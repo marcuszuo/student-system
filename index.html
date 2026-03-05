@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>专业方向探索工具</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <p class="tag">初高中生职业规划辅助</p>
+      <h1>专业方向探索工具</h1>
+      <p class="subtitle">
+        通过性格、兴趣、学习偏好与心理特征问卷，帮助学生和家长更清晰地理解未来大学专业选择。
+      </p>
+    </section>
+
+    <section class="card" id="quiz-card">
+      <div id="intro" class="intro">
+        <h2>开始前说明</h2>
+        <ul>
+          <li>本工具用于规划参考，不代替专业心理咨询或招生决策。</li>
+          <li>题目总数 110 道，每题四选一，请选择最符合你的选项。</li>
+          <li>提交后会给出 3 个专业方向：首选、次选、末选（可冲刺/保底）。</li>
+        </ul>
+        <button id="start-btn" class="btn btn-primary">开始答题</button>
+      </div>
+
+      <form id="quiz-form" class="hidden">
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span>答题进度</span>
+            <span id="progress-text">0 / 24</span>
+          </div>
+          <div class="progress-bar">
+            <div id="progress-fill"></div>
+          </div>
+        </div>
+        <div id="question-list"></div>
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">生成推荐结果</button>
+        </div>
+      </form>
+
+      <section id="result" class="hidden"></section>
+    </section>
+  </main>
+
+  <script src="official_data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
