@@ -36,15 +36,27 @@
           <div class="progress-bar">
             <div id="progress-fill"></div>
           </div>
+          <p id="save-status" class="save-status">草稿未保存</p>
+        </div>
+        <div class="pager-meta">
+          <span id="page-text">第 1 / 1 页</span>
+          <button type="button" id="clear-btn" class="btn btn-ghost">清空作答</button>
         </div>
         <div id="question-list"></div>
         <div class="actions">
-          <button type="submit" class="btn btn-primary">生成推荐结果</button>
+          <button type="button" id="prev-btn" class="btn btn-ghost">上一页</button>
+          <button type="button" id="next-btn" class="btn btn-primary">下一页</button>
+          <button type="submit" id="submit-btn" class="btn btn-primary hidden">生成推荐结果</button>
         </div>
       </form>
 
       <section id="result" class="hidden"></section>
     </section>
+    <footer class="footer-links">
+      <a href="./disclaimer.html" target="_blank" rel="noopener noreferrer">测评声明</a>
+      <a href="./privacy.html" target="_blank" rel="noopener noreferrer">隐私说明与家长知情同意</a>
+      <a href="./domain.html" target="_blank" rel="noopener noreferrer">自定义域名配置说明</a>
+    </footer>
   </main>
 
   <script src="official_data.js"></script>
