@@ -1,8 +1,37 @@
 const allQuestions = OFFICIAL_DATA.questions;
 const dimensions = OFFICIAL_DATA.dimensions;
-const majors = OFFICIAL_DATA.majors;
+const baseMajors = OFFICIAL_DATA.majors;
 const actions = OFFICIAL_DATA.actions;
 const dimensionKeys = OFFICIAL_DATA.dimensionKeys;
+const extraMajors = typeof EXTRA_MAJORS !== "undefined" ? EXTRA_MAJORS : [];
+
+function clamp01(value) {
+  return Math.max(0, Math.min(1, value));
+}
+
+function mergeMajors(base, extras) {
+  const baseMap = new Map(base.map((m) => [m.name, m]));
+  const output = [...base];
+  extras.forEach((x) => {
+    if (baseMap.has(x.name)) return;
+    const archetype = baseMap.get(x.archetype) || base[0];
+    const vector = { ...archetype.vector };
+    Object.entries(x.delta || {}).forEach(([dim, delta]) => {
+      vector[dim] = clamp01((vector[dim] || 0) + delta);
+    });
+    output.push({
+      name: x.name,
+      category: x.category,
+      courses: x.courses,
+      careers: x.careers,
+      vector,
+      coreDims: x.coreDims || archetype.coreDims || []
+    });
+  });
+  return output;
+}
+
+const majors = mergeMajors(baseMajors, extraMajors);
 
 const ITEMS_PER_PAGE = 8;
 const STORAGE_KEY = "student-major-assessment-v2";
@@ -191,7 +220,9 @@ function clamp(value, min, max) {
 
 function readSubjectScores() {
   const parse = (input) => {
-    const raw = Number(input.value);
+    const text = String(input.value || "").trim();
+    if (!text) return null;
+    const raw = Number(text);
     if (Number.isNaN(raw)) return null;
     return clamp(raw, 0, 100);
   };
