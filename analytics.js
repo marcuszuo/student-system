@@ -5,6 +5,18 @@
   const BAIDU_HM_ID = "245b0a8dbd93e5654d9a86b4108b86c1";
   const GA4_MEASUREMENT_ID = "G-S2R7PBXZYP";
 
+  window.trackEvent = function (eventName, params) {
+    if (!eventName) return;
+    if (window.gtag) {
+      window.gtag("event", eventName, params || {});
+    }
+    if (window._hmt) {
+      const label = params && params.label ? String(params.label) : "";
+      const value = params && typeof params.value === "number" ? params.value : 0;
+      window._hmt.push(["_trackEvent", "majornavi", eventName, label, value]);
+    }
+  };
+
   if (BAIDU_HM_ID) {
     window._hmt = window._hmt || [];
     const hmScript = document.createElement("script");
@@ -23,6 +35,7 @@
     function gtag() {
       window.dataLayer.push(arguments);
     }
+    window.gtag = gtag;
     gtag("js", new Date());
     gtag("config", GA4_MEASUREMENT_ID);
   }

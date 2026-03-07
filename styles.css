@@ -86,6 +86,35 @@ body {
   gap: 8px;
 }
 
+.subject-inputs {
+  margin: 8px 0 16px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.subject-title {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.subject-inputs label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.subject-inputs input {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+}
+
 .hidden {
   display: none;
 }
@@ -366,5 +395,9 @@ body {
 
   .radar-legend {
     grid-template-columns: 1fr;
+  }
+
+  .subject-inputs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

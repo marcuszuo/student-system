@@ -43,12 +43,18 @@ const submitBtn = document.getElementById("submit-btn");
 const pageText = document.getElementById("page-text");
 const clearBtn = document.getElementById("clear-btn");
 const saveStatus = document.getElementById("save-status");
+const scoreCnInput = document.getElementById("score-cn");
+const scoreMathInput = document.getElementById("score-math");
+const scoreEnInput = document.getElementById("score-en");
+const scoreSciInput = document.getElementById("score-sci");
+const scoreHumInput = document.getElementById("score-hum");
 
 let selectedMode = "standard";
 let activeQuestions = [];
 let totalPages = 1;
 let currentPage = 1;
 let answers = {};
+let subjectScores = { cn: null, math: null, en: null, sci: null, hum: null };
 
 function formatTime(date) {
   return date.toLocaleTimeString("zh-CN", { hour12: false });
@@ -58,9 +64,16 @@ function setSaveStatus(text) {
   saveStatus.textContent = text;
 }
 
+function emitEvent(name, params) {
+  if (typeof window.trackEvent === "function") {
+    window.trackEvent(name, params);
+  }
+}
+
 function saveDraft() {
   const payload = {
     mode: selectedMode,
+    subjectScores,
     answers,
     page: currentPage,
     savedAt: new Date().toISOString()
@@ -82,11 +95,17 @@ function loadDraft() {
   try {
     const parsed = JSON.parse(raw);
     answers = parsed.answers || {};
+    subjectScores = parsed.subjectScores || subjectScores;
     applyMode(parsed.mode || selectedMode);
     currentPage = Number(parsed.page) || 1;
     currentPage = Math.min(Math.max(currentPage, 1), totalPages);
     const modeInput = document.querySelector(`input[name="assessment-mode"][value="${selectedMode}"]`);
     if (modeInput) modeInput.checked = true;
+    scoreCnInput.value = subjectScores.cn ?? "";
+    scoreMathInput.value = subjectScores.math ?? "";
+    scoreEnInput.value = subjectScores.en ?? "";
+    scoreSciInput.value = subjectScores.sci ?? "";
+    scoreHumInput.value = subjectScores.hum ?? "";
     setSaveStatus("已恢复上次作答草稿");
   } catch {
     answers = {};
@@ -97,6 +116,12 @@ function loadDraft() {
 
 function clearDraft() {
   answers = {};
+  subjectScores = { cn: null, math: null, en: null, sci: null, hum: null };
+  scoreCnInput.value = "";
+  scoreMathInput.value = "";
+  scoreEnInput.value = "";
+  scoreSciInput.value = "";
+  scoreHumInput.value = "";
   currentPage = 1;
   localStorage.removeItem(STORAGE_KEY);
   setSaveStatus("已清空草稿");
@@ -158,6 +183,72 @@ function isCurrentPageAnswered() {
 function average(values) {
   if (!values.length) return 0;
   return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function readSubjectScores() {
+  const parse = (input) => {
+    const raw = Number(input.value);
+    if (Number.isNaN(raw)) return null;
+    return clamp(raw, 0, 100);
+  };
+  return {
+    cn: parse(scoreCnInput),
+    math: parse(scoreMathInput),
+    en: parse(scoreEnInput),
+    sci: parse(scoreSciInput),
+    hum: parse(scoreHumInput)
+  };
+}
+
+function applySubjectWeight(baseScore, scores) {
+  const valid = Object.entries(scores).filter(([, v]) => typeof v === "number");
+  if (!valid.length) return { score: baseScore, used: false, summary: "未输入学科成绩，采用纯测评结果。" };
+
+  const avg = average(valid.map(([, v]) => v));
+  const normalized = {
+    cn: scores.cn ?? avg,
+    math: scores.math ?? avg,
+    en: scores.en ?? avg,
+    sci: scores.sci ?? avg,
+    hum: scores.hum ?? avg
+  };
+  const norm = (x) => (x - 60) / 40; // around [-1, 1]
+  const deltaByDim = {
+    "ability.math": 0.5 * norm(normalized.math) + 0.2 * norm(normalized.sci),
+    "ability.stat": 0.35 * norm(normalized.math) + 0.35 * norm(normalized.sci),
+    "cognition.data": 0.25 * norm(normalized.math) + 0.3 * norm(normalized.sci),
+    "cognition.abstract": 0.25 * norm(normalized.math) + 0.15 * norm(normalized.sci),
+    "cognition.system": 0.2 * norm(normalized.math) + 0.2 * norm(normalized.sci),
+    "ability.writing": 0.4 * norm(normalized.cn) + 0.2 * norm(normalized.hum),
+    "cognition.verbal": 0.25 * norm(normalized.cn) + 0.25 * norm(normalized.en),
+    "ability.comm": 0.2 * norm(normalized.cn) + 0.2 * norm(normalized.en) + 0.15 * norm(normalized.hum),
+    "interest.i": 0.15 * norm(normalized.sci),
+    "interest.s": 0.1 * norm(normalized.hum),
+    "interest.a": 0.1 * norm(normalized.hum),
+    "cognition.contextual": 0.2 * norm(normalized.hum),
+    "value.responsibility": 0.15 * norm(normalized.hum)
+  };
+
+  const weighted = { ...baseScore };
+  Object.keys(deltaByDim).forEach((dim) => {
+    weighted[dim] = clamp((weighted[dim] || 0) + deltaByDim[dim] * 0.12, 0, 1);
+  });
+
+  const topSub = Object.entries(normalized)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(([k, v]) => `${({ cn: "语文", math: "数学", en: "英语", sci: "理综", hum: "文综" }[k])}${Math.round(v)}分`)
+    .join("、");
+
+  return {
+    score: weighted,
+    used: true,
+    summary: `已启用学科成绩加权（${topSub}）。`
+  };
 }
 
 function calculateStudentVector(answerMap) {
@@ -380,7 +471,7 @@ function drawRadarChart(canvasId, profile) {
   }
 }
 
-function renderResult(studentVector, rankedMajors, confidence) {
+function renderResult(studentVector, rankedMajors, confidence, weightingSummary) {
   const topTraits = getTopDimensions(studentVector.score, 3);
   const traitText = topTraits.map((t) => `${t.label} ${t.score}分`).join("、");
   const radarProfile = buildRadarProfile(studentVector.score);
@@ -426,6 +517,7 @@ function renderResult(studentVector, rankedMajors, confidence) {
       <h2>推荐结果（官方矩阵）</h2>
       <p class="confidence">结果置信度：${confidence.level}（${confidence.score}/100）${tieTop ? "；首选存在并列，建议结合学科成绩再判断。" : ""}</p>
       <p class="result-meta">你的优势特征：${traitText}</p>
+      <p class="result-meta">${weightingSummary}</p>
       <p class="result-meta">Holland 职业兴趣代码：<strong>${hollandCode}</strong>（基于 RIASEC 六维）</p>
       <p class="result-meta">综合画像采用 8 维模型：6维兴趣（Holland）+ 2维能力韧性（选专业更实用）。</p>
     </div>
@@ -447,11 +539,18 @@ function renderResult(studentVector, rankedMajors, confidence) {
 startBtn.addEventListener("click", () => {
   const modeInput = document.querySelector('input[name="assessment-mode"]:checked');
   applyMode(modeInput ? modeInput.value : "standard");
+  subjectScores = readSubjectScores();
   intro.classList.add("hidden");
   quizForm.classList.remove("hidden");
   loadDraft();
   renderCurrentPage();
   updateProgress();
+  saveDraft();
+  emitEvent("start_assessment", {
+    mode: selectedMode,
+    question_count: activeQuestions.length,
+    subject_score_filled: Object.values(subjectScores).some((v) => typeof v === "number")
+  });
 });
 
 quizForm.addEventListener("change", (event) => {
@@ -499,18 +598,30 @@ quizForm.addEventListener("submit", (event) => {
     return;
   }
   const studentVector = calculateStudentVector(answers);
-  const rankedMajors = rankMajors(studentVector.score);
+  const weighted = applySubjectWeight(studentVector.score, subjectScores);
+  const rankedMajors = rankMajors(weighted.score);
   const confidence = calculateConfidence(answers, rankedMajors);
-  renderResult(studentVector, rankedMajors, confidence);
+  renderResult({ ...studentVector, score: weighted.score }, rankedMajors, confidence, weighted.summary);
   localStorage.removeItem(STORAGE_KEY);
   setSaveStatus("已提交并清除本地草稿");
   resultBox.classList.remove("hidden");
   resultBox.scrollIntoView({ behavior: "smooth", block: "start" });
+  emitEvent("complete_assessment", {
+    mode: selectedMode,
+    question_count: activeQuestions.length,
+    confidence_score: confidence.score,
+    top_major: rankedMajors[0]?.name || "",
+    match_index: rankedMajors[0]?.matchIndex || 0
+  });
 });
 
 resultBox.addEventListener("click", (event) => {
   const target = event.target;
   if (target instanceof HTMLElement && target.id === "export-pdf-btn") {
+    emitEvent("export_pdf", {
+      mode: selectedMode,
+      label: "report_export"
+    });
     window.print();
   }
 });
