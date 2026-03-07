@@ -3,7 +3,7 @@
   // BAIDU_HM_ID example: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
   // GA4_MEASUREMENT_ID example: "G-XXXXXXXXXX"
   const BAIDU_HM_ID = "245b0a8dbd93e5654d9a86b4108b86c1";
-  const GA4_MEASUREMENT_ID = "";
+  const GA4_MEASUREMENT_ID = "G-S2R7PBXZYP";
 
   if (BAIDU_HM_ID) {
     window._hmt = window._hmt || [];
