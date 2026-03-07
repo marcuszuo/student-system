@@ -253,6 +253,9 @@ function renderResult(studentVector, topMajors) {
       <h2>推荐结果（官方矩阵）</h2>
       <p class="result-meta">你的优势特征：${traitText}</p>
     </div>
+    <div class="result-tools">
+      <button type="button" id="export-pdf-btn" class="btn btn-ghost">导出 PDF（打印版）</button>
+    </div>
     <div class="rank-grid">${cards}</div>
     ${actionHTML}
   `;
@@ -320,4 +323,11 @@ quizForm.addEventListener("submit", (event) => {
   setSaveStatus("已提交并清除本地草稿");
   resultBox.classList.remove("hidden");
   resultBox.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+resultBox.addEventListener("click", (event) => {
+  const target = event.target;
+  if (target instanceof HTMLElement && target.id === "export-pdf-btn") {
+    window.print();
+  }
 });

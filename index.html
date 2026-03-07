@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>专业方向探索工具</title>
+  <title>MajorNavi 学生专业测评系统</title>
+  <meta name="description" content="MajorNavi 面向初高中学生的专业测评与升学规划系统，基于官方评分矩阵输出首选、次选与保底专业建议。">
   <script>
     if (location.protocol === "http:") {
       location.replace("https://" + location.host + location.pathname + location.search + location.hash);
@@ -14,11 +15,12 @@
 <body>
   <main class="page">
     <section class="hero">
-      <p class="tag">初高中生职业规划辅助</p>
-      <h1>专业方向探索工具</h1>
+      <p class="tag">MajorNavi · 初高中升学规划</p>
+      <h1>学生专业测评系统</h1>
       <p class="subtitle">
-        通过性格、兴趣、学习偏好与心理特征问卷，帮助学生和家长更清晰地理解未来大学专业选择。
+        基于官方计分矩阵，结合兴趣、认知、能力与价值观，为学生和家长提供清晰的大学专业方向建议。
       </p>
+      <p class="subtitle brand-subtitle">品牌域名：<strong>www.majornavi.cn</strong></p>
     </section>
 
     <section class="card" id="quiz-card">
@@ -65,6 +67,7 @@
   </main>
 
   <script src="official_data.js"></script>
+  <script src="analytics.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

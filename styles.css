@@ -50,6 +50,10 @@ body {
   margin-top: 0;
 }
 
+.brand-subtitle {
+  font-size: 0.95rem;
+}
+
 .card {
   background: var(--card);
   border: 1px solid var(--line);
@@ -204,6 +208,12 @@ body {
   flex-wrap: wrap;
 }
 
+.result-tools {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .result-header h2 {
   margin: 0 0 6px;
 }
@@ -258,6 +268,30 @@ body {
 
 .footer-links a:hover {
   opacity: 0.85;
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  .hero,
+  #quiz-form,
+  .footer-links,
+  #intro,
+  .result-tools {
+    display: none !important;
+  }
+
+  .card {
+    box-shadow: none;
+    border: 0;
+    padding: 0;
+  }
+
+  #result {
+    display: block !important;
+  }
 }
 
 @media (max-width: 820px) {
