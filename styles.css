@@ -68,6 +68,24 @@ body {
   line-height: 1.6;
 }
 
+.mode-picker {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 12px 0 14px;
+}
+
+.mode-item {
+  border: 1px solid var(--line);
+  background: #fffdf8;
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .hidden {
   display: none;
 }
@@ -218,6 +236,12 @@ body {
   margin: 0 0 6px;
 }
 
+.confidence {
+  margin: 6px 0 10px;
+  color: #7c3b1b;
+  font-weight: 700;
+}
+
 .result-meta {
   margin-top: 0;
   color: var(--muted);
@@ -243,6 +267,12 @@ body {
 .rank-card .score {
   color: var(--ok);
   font-weight: 700;
+}
+
+.evidence,
+.risk {
+  margin: 8px 0;
+  color: var(--muted);
 }
 
 .advice {

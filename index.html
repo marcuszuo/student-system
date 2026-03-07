@@ -28,9 +28,19 @@
         <h2>开始前说明</h2>
         <ul>
           <li>本工具用于规划参考，不代替专业心理咨询或招生决策。</li>
-          <li>题目总数 110 道，每题四选一，请选择最符合你的选项。</li>
+          <li>支持两种模式：标准版 66 题（更快）与完整版 110 题（更精细）。</li>
           <li>提交后会给出 3 个专业方向：首选、次选、末选（可冲刺/保底）。</li>
         </ul>
+        <div class="mode-picker">
+          <label class="mode-item">
+            <input type="radio" name="assessment-mode" value="standard" checked>
+            标准版（66题）
+          </label>
+          <label class="mode-item">
+            <input type="radio" name="assessment-mode" value="full">
+            完整版（110题）
+          </label>
+        </div>
         <button id="start-btn" class="btn btn-primary">开始答题</button>
       </div>
 
