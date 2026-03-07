@@ -2,7 +2,7 @@
   // Fill these IDs to enable tracking.
   // BAIDU_HM_ID example: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
   // GA4_MEASUREMENT_ID example: "G-XXXXXXXXXX"
-  const BAIDU_HM_ID = "";
+  const BAIDU_HM_ID = "245b0a8dbd93e5654d9a86b4108b86c1";
   const GA4_MEASUREMENT_ID = "";
 
   if (BAIDU_HM_ID) {
