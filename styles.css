@@ -232,6 +232,31 @@ body {
   justify-content: flex-end;
 }
 
+.radar-wrap {
+  margin: 10px 0 16px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+#profile-radar {
+  width: 360px;
+  height: 360px;
+  max-width: 100%;
+  background: #fffdf8;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.radar-legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .result-header h2 {
   margin: 0 0 6px;
 }
@@ -337,5 +362,9 @@ body {
     align-items: flex-start;
     gap: 10px;
     flex-direction: column;
+  }
+
+  .radar-legend {
+    grid-template-columns: 1fr;
   }
 }

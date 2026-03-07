@@ -273,9 +273,118 @@ function buildEvidence(major, studentScore) {
   return { positives, risks };
 }
 
+function buildRadarProfile(studentScore) {
+  const val = (n) => Math.round((n || 0) * 100);
+  return [
+    { key: "research", label: "研究探索", value: val((studentScore["interest.i"] + studentScore["cognition.abstract"]) / 2) },
+    { key: "practice", label: "实作执行", value: val((studentScore["interest.r"] + studentScore["ability.focus"]) / 2) },
+    { key: "creative", label: "创意表达", value: val((studentScore["interest.a"] + studentScore["ability.writing"]) / 2) },
+    { key: "social", label: "社会协作", value: val((studentScore["interest.s"] + studentScore["ability.comm"]) / 2) },
+    { key: "leadership", label: "领导经营", value: val((studentScore["interest.e"] + studentScore["value.influence"]) / 2) },
+    { key: "order", label: "规则秩序", value: val((studentScore["interest.c"] + studentScore["cognition.system"]) / 2) },
+    { key: "logic", label: "数据逻辑", value: val((studentScore["cognition.data"] + studentScore["ability.math"] + studentScore["ability.stat"]) / 3) },
+    { key: "resilience", label: "韧性稳定", value: val((studentScore["risk.pressure"] + studentScore["risk.stability"] + studentScore["value.security"]) / 3) }
+  ];
+}
+
+function getHollandCode(studentScore) {
+  const map = [
+    { k: "interest.r", c: "R" },
+    { k: "interest.i", c: "I" },
+    { k: "interest.a", c: "A" },
+    { k: "interest.s", c: "S" },
+    { k: "interest.e", c: "E" },
+    { k: "interest.c", c: "C" }
+  ];
+  return map
+    .map((x) => ({ ...x, v: studentScore[x.k] || 0 }))
+    .sort((a, b) => b.v - a.v)
+    .slice(0, 3)
+    .map((x) => x.c)
+    .join("");
+}
+
+function drawRadarChart(canvasId, profile) {
+  const canvas = document.getElementById(canvasId);
+  if (!(canvas instanceof HTMLCanvasElement)) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  const cssSize = 360;
+  canvas.width = cssSize * dpr;
+  canvas.height = cssSize * dpr;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.scale(dpr, dpr);
+
+  const size = cssSize;
+  const cx = size / 2;
+  const cy = size / 2;
+  const radius = 120;
+  const steps = 5;
+  const count = profile.length;
+
+  ctx.clearRect(0, 0, size, size);
+
+  for (let s = 1; s <= steps; s += 1) {
+    const r = (radius * s) / steps;
+    ctx.beginPath();
+    for (let i = 0; i < count; i += 1) {
+      const angle = -Math.PI / 2 + (2 * Math.PI * i) / count;
+      const x = cx + Math.cos(angle) * r;
+      const y = cy + Math.sin(angle) * r;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = "#eadfcd";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  for (let i = 0; i < count; i += 1) {
+    const angle = -Math.PI / 2 + (2 * Math.PI * i) / count;
+    const x = cx + Math.cos(angle) * radius;
+    const y = cy + Math.sin(angle) * radius;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(x, y);
+    ctx.strokeStyle = "#eadfcd";
+    ctx.stroke();
+  }
+
+  ctx.beginPath();
+  for (let i = 0; i < count; i += 1) {
+    const angle = -Math.PI / 2 + (2 * Math.PI * i) / count;
+    const r = (radius * profile[i].value) / 100;
+    const x = cx + Math.cos(angle) * r;
+    const y = cy + Math.sin(angle) * r;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = "rgba(199, 107, 36, 0.25)";
+  ctx.fill();
+  ctx.strokeStyle = "#8f3f1f";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.fillStyle = "#6b7280";
+  ctx.font = "12px sans-serif";
+  for (let i = 0; i < count; i += 1) {
+    const angle = -Math.PI / 2 + (2 * Math.PI * i) / count;
+    const x = cx + Math.cos(angle) * (radius + 18);
+    const y = cy + Math.sin(angle) * (radius + 18);
+    ctx.textAlign = x < cx - 4 ? "right" : x > cx + 4 ? "left" : "center";
+    ctx.textBaseline = y < cy ? "bottom" : "top";
+    ctx.fillText(profile[i].label, x, y);
+  }
+}
+
 function renderResult(studentVector, rankedMajors, confidence) {
   const topTraits = getTopDimensions(studentVector.score, 3);
   const traitText = topTraits.map((t) => `${t.label} ${t.score}分`).join("、");
+  const radarProfile = buildRadarProfile(studentVector.score);
+  const hollandCode = getHollandCode(studentVector.score);
   const top3 = rankedMajors.slice(0, 3);
   const tieTop = (top3[0].matchIndex - top3[1].matchIndex) <= 3;
 
@@ -317,13 +426,22 @@ function renderResult(studentVector, rankedMajors, confidence) {
       <h2>推荐结果（官方矩阵）</h2>
       <p class="confidence">结果置信度：${confidence.level}（${confidence.score}/100）${tieTop ? "；首选存在并列，建议结合学科成绩再判断。" : ""}</p>
       <p class="result-meta">你的优势特征：${traitText}</p>
+      <p class="result-meta">Holland 职业兴趣代码：<strong>${hollandCode}</strong>（基于 RIASEC 六维）</p>
+      <p class="result-meta">综合画像采用 8 维模型：6维兴趣（Holland）+ 2维能力韧性（选专业更实用）。</p>
     </div>
     <div class="result-tools">
       <button type="button" id="export-pdf-btn" class="btn btn-ghost">导出 PDF（打印版）</button>
     </div>
+    <div class="radar-wrap">
+      <canvas id="profile-radar" width="360" height="360"></canvas>
+      <div class="radar-legend">
+        ${radarProfile.map((x) => `<span>${x.label} ${x.value}</span>`).join("")}
+      </div>
+    </div>
     <div class="rank-grid">${cards}</div>
     ${actionHTML}
   `;
+  drawRadarChart("profile-radar", radarProfile);
 }
 
 startBtn.addEventListener("click", () => {
