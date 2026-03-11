@@ -54,6 +54,8 @@
           <div class="upload-row">
             <label class="btn btn-ghost upload-btn" for="school-major-file">上传 Excel/CSV/TXT</label>
             <input id="school-major-file" type="file" accept=".xlsx,.xls,.csv,.txt" hidden>
+            <label class="btn btn-ghost upload-btn" for="school-major-image">上传图片识别</label>
+            <input id="school-major-image" type="file" accept="image/*" hidden>
             <span id="school-major-file-status" class="upload-status">未上传文件</span>
           </div>
           <textarea id="school-major-text" rows="6" placeholder="把单招/高职院校可报专业直接粘贴进来，支持一行一个专业，或直接粘贴招生简章表格内容。系统会额外给出“该校可报范围内的最优替代专业”。例如：&#10;工程造价&#10;建筑工程技术&#10;电气自动化技术&#10;汽车技术服务与营销"></textarea>
@@ -97,6 +99,7 @@
   <script src="official_data.js"></script>
   <script src="majors_v2.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="analytics.js"></script>
   <script src="app.js"></script>
 </body>

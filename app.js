@@ -79,6 +79,7 @@ const scoreSciInput = document.getElementById("score-sci");
 const scoreHumInput = document.getElementById("score-hum");
 const schoolMajorsInput = document.getElementById("school-major-text");
 const schoolMajorFileInput = document.getElementById("school-major-file");
+const schoolMajorImageInput = document.getElementById("school-major-image");
 const schoolMajorFileStatus = document.getElementById("school-major-file-status");
 
 let selectedMode = "standard";
@@ -166,6 +167,7 @@ function clearDraft() {
   scoreHumInput.value = "";
   schoolMajorsInput.value = "";
   schoolMajorFileInput.value = "";
+  schoolMajorImageInput.value = "";
   setSchoolFileStatus("未上传文件");
   currentPage = 1;
   localStorage.removeItem(STORAGE_KEY);
@@ -367,6 +369,29 @@ function readSchoolMajorFile(file) {
     };
     reader.readAsText(file, "utf-8");
   });
+}
+
+async function readSchoolMajorImage(file) {
+  if (typeof Tesseract === "undefined") {
+    throw new Error("图片识别组件未加载，请刷新页面后再试");
+  }
+  const result = await Tesseract.recognize(file, "chi_sim+eng", {
+    logger: (message) => {
+      if (message.status === "recognizing text" && typeof message.progress === "number") {
+        setSchoolFileStatus(`图片识别中 ${Math.round(message.progress * 100)}%：${file.name}`);
+      }
+    }
+  });
+  const text = String(result?.data?.text || "").trim();
+  if (!text) {
+    throw new Error("图片中未识别到可用文本");
+  }
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.replace(/[|｜]/g, " ").replace(/\s{2,}/g, "\t").trim())
+    .filter(Boolean)
+    .join("\n");
+  return parseSchoolMajorText(lines).join("\n");
 }
 
 function applySubjectWeight(baseScore, scores) {
@@ -976,6 +1001,30 @@ schoolMajorFileInput.addEventListener("change", async (event) => {
   } catch (error) {
     setSchoolFileStatus(`导入失败：${error.message}`);
     alert(`学校专业清单导入失败：${error.message}`);
+  }
+});
+
+schoolMajorImageInput.addEventListener("change", async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) {
+    setSchoolFileStatus("未上传文件");
+    return;
+  }
+
+  setSchoolFileStatus(`正在识别图片：${file.name}`);
+  try {
+    const parsedText = await readSchoolMajorImage(file);
+    if (!parsedText) {
+      throw new Error("图片已识别，但未提取出专业名");
+    }
+    schoolMajorsInput.value = parsedText;
+    schoolMajorText = parsedText;
+    const parsedNames = parseSchoolMajorText(parsedText);
+    setSchoolFileStatus(`图片识别完成，提取 ${parsedNames.length} 个专业：${file.name}`);
+    saveDraft();
+  } catch (error) {
+    setSchoolFileStatus(`图片识别失败：${error.message}`);
+    alert(`学校专业图片识别失败：${error.message}`);
   }
 });
 
