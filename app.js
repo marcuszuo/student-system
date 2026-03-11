@@ -395,6 +395,21 @@ function buildEvidence(major, studentScore) {
   return { positives, risks };
 }
 
+function getConfidenceTone(score) {
+  if (score >= 80) return "high";
+  if (score >= 60) return "medium";
+  return "low";
+}
+
+function buildActionPlan(topMajor, action) {
+  if (!action) return [];
+  return [
+    `30天：围绕 ${topMajor.name} 做一次轻量验证，优先试一门公开课、一次社团任务或一次案例拆解。`,
+    `60天：把结果落到作品或输出上，例如一份研究笔记、一次主题展示或一个小项目。`,
+    `90天：复盘投入感、成就感和压力感，判断是否继续把 ${topMajor.name} 作为主方向。`
+  ];
+}
+
 function buildRadarProfile(studentScore) {
   const val = (n) => Math.round((n || 0) * 100);
   return [
@@ -509,6 +524,9 @@ function renderResult(studentVector, rankedMajors, confidence, weightingSummary)
   const hollandCode = getHollandCode(studentVector.score);
   const top3 = rankedMajors.slice(0, 3);
   const tieTop = (top3[0].matchIndex - top3[1].matchIndex) <= 3;
+  const confidenceTone = getConfidenceTone(confidence.score);
+  const firstAction = getActionByCategory(top3[0].category);
+  const actionPlan = buildActionPlan(top3[0], firstAction);
 
   const rankNames = tieTop
     ? ["首选（并列A）", "首选（并列B）", "备选"]
@@ -517,43 +535,76 @@ function renderResult(studentVector, rankedMajors, confidence, weightingSummary)
   const cards = top3
     .map((major, index) => {
       const ev = buildEvidence(major, studentVector.score);
+      const headline =
+        index === 0 && tieTop
+          ? `${major.name} 与另一方向接近，建议用成绩与实践体验做二次判断。`
+          : `${major.name} 当前与学生画像匹配度较高，可优先进入验证清单。`;
       return `
       <article class="rank-card">
-        <h3>${rankNames[index]}：${major.name}</h3>
-        <p class="score">匹配指数：${major.matchIndex} / 100</p>
-        <p>学科门类：${major.category}</p>
-        <p>核心课程：${major.courses}</p>
-        <p>典型去向：${major.careers}</p>
+        <div class="rank-card-top">
+          <div>
+            <p class="rank-label">${rankNames[index]}</p>
+            <h3>${major.name}</h3>
+          </div>
+          <p class="score">${major.matchIndex} / 100</p>
+        </div>
+        <p class="rank-summary">${headline}</p>
+        <div class="rank-meta-grid">
+          <span>学科门类：${major.category}</span>
+          <span>课程关键词：${major.courses}</span>
+          <span>典型去向：${major.careers}</span>
+        </div>
         <p class="evidence"><strong>推荐证据：</strong>${ev.positives.join("、") || "综合匹配度较高"}</p>
-        <p class="risk"><strong>风险提示：</strong>${ev.risks.join("、") || "当前未见明显核心短板，可持续观察学业压力承受度"}</p>
+        <details class="rank-details">
+          <summary>查看详细解释</summary>
+          <p class="risk"><strong>风险提示：</strong>${ev.risks.join("、") || "当前未见明显核心短板，可持续观察学业压力承受度"}</p>
+        </details>
       </article>
     `;
     })
     .join("");
 
-  const firstAction = getActionByCategory(top3[0].category);
   const actionHTML = firstAction
     ? `
-      <div class="advice">
-        <strong>家长可读建议：</strong><br>
-        当前结果置信度为 ${confidence.level}（${confidence.score}/100），建议先围绕首选方向进行 1-2 个可执行验证任务，再决定长期投入。<br>
-        学习重点：${firstAction.focus}<br>
-        验证方式：${firstAction.validation}
-      </div>
+      <section id="action-plan" class="advice">
+        <h3>下一步行动</h3>
+        <p><strong>家长可读结论：</strong>当前结果置信度为 ${confidence.level}（${confidence.score}/100），建议先以低成本验证代替直接定方向。</p>
+        <p><strong>学习重点：</strong>${firstAction.focus}</p>
+        <p><strong>验证方式：</strong>${firstAction.validation}</p>
+        <div class="action-plan-list">
+          ${actionPlan.map((item) => `<p>${item}</p>`).join("")}
+        </div>
+      </section>
     `
     : "";
 
+  const summaryTitle = tieTop
+    ? `当前最适合：${top3[0].name} / ${top3[1].name}`
+    : `当前最适合：${top3[0].name}`;
+  const summaryText = tieTop
+    ? "两条方向分差很小，建议结合学科成绩和真实体验做二选一。"
+    : `${top3[0].name} 是当前优先验证方向，次选可作为补充参考。`;
+
   resultBox.innerHTML = `
     <div class="result-header">
-      <h2>推荐结果（官方矩阵）</h2>
-      <p class="confidence">结果置信度：${confidence.level}（${confidence.score}/100）${tieTop ? "；首选存在并列，建议结合学科成绩再判断。" : ""}</p>
-      <p class="result-meta">你的优势特征：${traitText}</p>
-      <p class="result-meta">${weightingSummary}</p>
-      <p class="result-meta">Holland 职业兴趣代码：<strong>${hollandCode}</strong>（基于 RIASEC 六维）</p>
+      <p class="result-kicker">报告结论</p>
+      <h2>${summaryTitle}</h2>
+      <p class="result-summary">${summaryText}</p>
+      <div class="confidence-badge confidence-${confidenceTone}">
+        <span>结果置信度</span>
+        <strong>${confidence.level} ${confidence.score}/100</strong>
+      </div>
+      <p class="confidence-note">${tieTop ? "首选并列：先看成绩与真实体验，再定主方向。" : "当前分差明确，可先围绕首选方向做验证。"} </p>
+      <div class="summary-chips">
+        <span>优势特征：${traitText}</span>
+        <span>${weightingSummary}</span>
+        <span>Holland：${hollandCode}</span>
+      </div>
       <p class="result-meta">综合画像采用 8 维模型：6维兴趣（Holland）+ 2维能力韧性（选专业更实用）。</p>
     </div>
     <div class="result-tools">
       <button type="button" id="export-pdf-btn" class="btn btn-ghost">导出 PDF（打印版）</button>
+      <button type="button" id="jump-action-btn" class="btn btn-primary">查看 90 天行动</button>
     </div>
     <div class="radar-wrap">
       <canvas id="profile-radar" width="360" height="360"></canvas>
@@ -654,5 +705,11 @@ resultBox.addEventListener("click", (event) => {
       label: "report_export"
     });
     window.print();
+  }
+  if (target instanceof HTMLElement && target.id === "jump-action-btn") {
+    const actionPlan = document.getElementById("action-plan");
+    if (actionPlan) {
+      actionPlan.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   }
 });

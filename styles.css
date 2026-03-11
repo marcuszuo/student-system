@@ -296,7 +296,21 @@ body {
 }
 
 .result-header h2 {
+  margin: 0 0 8px;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+}
+
+.result-kicker {
   margin: 0 0 6px;
+  color: #8f3f1f;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.result-summary {
+  margin: 0 0 12px;
+  color: var(--ink);
+  line-height: 1.5;
 }
 
 .confidence {
@@ -305,9 +319,61 @@ body {
   font-weight: 700;
 }
 
+.confidence-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+}
+
+.confidence-badge strong {
+  font-size: 1rem;
+}
+
+.confidence-high {
+  background: #e8f7ef;
+  color: #166534;
+}
+
+.confidence-medium {
+  background: #fff3d6;
+  color: #9a5b00;
+}
+
+.confidence-low {
+  background: #fde8e2;
+  color: #b3411f;
+}
+
+.confidence-note {
+  margin: 0 0 12px;
+  color: var(--muted);
+}
+
 .result-meta {
   margin-top: 0;
   color: var(--muted);
+}
+
+.summary-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.summary-chips span {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #fff7ee;
+  border: 1px solid var(--line);
+  color: #7c3b1b;
+  font-size: 0.88rem;
 }
 
 .rank-grid {
@@ -323,13 +389,42 @@ body {
   background: #fffdf8;
 }
 
+.rank-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.rank-label {
+  margin: 0 0 4px;
+  color: #8f3f1f;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .rank-card h3 {
-  margin-top: 0;
+  margin: 0;
 }
 
 .rank-card .score {
   color: var(--ok);
   font-weight: 700;
+  white-space: nowrap;
+}
+
+.rank-summary {
+  margin: 10px 0 12px;
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.rank-meta-grid {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  margin-bottom: 10px;
 }
 
 .evidence,
@@ -338,12 +433,40 @@ body {
   color: var(--muted);
 }
 
+.rank-details {
+  margin-top: 8px;
+}
+
+.rank-details summary {
+  cursor: pointer;
+  color: #7c3b1b;
+  font-weight: 700;
+}
+
 .advice {
   margin-top: 16px;
   border-top: 1px dashed var(--line);
   padding-top: 12px;
   color: var(--muted);
   line-height: 1.6;
+}
+
+.advice h3 {
+  margin: 0 0 10px;
+  color: var(--ink);
+}
+
+.action-plan-list {
+  display: grid;
+  gap: 8px;
+}
+
+.action-plan-list p {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff7ee;
+  border: 1px solid var(--line);
 }
 
 .footer-links {
@@ -456,6 +579,15 @@ body {
   .result-tools .btn {
     width: 100%;
     min-height: 48px;
+  }
+
+  .confidence-badge {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .rank-card-top {
+    flex-direction: column;
   }
 
   #profile-radar {
