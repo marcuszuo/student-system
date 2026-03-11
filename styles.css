@@ -380,6 +380,23 @@ body {
   margin-top: 18px;
 }
 
+.upload-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.upload-btn {
+  cursor: pointer;
+}
+
+.upload-status {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
 .school-major-box textarea {
   width: 100%;
   min-height: 132px;

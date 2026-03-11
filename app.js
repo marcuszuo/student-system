@@ -78,6 +78,8 @@ const scoreEnInput = document.getElementById("score-en");
 const scoreSciInput = document.getElementById("score-sci");
 const scoreHumInput = document.getElementById("score-hum");
 const schoolMajorsInput = document.getElementById("school-major-text");
+const schoolMajorFileInput = document.getElementById("school-major-file");
+const schoolMajorFileStatus = document.getElementById("school-major-file-status");
 
 let selectedMode = "standard";
 let activeQuestions = [];
@@ -93,6 +95,10 @@ function formatTime(date) {
 
 function setSaveStatus(text) {
   saveStatus.textContent = text;
+}
+
+function setSchoolFileStatus(text) {
+  schoolMajorFileStatus.textContent = text;
 }
 
 function emitEvent(name, params) {
@@ -140,6 +146,7 @@ function loadDraft() {
     scoreSciInput.value = subjectScores.sci ?? "";
     scoreHumInput.value = subjectScores.hum ?? "";
     schoolMajorsInput.value = schoolMajorText;
+    setSchoolFileStatus(schoolMajorText ? "已恢复学校专业清单" : "未上传文件");
     setSaveStatus("已恢复上次作答草稿");
   } catch {
     answers = {};
@@ -158,6 +165,8 @@ function clearDraft() {
   scoreSciInput.value = "";
   scoreHumInput.value = "";
   schoolMajorsInput.value = "";
+  schoolMajorFileInput.value = "";
+  setSchoolFileStatus("未上传文件");
   currentPage = 1;
   localStorage.removeItem(STORAGE_KEY);
   setSaveStatus("已清空草稿");
@@ -300,6 +309,64 @@ function parseSchoolMajorText(rawText) {
     .map(extractSchoolMajorName)
     .filter(Boolean);
   return uniqueByName(names.map((name) => ({ name }))).map((item) => item.name);
+}
+
+function rowsToSchoolMajorText(rows) {
+  return rows
+    .map((row) => row.map((cell) => String(cell ?? "").trim()).filter(Boolean).join("\t"))
+    .map(extractSchoolMajorName)
+    .filter(Boolean)
+    .join("\n");
+}
+
+function parseDelimitedText(text) {
+  return String(text || "")
+    .split(/\r?\n/)
+    .map((line) => line.split(/,|，|;|；/));
+}
+
+function readSchoolMajorFile(file) {
+  return new Promise((resolve, reject) => {
+    const name = file.name.toLowerCase();
+    const reader = new FileReader();
+
+    reader.onerror = () => reject(new Error("文件读取失败"));
+
+    if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
+      if (typeof XLSX === "undefined") {
+        reject(new Error("Excel 解析组件未加载，请稍后刷新再试"));
+        return;
+      }
+      reader.onload = () => {
+        try {
+          const data = new Uint8Array(reader.result);
+          const workbook = XLSX.read(data, { type: "array" });
+          const rows = [];
+          workbook.SheetNames.forEach((sheetName) => {
+            const sheet = workbook.Sheets[sheetName];
+            const sheetRows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "" });
+            rows.push(...sheetRows);
+          });
+          resolve(rowsToSchoolMajorText(rows));
+        } catch {
+          reject(new Error("Excel 文件解析失败"));
+        }
+      };
+      reader.readAsArrayBuffer(file);
+      return;
+    }
+
+    reader.onload = () => {
+      try {
+        const text = String(reader.result || "");
+        const rows = parseDelimitedText(text);
+        resolve(rowsToSchoolMajorText(rows));
+      } catch {
+        reject(new Error("文本文件解析失败"));
+      }
+    };
+    reader.readAsText(file, "utf-8");
+  });
 }
 
 function applySubjectWeight(baseScore, scores) {
@@ -889,6 +956,27 @@ quizForm.addEventListener("change", (event) => {
     schoolMajorText = readSchoolMajorText();
     saveDraft();
   });
+});
+
+schoolMajorFileInput.addEventListener("change", async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) {
+    setSchoolFileStatus("未上传文件");
+    return;
+  }
+
+  setSchoolFileStatus(`正在解析：${file.name}`);
+  try {
+    const parsedText = await readSchoolMajorFile(file);
+    schoolMajorsInput.value = parsedText;
+    schoolMajorText = parsedText;
+    const parsedNames = parseSchoolMajorText(parsedText);
+    setSchoolFileStatus(`已导入 ${parsedNames.length} 个专业：${file.name}`);
+    saveDraft();
+  } catch (error) {
+    setSchoolFileStatus(`导入失败：${error.message}`);
+    alert(`学校专业清单导入失败：${error.message}`);
+  }
 });
 
 prevBtn.addEventListener("click", () => {
