@@ -79,11 +79,12 @@ body {
   border: 1px solid var(--line);
   background: #fffdf8;
   border-radius: 10px;
-  padding: 9px 12px;
+  padding: 12px 14px;
   color: var(--muted);
   display: flex;
   align-items: center;
   gap: 8px;
+  min-height: 46px;
 }
 
 .subject-inputs {
@@ -240,7 +241,10 @@ body {
 }
 
 .option-item input {
-  margin-top: 2px;
+  margin-top: 3px;
+  inline-size: 18px;
+  block-size: 18px;
+  flex: 0 0 auto;
 }
 
 .option-tag {
@@ -254,6 +258,10 @@ body {
   justify-content: flex-end;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.actions .btn {
+  min-height: 42px;
 }
 
 .result-tools {
@@ -380,6 +388,16 @@ body {
 }
 
 @media (max-width: 820px) {
+  .page {
+    width: min(100%, calc(100vw - 20px));
+    margin: 20px auto 84px;
+  }
+
+  .card {
+    padding: 18px 14px;
+    border-radius: 16px;
+  }
+
   .rank-grid {
     grid-template-columns: 1fr;
   }
@@ -403,7 +421,7 @@ body {
   }
 
   #quiz-form {
-    padding-bottom: 92px;
+    padding-bottom: 104px;
   }
 
   .actions {
@@ -412,19 +430,54 @@ body {
     right: 0;
     bottom: 0;
     margin: 0;
-    padding: 10px 14px calc(env(safe-area-inset-bottom, 0px) + 10px);
-    background: rgba(255, 250, 240, 0.96);
+    padding: 10px 12px calc(env(safe-area-inset-bottom, 0px) + 10px);
+    background: rgba(255, 250, 240, 0.98);
     border-top: 1px solid var(--line);
     justify-content: space-between;
     z-index: 30;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 -10px 24px rgba(143, 63, 31, 0.08);
   }
 
   .actions .btn {
     flex: 1;
-    min-height: 44px;
+    min-height: 48px;
+    font-size: 1rem;
   }
 
   .actions .btn.hidden {
     display: none;
+  }
+
+  .result-tools {
+    justify-content: stretch;
+  }
+
+  .result-tools .btn {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  #profile-radar {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+}
+
+@media (max-width: 540px) {
+  .subject-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .hero h1 {
+    font-size: 1.55rem;
+    line-height: 1.2;
+  }
+
+  .subtitle,
+  .result-meta,
+  .advice {
+    font-size: 0.94rem;
   }
 }
