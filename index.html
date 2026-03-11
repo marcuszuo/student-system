@@ -49,6 +49,11 @@
           <label>理科综合<input id="score-sci" type="number" min="0" max="100" inputmode="numeric" autocomplete="off" placeholder="如 85"></label>
           <label>文科综合<input id="score-hum" type="number" min="0" max="100" inputmode="numeric" autocomplete="off" placeholder="如 80"></label>
         </div>
+        <div class="school-major-box">
+          <label for="school-major-text" class="subject-title">学校专业清单约束（可选）</label>
+          <textarea id="school-major-text" rows="6" placeholder="把单招/高职院校可报专业直接粘贴进来，支持一行一个专业，或直接粘贴招生简章表格内容。系统会额外给出“该校可报范围内的最优替代专业”。例如：&#10;工程造价&#10;建筑工程技术&#10;电气自动化技术&#10;汽车技术服务与营销"></textarea>
+          <p class="field-note">适合处理“学生理想方向偏文科，但目标学校只开理工专业”的情况。</p>
+        </div>
         <button id="start-btn" class="btn btn-primary">开始答题</button>
       </div>
 

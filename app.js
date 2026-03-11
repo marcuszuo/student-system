@@ -77,6 +77,7 @@ const scoreMathInput = document.getElementById("score-math");
 const scoreEnInput = document.getElementById("score-en");
 const scoreSciInput = document.getElementById("score-sci");
 const scoreHumInput = document.getElementById("score-hum");
+const schoolMajorsInput = document.getElementById("school-major-text");
 
 let selectedMode = "standard";
 let activeQuestions = [];
@@ -84,6 +85,7 @@ let totalPages = 1;
 let currentPage = 1;
 let answers = {};
 let subjectScores = { cn: null, math: null, en: null, sci: null, hum: null };
+let schoolMajorText = "";
 
 function formatTime(date) {
   return date.toLocaleTimeString("zh-CN", { hour12: false });
@@ -103,6 +105,7 @@ function saveDraft() {
   const payload = {
     mode: selectedMode,
     subjectScores,
+    schoolMajorText,
     answers,
     page: currentPage,
     savedAt: new Date().toISOString()
@@ -125,6 +128,7 @@ function loadDraft() {
     const parsed = JSON.parse(raw);
     answers = parsed.answers || {};
     subjectScores = parsed.subjectScores || subjectScores;
+    schoolMajorText = parsed.schoolMajorText || "";
     applyMode(parsed.mode || selectedMode);
     currentPage = Number(parsed.page) || 1;
     currentPage = Math.min(Math.max(currentPage, 1), totalPages);
@@ -135,6 +139,7 @@ function loadDraft() {
     scoreEnInput.value = subjectScores.en ?? "";
     scoreSciInput.value = subjectScores.sci ?? "";
     scoreHumInput.value = subjectScores.hum ?? "";
+    schoolMajorsInput.value = schoolMajorText;
     setSaveStatus("已恢复上次作答草稿");
   } catch {
     answers = {};
@@ -146,11 +151,13 @@ function loadDraft() {
 function clearDraft() {
   answers = {};
   subjectScores = { cn: null, math: null, en: null, sci: null, hum: null };
+  schoolMajorText = "";
   scoreCnInput.value = "";
   scoreMathInput.value = "";
   scoreEnInput.value = "";
   scoreSciInput.value = "";
   scoreHumInput.value = "";
+  schoolMajorsInput.value = "";
   currentPage = 1;
   localStorage.removeItem(STORAGE_KEY);
   setSaveStatus("已清空草稿");
@@ -233,6 +240,66 @@ function readSubjectScores() {
     sci: parse(scoreSciInput),
     hum: parse(scoreHumInput)
   };
+}
+
+function readSchoolMajorText() {
+  return String(schoolMajorsInput.value || "").trim();
+}
+
+function normalizeMajorName(text) {
+  return String(text || "")
+    .replace(/[（(][^)）]+[)）]/g, "")
+    .replace(/[^\u4e00-\u9fa5A-Za-z0-9]/g, "")
+    .toLowerCase();
+}
+
+function uniqueByName(list) {
+  const seen = new Set();
+  return list.filter((item) => {
+    const key = normalizeMajorName(item.name || item);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function extractSchoolMajorName(line) {
+  const raw = String(line || "").replace(/\u3000/g, " ").trim();
+  if (!raw) return "";
+  if (/(序号|专业名称|专业代码|招生计划|校区|学制|教学点|计划数|二级学院|专业大类|所在系部|层次|合计)/.test(raw) &&
+      !/(工程|技术|管理|设计|会计|乘务|应用|制造|维修|营销)/.test(raw)) {
+    return "";
+  }
+
+  const cells = raw
+    .split(/\t| {2,}|(?<=\d)\s+(?=[\u4e00-\u9fa5A-Za-z])/)
+    .map((x) => x.trim().replace(/^\d+[A-Z]?\s*/, ""))
+    .filter(Boolean);
+
+  const goodCell = (cell) => {
+    if (!/[\u4e00-\u9fa5]/.test(cell)) return false;
+    if (/^(序号|合计|高职|校区|教学点|计划数|招生人数合计|新建区校区|经开区校区|湖北校区|白水湖校区|湖东校区)$/.test(cell)) return false;
+    return /(工程|技术|管理|设计|会计|乘务|应用|制造|维修|营销|科学|装饰|园林|造价|测量|电子|机电|自动化|物流|媒体|会计|动画)/.test(cell);
+  };
+
+  const preferred = cells.find(goodCell);
+  if (preferred) return preferred;
+
+  const matches = raw.match(/[\u4e00-\u9fa5A-Za-z]+(?:工程|技术|管理|设计|会计|乘务|应用|制造|维修|营销|科学|装饰|园林|造价|测量|电子|机电|自动化|物流|媒体|动画)/g);
+  if (matches && matches.length) {
+    return matches
+      .map((x) => x.replace(/^\d+[A-Z]?\s*/, ""))
+      .sort((a, b) => b.length - a.length)[0];
+  }
+  return "";
+}
+
+function parseSchoolMajorText(rawText) {
+  const names = String(rawText || "")
+    .split(/\r?\n/)
+    .map(extractSchoolMajorName)
+    .filter(Boolean);
+  return uniqueByName(names.map((name) => ({ name }))).map((item) => item.name);
 }
 
 function applySubjectWeight(baseScore, scores) {
@@ -346,6 +413,123 @@ function rankMajors(studentScore) {
   return withDistance.sort((a, b) => b.rankScore - a.rankScore);
 }
 
+const majorMap = new Map(majors.map((major) => [normalizeMajorName(major.name), major]));
+
+function blendVectors(refs) {
+  const vector = {};
+  const totalWeight = refs.reduce((sum, [, weight]) => sum + weight, 0) || 1;
+  dimensionKeys.forEach((dim) => {
+    const sum = refs.reduce((acc, [majorName, weight]) => {
+      const ref = majorMap.get(normalizeMajorName(majorName));
+      return acc + ((ref?.vector?.[dim] || 0) * weight);
+    }, 0);
+    vector[dim] = clamp01(sum / totalWeight);
+  });
+  return vector;
+}
+
+function createSchoolMajorProfile(displayName, refs, options = {}) {
+  const vector = blendVectors(refs);
+  Object.entries(options.delta || {}).forEach(([dim, delta]) => {
+    vector[dim] = clamp01((vector[dim] || 0) + delta);
+  });
+  return {
+    name: displayName,
+    category: options.category || refs.map(([name]) => name).join(" / "),
+    courses: options.courses || "按院校培养方案为准",
+    careers: options.careers || "适合先看岗位方向与课程结构",
+    vector,
+    coreDims: options.coreDims || [],
+    sourceRef: refs.map(([name]) => name).join(" + ")
+  };
+}
+
+const SCHOOL_MAJOR_RULES = [
+  { pattern: /工程造价/, refs: [["工业工程", 0.55], ["财务管理", 0.45]], options: { category: "土木建筑 / 管理", courses: "工程计量/预算/招投标", careers: "造价/资料/项目管理", coreDims: ["interest.c", "cognition.data", "ability.comm", "value.responsibility"] } },
+  { pattern: /汽车技术服务与营销/, refs: [["市场营销", 0.65], ["车辆工程", 0.35]], options: { category: "装备制造 / 服务运营", courses: "汽车服务/客户沟通/营销", careers: "汽车服务顾问/门店运营", coreDims: ["interest.s", "interest.e", "ability.comm", "value.responsibility"] } },
+  { pattern: /智能水务管理/, refs: [["公共管理", 0.55], ["土木工程", 0.45]], options: { category: "水利 / 管理", courses: "水务运营/流程管理/基础工程", careers: "水务运营/项目协同", coreDims: ["interest.s", "interest.c", "cognition.system", "value.responsibility"] } },
+  { pattern: /大数据与会计/, refs: [["会计学", 0.7], ["数据科学与大数据技术", 0.3]], options: { category: "财经 / 数据", courses: "会计实务/数据分析", careers: "财务数据/业务分析", coreDims: ["interest.c", "cognition.data", "ability.stat", "value.responsibility"] } },
+  { pattern: /空中乘务/, refs: [["市场营销", 0.4], ["传播学", 0.3], ["人力资源管理", 0.3]], options: { category: "交通运输 / 服务", courses: "服务礼仪/沟通/应急", careers: "客舱服务/地面服务", coreDims: ["interest.s", "ability.comm", "risk.pressure", "value.responsibility"] } },
+  { pattern: /建筑工程技术/, refs: [["土木工程", 0.7], ["工业工程", 0.3]], options: { category: "土木建筑", courses: "施工技术/项目现场/识图", careers: "施工管理/现场技术", coreDims: ["interest.r", "cognition.spatial", "ability.focus", "interest.c"] } },
+  { pattern: /建筑装饰工程技术/, refs: [["建筑学", 0.55], ["环境设计", 0.45]], options: { category: "土木建筑 / 设计", courses: "装饰设计/材料/施工", careers: "装饰设计/项目落地", coreDims: ["interest.a", "cognition.spatial", "ability.comm", "interest.r"] } },
+  { pattern: /园林工程技术/, refs: [["建筑学", 0.45], ["环境设计", 0.3], ["生物科学", 0.25]], options: { category: "园林 / 工程", courses: "景观/植物/施工", careers: "园林施工/景观助理", coreDims: ["interest.a", "interest.r", "cognition.spatial", "value.responsibility"] } },
+  { pattern: /水利水电建筑工程|水利工程|水文与水资源技术|智慧水利技术|给排水工程技术|水利水电工程技术|水利机电设备智能管理|港口与航道工程技术/, refs: [["土木工程", 0.75], ["电气工程及其自动化", 0.25]], options: { category: "水利 / 工程", courses: "工程基础/施工/设备", careers: "工程技术/现场管理", coreDims: ["interest.r", "cognition.system", "ability.math", "ability.focus"] } },
+  { pattern: /水生态修复技术/, refs: [["生物科学", 0.45], ["土木工程", 0.35], ["环境设计", 0.2]], options: { category: "生态 / 工程", courses: "生态修复/监测/施工", careers: "生态治理/项目实施", coreDims: ["interest.i", "interest.r", "value.responsibility", "cognition.contextual"] } },
+  { pattern: /人工智能技术应用|计算机应用技术|物联网应用技术|应用电子技术/, refs: [["计算机科学与技术", 0.55], ["软件工程", 0.45]], options: { category: "信息技术", courses: "编程/系统/应用开发", careers: "实施/开发/技术支持", coreDims: ["cognition.data", "ability.math", "interest.r", "cognition.system"] } },
+  { pattern: /数字媒体技术|动漫制作技术|视觉传达设计|环境艺术设计/, refs: [["网络与新媒体", 0.35], ["视觉传达设计", 0.65]], options: { category: "数字媒体 / 设计", courses: "内容制作/视觉设计/工具应用", careers: "设计执行/内容制作", coreDims: ["interest.a", "ability.writing", "cognition.spatial", "ability.comm"] } },
+  { pattern: /电力系统自动化技术|电气自动化技术/, refs: [["电气工程及其自动化", 0.7], ["自动化", 0.3]], options: { category: "装备制造 / 电气", courses: "电路/控制/设备", careers: "自动化实施/运维", coreDims: ["interest.r", "ability.math", "cognition.system", "ability.focus"] } },
+  { pattern: /机电一体化技术|数控技术|机械制造及自动化|新能源汽车技术|汽车制造与试验技术|无人机应用技术/, refs: [["机械设计制造及其自动化", 0.55], ["自动化", 0.45]], options: { category: "装备制造", courses: "机械/控制/设备应用", careers: "制造/设备调试/技术员", coreDims: ["interest.r", "cognition.spatial", "ability.math", "ability.focus"] } },
+  { pattern: /道路与桥梁工程技术|道路养护与管理|工程测量技术|测绘地理信息技术|智能交通技术/, refs: [["土木工程", 0.65], ["工业工程", 0.35]], options: { category: "交通 / 工程", courses: "测量/施工/运维管理", careers: "施工测量/项目协调", coreDims: ["interest.r", "cognition.system", "interest.c", "ability.focus"] } },
+  { pattern: /汽车检测与维修技术/, refs: [["车辆工程", 0.65], ["机械设计制造及其自动化", 0.35]], options: { category: "交通运输 / 维修", courses: "故障诊断/检测/维修", careers: "维修技术/售后诊断", coreDims: ["interest.r", "cognition.spatial", "ability.focus", "ability.math"] } }
+];
+
+function getSchoolMajorProfile(programName) {
+  const exact = majorMap.get(normalizeMajorName(programName));
+  if (exact) {
+    return { ...exact, name: programName, sourceRef: exact.name };
+  }
+
+  const matchedRule = SCHOOL_MAJOR_RULES.find((rule) => rule.pattern.test(programName));
+  if (matchedRule) {
+    return createSchoolMajorProfile(programName, matchedRule.refs, matchedRule.options);
+  }
+
+  if (/管理/.test(programName)) {
+    return createSchoolMajorProfile(programName, [["公共管理", 0.55], ["工业工程", 0.45]], {
+      category: "管理 / 应用",
+      courses: "流程管理/组织协同/基础实务",
+      careers: "运营/项目支持/执行管理",
+      coreDims: ["interest.s", "interest.c", "ability.comm", "value.responsibility"]
+    });
+  }
+  if (/营销/.test(programName)) {
+    return createSchoolMajorProfile(programName, [["市场营销", 0.75], ["传播学", 0.25]], {
+      category: "市场 / 服务",
+      courses: "沟通/客户/营销执行",
+      careers: "销售/运营/客户服务",
+      coreDims: ["interest.e", "interest.s", "ability.comm", "ability.writing"]
+    });
+  }
+  if (/会计/.test(programName)) {
+    return createSchoolMajorProfile(programName, [["会计学", 0.8], ["财务管理", 0.2]], {
+      category: "财经",
+      courses: "会计核算/财务分析",
+      careers: "财务/出纳/数据支持",
+      coreDims: ["interest.c", "cognition.data", "ability.stat", "value.responsibility"]
+    });
+  }
+  return null;
+}
+
+function rankSchoolMajors(studentScore, rawText) {
+  const names = parseSchoolMajorText(rawText);
+  if (!names.length) return null;
+  const profiles = uniqueByName(names.map(getSchoolMajorProfile).filter(Boolean));
+  if (!profiles.length) {
+    return { inputCount: names.length, names, matchedCount: 0, unmatchedCount: names.length, ranked: [] };
+  }
+  const ranked = profiles.map((major, idx) => {
+    const dist = squaredDistance(studentScore, major.vector);
+    return { ...major, _dist: dist, _idx: idx };
+  });
+  const distances = ranked.map((x) => x._dist);
+  const minDist = Math.min(...distances);
+  const maxDist = Math.max(...distances);
+  ranked.forEach((major) => {
+    const score01 = maxDist === minDist ? 0.5 : 1 - (major._dist - minDist) / (maxDist - minDist);
+    major.matchIndex = Math.round(score01 * 100);
+    major.rankScore = score01 + (major._idx + 1) * 0.000001;
+  });
+  ranked.sort((a, b) => b.rankScore - a.rankScore);
+  return {
+    inputCount: names.length,
+    names,
+    matchedCount: profiles.length,
+    unmatchedCount: Math.max(0, names.length - profiles.length),
+    ranked
+  };
+}
+
 function getTopDimensions(studentScore, topN = 3) {
   return dimensionKeys
     .map((dim) => ({
@@ -399,6 +583,12 @@ function getConfidenceTone(score) {
   if (score >= 80) return "high";
   if (score >= 60) return "medium";
   return "low";
+}
+
+function getFitTone(score) {
+  if (score >= 75) return { tone: "high", label: "校内优先" };
+  if (score >= 58) return { tone: "medium", label: "校内可冲" };
+  return { tone: "low", label: "谨慎填报" };
 }
 
 function buildActionPlan(topMajor, action) {
@@ -517,7 +707,7 @@ function drawRadarChart(canvasId, profile) {
   }
 }
 
-function renderResult(studentVector, rankedMajors, confidence, weightingSummary) {
+function renderResult(studentVector, rankedMajors, confidence, weightingSummary, schoolRecommendation) {
   const topTraits = getTopDimensions(studentVector.score, 3);
   const traitText = topTraits.map((t) => `${t.label} ${t.score}分`).join("、");
   const radarProfile = buildRadarProfile(studentVector.score);
@@ -585,6 +775,52 @@ function renderResult(studentVector, rankedMajors, confidence, weightingSummary)
     ? "两条方向分差很小，建议结合学科成绩和真实体验做二选一。"
     : `${top3[0].name} 是当前优先验证方向，次选可作为补充参考。`;
 
+  const schoolRestrictedHTML = schoolRecommendation?.ranked?.length
+    ? `
+    <section class="restricted-section">
+      <h3>该校可报范围内的替代推荐</h3>
+      <p class="restricted-note">理想专业用于判断学生“本来更适合什么”，下面这组结果用于回答“如果只在目标学校现有专业里选，哪些更接近学生画像”。</p>
+      <p class="restricted-source">已识别学校专业 ${schoolRecommendation.matchedCount} 个${schoolRecommendation.unmatchedCount ? `，另有 ${schoolRecommendation.unmatchedCount} 个名称未完成匹配` : ""}。</p>
+      <div class="rank-grid">
+        ${schoolRecommendation.ranked.slice(0, 3).map((major, index) => {
+          const fit = getFitTone(major.matchIndex);
+          const ev = buildEvidence(major, studentVector.score);
+          return `
+            <article class="rank-card">
+              <div class="rank-card-top">
+                <div>
+                  <p class="rank-label">${index === 0 ? "校内首选" : index === 1 ? "校内次选" : "校内备选"}</p>
+                  <h3>${major.name}</h3>
+                </div>
+                <div>
+                  <p class="score">${major.matchIndex} / 100</p>
+                  <span class="fit-badge fit-${fit.tone}">${fit.label}</span>
+                </div>
+              </div>
+              <p class="rank-summary">如果学校只开理工或应用型专业，${major.name} 是当前相对更稳的替代方向。</p>
+              <div class="rank-meta-grid">
+                <span>校内替代类型：${major.category}</span>
+                <span>课程关键词：${major.courses}</span>
+                <span>典型去向：${major.careers}</span>
+              </div>
+              <p class="evidence"><strong>替代理由：</strong>${ev.positives.join("、") || "与学生画像的相对距离较近"}</p>
+              <p class="mapping-note"><strong>匹配参照：</strong>${major.sourceRef || "关键词映射"}</p>
+            </article>
+          `;
+        }).join("")}
+      </div>
+      <p class="mapping-note"><strong>使用建议：</strong>如果理想专业与校内可报方向差异较大，优先选择“偏管理、偏服务、偏应用协同”的专业，不建议为进学校而硬上最硬核的设备制造或纯技术研发方向。</p>
+    </section>
+  `
+    : schoolMajorText
+      ? `
+      <section class="restricted-section">
+        <h3>该校可报范围内的替代推荐</h3>
+        <p class="restricted-note">已检测到你输入了学校专业清单，但当前还没有足够多的专业名称被系统识别。建议把专业名单按“一行一个专业名”再粘贴一次，例如：工程造价、建筑工程技术、电气自动化技术。</p>
+      </section>
+    `
+      : "";
+
   resultBox.innerHTML = `
     <div class="result-header">
       <p class="result-kicker">报告结论</p>
@@ -613,6 +849,7 @@ function renderResult(studentVector, rankedMajors, confidence, weightingSummary)
       </div>
     </div>
     <div class="rank-grid">${cards}</div>
+    ${schoolRestrictedHTML}
     ${actionHTML}
   `;
   drawRadarChart("profile-radar", radarProfile);
@@ -622,6 +859,7 @@ startBtn.addEventListener("click", () => {
   const modeInput = document.querySelector('input[name="assessment-mode"]:checked');
   applyMode(modeInput ? modeInput.value : "standard");
   subjectScores = readSubjectScores();
+  schoolMajorText = readSchoolMajorText();
   intro.classList.add("hidden");
   quizForm.classList.remove("hidden");
   loadDraft();
@@ -631,7 +869,8 @@ startBtn.addEventListener("click", () => {
   emitEvent("start_assessment", {
     mode: selectedMode,
     question_count: activeQuestions.length,
-    subject_score_filled: Object.values(subjectScores).some((v) => typeof v === "number")
+    subject_score_filled: Object.values(subjectScores).some((v) => typeof v === "number"),
+    school_restricted_mode: Boolean(schoolMajorText)
   });
 });
 
@@ -642,6 +881,14 @@ quizForm.addEventListener("change", (event) => {
     saveDraft();
     updateProgress();
   }
+});
+
+[scoreCnInput, scoreMathInput, scoreEnInput, scoreSciInput, scoreHumInput, schoolMajorsInput].forEach((input) => {
+  input.addEventListener("input", () => {
+    subjectScores = readSubjectScores();
+    schoolMajorText = readSchoolMajorText();
+    saveDraft();
+  });
 });
 
 prevBtn.addEventListener("click", () => {
@@ -682,8 +929,9 @@ quizForm.addEventListener("submit", (event) => {
   const studentVector = calculateStudentVector(answers);
   const weighted = applySubjectWeight(studentVector.score, subjectScores);
   const rankedMajors = rankMajors(weighted.score);
+  const schoolRecommendation = rankSchoolMajors(weighted.score, schoolMajorText);
   const confidence = calculateConfidence(answers, rankedMajors);
-  renderResult({ ...studentVector, score: weighted.score }, rankedMajors, confidence, weighted.summary);
+  renderResult({ ...studentVector, score: weighted.score }, rankedMajors, confidence, weighted.summary, schoolRecommendation);
   localStorage.removeItem(STORAGE_KEY);
   setSaveStatus("已提交并清除本地草稿");
   resultBox.classList.remove("hidden");
@@ -693,7 +941,8 @@ quizForm.addEventListener("submit", (event) => {
     question_count: activeQuestions.length,
     confidence_score: confidence.score,
     top_major: rankedMajors[0]?.name || "",
-    match_index: rankedMajors[0]?.matchIndex || 0
+    match_index: rankedMajors[0]?.matchIndex || 0,
+    school_restricted_mode: Boolean(schoolRecommendation?.ranked?.length)
   });
 });
 
