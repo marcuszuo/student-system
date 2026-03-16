@@ -90,7 +90,6 @@ const publicScorePanel = document.getElementById("public-score-panel");
 const internationalScorePanel = document.getElementById("international-score-panel");
 const internationalCurriculumNameInput = document.getElementById("international-curriculum-name");
 const internationalScoreTextInput = document.getElementById("international-score-text");
-const schoolMajorsInput = document.getElementById("school-major-text");
 const schoolMajorFileInput = document.getElementById("school-major-file");
 const schoolMajorImageInput = document.getElementById("school-major-image");
 const schoolMajorFileStatus = document.getElementById("school-major-file-status");
@@ -208,8 +207,7 @@ function loadDraft() {
     scoreBioInput.value = publicSubjectScores.bio ?? "";
     internationalCurriculumNameInput.value = internationalProfile.curriculumName || "";
     internationalScoreTextInput.value = internationalProfile.scoreText || "";
-    schoolMajorsInput.value = schoolMajorText;
-    setSchoolFileStatus(schoolMajorText ? "已恢复学校专业清单" : "未上传文件");
+    setSchoolFileStatus(schoolMajorText ? `已恢复学校专业清单（${parseSchoolMajorText(schoolMajorText).length} 个专业）` : "未上传文件");
     setSaveStatus("已恢复上次作答草稿");
     showIntroStep(introStep);
   } catch {
@@ -238,7 +236,6 @@ function clearDraft() {
   scoreBioInput.value = "";
   internationalCurriculumNameInput.value = "";
   internationalScoreTextInput.value = "";
-  schoolMajorsInput.value = "";
   schoolMajorFileInput.value = "";
   schoolMajorImageInput.value = "";
   setSchoolFileStatus("未上传文件");
@@ -336,7 +333,7 @@ function readInternationalProfile() {
 }
 
 function readSchoolMajorText() {
-  return String(schoolMajorsInput.value || "").trim();
+  return String(schoolMajorText || "").trim();
 }
 
 function normalizeMajorName(text) {
@@ -1276,12 +1273,11 @@ quizForm.addEventListener("change", (event) => {
   }
 });
 
-[gradeInput, internationalCurriculumNameInput, internationalScoreTextInput, scoreCnInput, scoreMathInput, scoreEnInput, scorePhyInput, scoreChemInput, scoreBioInput, schoolMajorsInput].forEach((input) => {
+[gradeInput, internationalCurriculumNameInput, internationalScoreTextInput, scoreCnInput, scoreMathInput, scoreEnInput, scorePhyInput, scoreChemInput, scoreBioInput].forEach((input) => {
   input.addEventListener("input", () => {
     studentProfile = readStudentProfile();
     publicSubjectScores = readPublicSubjectScores();
     internationalProfile = readInternationalProfile();
-    schoolMajorText = readSchoolMajorText();
     saveDraft();
   });
 });
@@ -1311,7 +1307,6 @@ schoolMajorFileInput.addEventListener("change", async (event) => {
   setSchoolFileStatus(`正在解析：${file.name}`);
   try {
     const parsedText = await readSchoolMajorFile(file);
-    schoolMajorsInput.value = parsedText;
     schoolMajorText = parsedText;
     const parsedNames = parseSchoolMajorText(parsedText);
     setSchoolFileStatus(`已导入 ${parsedNames.length} 个专业：${file.name}`);
@@ -1335,7 +1330,6 @@ schoolMajorImageInput.addEventListener("change", async (event) => {
     if (!parsedText) {
       throw new Error("图片已识别，但未提取出专业名");
     }
-    schoolMajorsInput.value = parsedText;
     schoolMajorText = parsedText;
     const parsedNames = parseSchoolMajorText(parsedText);
     setSchoolFileStatus(`图片识别完成，提取 ${parsedNames.length} 个专业：${file.name}`);
