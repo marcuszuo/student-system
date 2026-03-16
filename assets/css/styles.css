@@ -68,6 +68,147 @@ body {
   line-height: 1.6;
 }
 
+.intro-steps {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 18px 0 14px;
+}
+
+.step-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fffdf8;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.step-chip.is-active {
+  background: linear-gradient(135deg, #f7dfc4, #f5e8da);
+  color: #7c3b1b;
+  border-color: #d8b998;
+}
+
+.step-chip.is-done {
+  background: #eef7f1;
+  color: #166534;
+  border-color: #b9deca;
+}
+
+.intro-panel h3 {
+  margin: 0 0 12px;
+}
+
+.intro-panel {
+  margin-top: 8px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(255, 251, 244, 0.96) 0%, rgba(255, 253, 248, 0.98) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.panel-kicker {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f6e9d9;
+  color: #8f3f1f;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+}
+
+.panel-summary {
+  margin: 0 0 14px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.student-type-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.type-card {
+  display: flex;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: #fffdf8;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.type-card input {
+  margin-top: 4px;
+  inline-size: 18px;
+  block-size: 18px;
+}
+
+.type-card strong {
+  display: block;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.type-card small {
+  display: block;
+  font-size: 0.88rem;
+}
+
+.single-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.single-field input,
+.single-field textarea {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font: inherit;
+  color: var(--ink);
+  background: #fffdf8;
+}
+
+.single-field textarea {
+  min-height: 140px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.single-field input:focus,
+.single-field textarea:focus {
+  outline: 2px solid rgba(143, 63, 31, 0.12);
+  border-color: #d6b496;
+}
+
+.score-panel {
+  margin-bottom: 14px;
+}
+
+.wizard-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
 .mode-picker {
   display: flex;
   gap: 10px;
@@ -311,6 +452,34 @@ body {
   margin: 0 0 12px;
   color: var(--ink);
   line-height: 1.5;
+}
+
+.student-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.student-summary-card {
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: #fffdf8;
+}
+
+.student-summary-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.student-summary-card strong {
+  display: block;
+  color: #7c3b1b;
+  line-height: 1.5;
+  font-size: 0.94rem;
 }
 
 .confidence {
@@ -625,6 +794,14 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .student-type-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .option-list {
     grid-template-columns: 1fr;
   }
@@ -699,6 +876,18 @@ body {
 
 @media (max-width: 540px) {
   .subject-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .wizard-actions .btn {
+    width: 100%;
+  }
+
+  .intro-panel {
+    padding: 14px;
+  }
+
+  .student-summary-grid {
     grid-template-columns: 1fr;
   }
 

@@ -61,6 +61,12 @@ const dimensionNameMap = Object.fromEntries(
 
 const startBtn = document.getElementById("start-btn");
 const intro = document.getElementById("intro");
+const introPanels = Array.from(document.querySelectorAll("[data-intro-step]"));
+const stepChips = Array.from(document.querySelectorAll("[data-step-chip]"));
+const introNext1Btn = document.getElementById("intro-next-1");
+const introPrev2Btn = document.getElementById("intro-prev-2");
+const introNext2Btn = document.getElementById("intro-next-2");
+const introPrev3Btn = document.getElementById("intro-prev-3");
 const quizForm = document.getElementById("quiz-form");
 const questionList = document.getElementById("question-list");
 const progressText = document.getElementById("progress-text");
@@ -72,11 +78,18 @@ const submitBtn = document.getElementById("submit-btn");
 const pageText = document.getElementById("page-text");
 const clearBtn = document.getElementById("clear-btn");
 const saveStatus = document.getElementById("save-status");
+const studentTypeInputs = Array.from(document.querySelectorAll('input[name="student-type"]'));
+const gradeInput = document.getElementById("student-grade");
 const scoreCnInput = document.getElementById("score-cn");
 const scoreMathInput = document.getElementById("score-math");
 const scoreEnInput = document.getElementById("score-en");
-const scoreSciInput = document.getElementById("score-sci");
-const scoreHumInput = document.getElementById("score-hum");
+const scorePhyInput = document.getElementById("score-phy");
+const scoreChemInput = document.getElementById("score-chem");
+const scoreBioInput = document.getElementById("score-bio");
+const publicScorePanel = document.getElementById("public-score-panel");
+const internationalScorePanel = document.getElementById("international-score-panel");
+const internationalCurriculumNameInput = document.getElementById("international-curriculum-name");
+const internationalScoreTextInput = document.getElementById("international-score-text");
 const schoolMajorsInput = document.getElementById("school-major-text");
 const schoolMajorFileInput = document.getElementById("school-major-file");
 const schoolMajorImageInput = document.getElementById("school-major-image");
@@ -87,7 +100,10 @@ let activeQuestions = [];
 let totalPages = 1;
 let currentPage = 1;
 let answers = {};
-let subjectScores = { cn: null, math: null, en: null, sci: null, hum: null };
+let introStep = 1;
+let studentProfile = { type: "public", grade: "" };
+let publicSubjectScores = { cn: null, math: null, en: null, phy: null, chem: null, bio: null };
+let internationalProfile = { curriculumName: "", scoreText: "" };
 let schoolMajorText = "";
 
 function formatTime(date) {
@@ -102,6 +118,36 @@ function setSchoolFileStatus(text) {
   schoolMajorFileStatus.textContent = text;
 }
 
+function selectedStudentType() {
+  return studentTypeInputs.find((input) => input.checked)?.value || "public";
+}
+
+function readStudentProfile() {
+  return {
+    type: selectedStudentType(),
+    grade: String(gradeInput.value || "").trim()
+  };
+}
+
+function updateStudentTypeUI() {
+  const type = selectedStudentType();
+  publicScorePanel.classList.toggle("hidden", type !== "public");
+  internationalScorePanel.classList.toggle("hidden", type !== "international");
+}
+
+function showIntroStep(step) {
+  introStep = clamp(step, 1, 3);
+  introPanels.forEach((panel) => {
+    panel.classList.toggle("hidden", Number(panel.dataset.introStep) !== introStep);
+  });
+  stepChips.forEach((chip) => {
+    const chipStep = Number(chip.dataset.stepChip);
+    chip.classList.toggle("is-active", chipStep === introStep);
+    chip.classList.toggle("is-done", chipStep < introStep);
+  });
+  updateStudentTypeUI();
+}
+
 function emitEvent(name, params) {
   if (typeof window.trackEvent === "function") {
     window.trackEvent(name, params);
@@ -109,9 +155,16 @@ function emitEvent(name, params) {
 }
 
 function saveDraft() {
+  studentProfile = readStudentProfile();
+  publicSubjectScores = readPublicSubjectScores();
+  internationalProfile = readInternationalProfile();
+  schoolMajorText = readSchoolMajorText();
   const payload = {
+    introStep,
+    studentProfile,
     mode: selectedMode,
-    subjectScores,
+    publicSubjectScores,
+    internationalProfile,
     schoolMajorText,
     answers,
     page: currentPage,
@@ -134,37 +187,57 @@ function loadDraft() {
   try {
     const parsed = JSON.parse(raw);
     answers = parsed.answers || {};
-    subjectScores = parsed.subjectScores || subjectScores;
+    introStep = Number(parsed.introStep) || 1;
+    studentProfile = parsed.studentProfile || studentProfile;
+    publicSubjectScores = parsed.publicSubjectScores || publicSubjectScores;
+    internationalProfile = parsed.internationalProfile || internationalProfile;
     schoolMajorText = parsed.schoolMajorText || "";
     applyMode(parsed.mode || selectedMode);
     currentPage = Number(parsed.page) || 1;
     currentPage = Math.min(Math.max(currentPage, 1), totalPages);
     const modeInput = document.querySelector(`input[name="assessment-mode"][value="${selectedMode}"]`);
     if (modeInput) modeInput.checked = true;
-    scoreCnInput.value = subjectScores.cn ?? "";
-    scoreMathInput.value = subjectScores.math ?? "";
-    scoreEnInput.value = subjectScores.en ?? "";
-    scoreSciInput.value = subjectScores.sci ?? "";
-    scoreHumInput.value = subjectScores.hum ?? "";
+    const studentTypeInput = document.querySelector(`input[name="student-type"][value="${studentProfile.type}"]`);
+    if (studentTypeInput) studentTypeInput.checked = true;
+    gradeInput.value = studentProfile.grade || "";
+    scoreCnInput.value = publicSubjectScores.cn ?? "";
+    scoreMathInput.value = publicSubjectScores.math ?? "";
+    scoreEnInput.value = publicSubjectScores.en ?? "";
+    scorePhyInput.value = publicSubjectScores.phy ?? "";
+    scoreChemInput.value = publicSubjectScores.chem ?? "";
+    scoreBioInput.value = publicSubjectScores.bio ?? "";
+    internationalCurriculumNameInput.value = internationalProfile.curriculumName || "";
+    internationalScoreTextInput.value = internationalProfile.scoreText || "";
     schoolMajorsInput.value = schoolMajorText;
     setSchoolFileStatus(schoolMajorText ? "已恢复学校专业清单" : "未上传文件");
     setSaveStatus("已恢复上次作答草稿");
+    showIntroStep(introStep);
   } catch {
     answers = {};
     currentPage = 1;
+    introStep = 1;
     applyMode("standard");
   }
 }
 
 function clearDraft() {
   answers = {};
-  subjectScores = { cn: null, math: null, en: null, sci: null, hum: null };
+  studentProfile = { type: "public", grade: "" };
+  publicSubjectScores = { cn: null, math: null, en: null, phy: null, chem: null, bio: null };
+  internationalProfile = { curriculumName: "", scoreText: "" };
   schoolMajorText = "";
+  introStep = 1;
+  const defaultTypeInput = document.querySelector('input[name="student-type"][value="public"]');
+  if (defaultTypeInput) defaultTypeInput.checked = true;
+  gradeInput.value = "";
   scoreCnInput.value = "";
   scoreMathInput.value = "";
   scoreEnInput.value = "";
-  scoreSciInput.value = "";
-  scoreHumInput.value = "";
+  scorePhyInput.value = "";
+  scoreChemInput.value = "";
+  scoreBioInput.value = "";
+  internationalCurriculumNameInput.value = "";
+  internationalScoreTextInput.value = "";
   schoolMajorsInput.value = "";
   schoolMajorFileInput.value = "";
   schoolMajorImageInput.value = "";
@@ -172,6 +245,7 @@ function clearDraft() {
   currentPage = 1;
   localStorage.removeItem(STORAGE_KEY);
   setSaveStatus("已清空草稿");
+  showIntroStep(1);
   renderCurrentPage();
   updateProgress();
 }
@@ -236,7 +310,7 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
-function readSubjectScores() {
+function readPublicSubjectScores() {
   const parse = (input) => {
     const text = String(input.value || "").trim();
     if (!text) return null;
@@ -248,8 +322,16 @@ function readSubjectScores() {
     cn: parse(scoreCnInput),
     math: parse(scoreMathInput),
     en: parse(scoreEnInput),
-    sci: parse(scoreSciInput),
-    hum: parse(scoreHumInput)
+    phy: parse(scorePhyInput),
+    chem: parse(scoreChemInput),
+    bio: parse(scoreBioInput)
+  };
+}
+
+function readInternationalProfile() {
+  return {
+    curriculumName: String(internationalCurriculumNameInput.value || "").trim(),
+    scoreText: String(internationalScoreTextInput.value || "").trim()
   };
 }
 
@@ -394,33 +476,98 @@ async function readSchoolMajorImage(file) {
   return parseSchoolMajorText(lines).join("\n");
 }
 
-function applySubjectWeight(baseScore, scores) {
+function hasPublicScores(scores) {
+  return Object.values(scores).some((v) => typeof v === "number");
+}
+
+function parseInternationalScoreValue(line, curriculumName) {
+  const rawLine = String(line || "").trim();
+  if (!rawLine) return null;
+  const upper = rawLine.toUpperCase();
+  const curriculum = String(curriculumName || "").toUpperCase();
+  const context = `${curriculum} ${upper}`;
+
+  const dseMatch = upper.match(/5\*\*|5\*|[1-5]/);
+  if (/DSE/.test(context) && dseMatch) {
+    return { "5**": 98, "5*": 94, "5": 90, "4": 82, "3": 72, "2": 62, "1": 52 }[dseMatch[0]] ?? null;
+  }
+
+  const aLevelMatch = upper.match(/A\*|[A-E]/);
+  if (/(A[\s-]?LEVEL|IGCSE|GCSE)/.test(context) && aLevelMatch) {
+    return { "A*": 98, A: 92, B: 84, C: 76, D: 68, E: 60 }[aLevelMatch[0]] ?? null;
+  }
+
+  const numericMatches = upper.match(/\d+(?:\.\d+)?/g) || [];
+  const lastNumber = numericMatches.length ? Number(numericMatches[numericMatches.length - 1]) : null;
+  if (/(IB)/.test(context) && typeof lastNumber === "number") {
+    return { 7: 97, 6: 90, 5: 82, 4: 74, 3: 66, 2: 58, 1: 50 }[Math.round(lastNumber)] ?? null;
+  }
+  if (/(AP)/.test(context) && typeof lastNumber === "number") {
+    return { 5: 95, 4: 88, 3: 78, 2: 65, 1: 50 }[Math.round(lastNumber)] ?? null;
+  }
+  if (typeof lastNumber === "number") {
+    if (lastNumber <= 7) return { 7: 97, 6: 90, 5: 82, 4: 74, 3: 66, 2: 58, 1: 50 }[Math.round(lastNumber)] ?? lastNumber * 14;
+    if (lastNumber <= 100) return clamp(lastNumber, 0, 100);
+  }
+  return null;
+}
+
+function inferInternationalSubjectBucket(line) {
+  const text = String(line || "").toLowerCase();
+  if (/(math|mathematics|further math|数学|统计|economics|economy|physics|物理|chem|化学|bio|biology|生物|computer|cs)/.test(text)) return "logic";
+  if (/(english|literature|lang|语言|语文|中文|history|历史|global|人文|business|商科|psychology|psych)/.test(text)) return "verbal";
+  if (/(art|design|media|visual|music|戏剧|艺术)/.test(text)) return "creative";
+  return "general";
+}
+
+function parseInternationalScores(curriculumName, scoreText) {
+  const lines = String(scoreText || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return lines
+    .map((line) => {
+      const score = parseInternationalScoreValue(line, curriculumName);
+      if (typeof score !== "number") return null;
+      return {
+        label: line,
+        score,
+        bucket: inferInternationalSubjectBucket(line)
+      };
+    })
+    .filter(Boolean);
+}
+
+function applyPublicSubjectWeight(baseScore, scores) {
   const valid = Object.entries(scores).filter(([, v]) => typeof v === "number");
-  if (!valid.length) return { score: baseScore, used: false, summary: "未输入学科成绩，采用纯测评结果。" };
+  if (!valid.length) return { score: baseScore, used: false, summary: "未输入公立学校成绩，采用纯测评结果。" };
 
   const avg = average(valid.map(([, v]) => v));
   const normalized = {
     cn: scores.cn ?? avg,
     math: scores.math ?? avg,
     en: scores.en ?? avg,
-    sci: scores.sci ?? avg,
-    hum: scores.hum ?? avg
+    phy: scores.phy ?? avg,
+    chem: scores.chem ?? avg,
+    bio: scores.bio ?? avg
   };
+  const sciAvg = average([normalized.phy, normalized.chem, normalized.bio]);
   const norm = (x) => (x - 60) / 40; // around [-1, 1]
   const deltaByDim = {
-    "ability.math": 0.5 * norm(normalized.math) + 0.2 * norm(normalized.sci),
-    "ability.stat": 0.35 * norm(normalized.math) + 0.35 * norm(normalized.sci),
-    "cognition.data": 0.25 * norm(normalized.math) + 0.3 * norm(normalized.sci),
-    "cognition.abstract": 0.25 * norm(normalized.math) + 0.15 * norm(normalized.sci),
-    "cognition.system": 0.2 * norm(normalized.math) + 0.2 * norm(normalized.sci),
-    "ability.writing": 0.4 * norm(normalized.cn) + 0.2 * norm(normalized.hum),
+    "ability.math": 0.5 * norm(normalized.math) + 0.18 * norm(normalized.phy),
+    "ability.stat": 0.35 * norm(normalized.math) + 0.22 * norm(normalized.phy) + 0.18 * norm(normalized.chem),
+    "cognition.data": 0.25 * norm(normalized.math) + 0.2 * norm(normalized.phy) + 0.18 * norm(normalized.chem),
+    "cognition.abstract": 0.25 * norm(normalized.math) + 0.18 * norm(normalized.phy),
+    "cognition.system": 0.18 * norm(normalized.math) + 0.16 * norm(sciAvg),
+    "ability.writing": 0.4 * norm(normalized.cn) + 0.15 * norm(normalized.en),
     "cognition.verbal": 0.25 * norm(normalized.cn) + 0.25 * norm(normalized.en),
-    "ability.comm": 0.2 * norm(normalized.cn) + 0.2 * norm(normalized.en) + 0.15 * norm(normalized.hum),
-    "interest.i": 0.15 * norm(normalized.sci),
-    "interest.s": 0.1 * norm(normalized.hum),
-    "interest.a": 0.1 * norm(normalized.hum),
-    "cognition.contextual": 0.2 * norm(normalized.hum),
-    "value.responsibility": 0.15 * norm(normalized.hum)
+    "ability.comm": 0.18 * norm(normalized.cn) + 0.2 * norm(normalized.en),
+    "interest.i": 0.1 * norm(normalized.phy) + 0.1 * norm(normalized.chem) + 0.14 * norm(normalized.bio),
+    "interest.s": 0.06 * norm(normalized.cn) + 0.06 * norm(normalized.en),
+    "interest.a": 0.05 * norm(normalized.cn),
+    "cognition.contextual": 0.12 * norm(normalized.cn) + 0.08 * norm(normalized.bio),
+    "value.responsibility": 0.08 * norm(normalized.cn) + 0.08 * norm(normalized.bio)
   };
 
   const weighted = { ...baseScore };
@@ -431,14 +578,88 @@ function applySubjectWeight(baseScore, scores) {
   const topSub = Object.entries(normalized)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 2)
-    .map(([k, v]) => `${({ cn: "语文", math: "数学", en: "英语", sci: "理综", hum: "文综" }[k])}${Math.round(v)}分`)
+    .map(([k, v]) => `${({ cn: "语文", math: "数学", en: "英语", phy: "物理", chem: "化学", bio: "生物" }[k])}${Math.round(v)}分`)
     .join("、");
 
   return {
     score: weighted,
     used: true,
-    summary: `已启用学科成绩加权（${topSub}）。`
+    summary: `已启用公立学校成绩加权（${topSub}）。`
   };
+}
+
+function applyInternationalSubjectWeight(baseScore, profile) {
+  const entries = parseInternationalScores(profile.curriculumName, profile.scoreText);
+  if (!entries.length) {
+    return { score: baseScore, used: false, summary: "未识别到国际课程成绩，采用纯测评结果。" };
+  }
+
+  const avg = average(entries.map((entry) => entry.score));
+  const norm = (x) => (x - 60) / 40;
+  const weighted = { ...baseScore };
+  const bucketAverage = (bucket) => {
+    const values = entries.filter((entry) => entry.bucket === bucket).map((entry) => entry.score);
+    return values.length ? average(values) : avg;
+  };
+  const logic = bucketAverage("logic");
+  const verbal = bucketAverage("verbal");
+  const creative = bucketAverage("creative");
+  const general = bucketAverage("general");
+  const deltaByDim = {
+    "ability.math": 0.3 * norm(logic) + 0.12 * norm(avg),
+    "ability.stat": 0.24 * norm(logic) + 0.1 * norm(avg),
+    "cognition.data": 0.2 * norm(logic) + 0.08 * norm(general),
+    "cognition.abstract": 0.18 * norm(logic) + 0.12 * norm(avg),
+    "cognition.system": 0.16 * norm(logic) + 0.1 * norm(avg),
+    "ability.writing": 0.22 * norm(verbal) + 0.08 * norm(creative),
+    "cognition.verbal": 0.25 * norm(verbal),
+    "ability.comm": 0.12 * norm(verbal) + 0.08 * norm(general),
+    "interest.a": 0.1 * norm(creative),
+    "interest.i": 0.1 * norm(logic),
+    "value.responsibility": 0.1 * norm(avg)
+  };
+
+  Object.keys(deltaByDim).forEach((dim) => {
+    weighted[dim] = clamp((weighted[dim] || 0) + deltaByDim[dim] * 0.12, 0, 1);
+  });
+
+  const curriculumLabel = profile.curriculumName || "国际课程";
+  const topEntries = entries
+    .slice()
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 2)
+    .map((entry) => entry.label)
+    .join("、");
+
+  return {
+    score: weighted,
+    used: true,
+    summary: `已启用${curriculumLabel}成绩加权（${topEntries || `平均分约 ${Math.round(avg)} 分`}）。`
+  };
+}
+
+function applySubjectWeight(baseScore) {
+  studentProfile = readStudentProfile();
+  publicSubjectScores = readPublicSubjectScores();
+  internationalProfile = readInternationalProfile();
+  if (studentProfile.type === "international") {
+    return applyInternationalSubjectWeight(baseScore, internationalProfile);
+  }
+  return applyPublicSubjectWeight(baseScore, publicSubjectScores);
+}
+
+function getStudentTypeLabel(type) {
+  return type === "international" ? "国际学生" : "公立学校学生";
+}
+
+function getCurriculumSummary() {
+  if (studentProfile.type === "international") {
+    return internationalProfile.curriculumName || "国际课程未填写";
+  }
+  const filled = Object.entries(publicSubjectScores)
+    .filter(([, value]) => typeof value === "number")
+    .map(([key, value]) => `${({ cn: "语文", math: "数学", en: "英语", phy: "物理", chem: "化学", bio: "生物" }[key])}${Math.round(value)}`);
+  return filled.length ? `公立成绩已填 ${filled.slice(0, 3).join(" / ")}` : "公立成绩未填写";
 }
 
 function calculateStudentVector(answerMap) {
@@ -866,6 +1087,26 @@ function renderResult(studentVector, rankedMajors, confidence, weightingSummary,
   const summaryText = tieTop
     ? "两条方向分差很小，建议结合学科成绩和真实体验做二选一。"
     : `${top3[0].name} 是当前优先验证方向，次选可作为补充参考。`;
+  const studentSummaryCards = `
+    <div class="student-summary-grid">
+      <article class="student-summary-card">
+        <span class="student-summary-label">学生类型</span>
+        <strong>${getStudentTypeLabel(studentProfile.type)}</strong>
+      </article>
+      <article class="student-summary-card">
+        <span class="student-summary-label">当前年级</span>
+        <strong>${studentProfile.grade || "未填写"}</strong>
+      </article>
+      <article class="student-summary-card">
+        <span class="student-summary-label">课程体系</span>
+        <strong>${getCurriculumSummary()}</strong>
+      </article>
+      <article class="student-summary-card">
+        <span class="student-summary-label">测评版本</span>
+        <strong>${MODE_CONFIG[selectedMode].label}</strong>
+      </article>
+    </div>
+  `;
 
   const schoolRestrictedHTML = schoolRecommendation?.ranked?.length
     ? `
@@ -918,6 +1159,7 @@ function renderResult(studentVector, rankedMajors, confidence, weightingSummary,
       <p class="result-kicker">报告结论</p>
       <h2>${summaryTitle}</h2>
       <p class="result-summary">${summaryText}</p>
+      ${studentSummaryCards}
       <div class="confidence-badge confidence-${confidenceTone}">
         <span>结果置信度</span>
         <strong>${confidence.level} ${confidence.score}/100</strong>
@@ -947,21 +1189,80 @@ function renderResult(studentVector, rankedMajors, confidence, weightingSummary,
   drawRadarChart("profile-radar", radarProfile);
 }
 
+function validateIntroStep(step) {
+  const profile = readStudentProfile();
+  if (step === 1) {
+    if (!profile.grade) {
+      alert("请先填写当前年级。");
+      return false;
+    }
+    return true;
+  }
+
+  if (step === 2) {
+    if (profile.type === "international") {
+      const intl = readInternationalProfile();
+      if (!intl.curriculumName) {
+        alert("请先填写国际课程名称。");
+        return false;
+      }
+      if (!parseInternationalScores(intl.curriculumName, intl.scoreText).length) {
+        alert("请至少填写一门可识别的国际课程成绩。");
+        return false;
+      }
+      return true;
+    }
+    if (!hasPublicScores(readPublicSubjectScores())) {
+      alert("请至少填写一门公立学校学科成绩。");
+      return false;
+    }
+  }
+  return true;
+}
+
+introNext1Btn.addEventListener("click", () => {
+  if (!validateIntroStep(1)) return;
+  showIntroStep(2);
+  saveDraft();
+});
+
+introPrev2Btn.addEventListener("click", () => {
+  showIntroStep(1);
+  saveDraft();
+});
+
+introNext2Btn.addEventListener("click", () => {
+  if (!validateIntroStep(2)) return;
+  showIntroStep(3);
+  saveDraft();
+});
+
+introPrev3Btn.addEventListener("click", () => {
+  showIntroStep(2);
+  saveDraft();
+});
+
 startBtn.addEventListener("click", () => {
+  if (!validateIntroStep(1) || !validateIntroStep(2)) return;
   const modeInput = document.querySelector('input[name="assessment-mode"]:checked');
   applyMode(modeInput ? modeInput.value : "standard");
-  subjectScores = readSubjectScores();
+  studentProfile = readStudentProfile();
+  publicSubjectScores = readPublicSubjectScores();
+  internationalProfile = readInternationalProfile();
   schoolMajorText = readSchoolMajorText();
   intro.classList.add("hidden");
   quizForm.classList.remove("hidden");
-  loadDraft();
   renderCurrentPage();
   updateProgress();
   saveDraft();
   emitEvent("start_assessment", {
     mode: selectedMode,
+    student_type: studentProfile.type,
+    grade: studentProfile.grade,
     question_count: activeQuestions.length,
-    subject_score_filled: Object.values(subjectScores).some((v) => typeof v === "number"),
+    subject_score_filled: studentProfile.type === "international"
+      ? Boolean(parseInternationalScores(internationalProfile.curriculumName, internationalProfile.scoreText).length)
+      : hasPublicScores(publicSubjectScores),
     school_restricted_mode: Boolean(schoolMajorText)
   });
 });
@@ -975,10 +1276,27 @@ quizForm.addEventListener("change", (event) => {
   }
 });
 
-[scoreCnInput, scoreMathInput, scoreEnInput, scoreSciInput, scoreHumInput, schoolMajorsInput].forEach((input) => {
+[gradeInput, internationalCurriculumNameInput, internationalScoreTextInput, scoreCnInput, scoreMathInput, scoreEnInput, scorePhyInput, scoreChemInput, scoreBioInput, schoolMajorsInput].forEach((input) => {
   input.addEventListener("input", () => {
-    subjectScores = readSubjectScores();
+    studentProfile = readStudentProfile();
+    publicSubjectScores = readPublicSubjectScores();
+    internationalProfile = readInternationalProfile();
     schoolMajorText = readSchoolMajorText();
+    saveDraft();
+  });
+});
+
+studentTypeInputs.forEach((input) => {
+  input.addEventListener("change", () => {
+    studentProfile = readStudentProfile();
+    updateStudentTypeUI();
+    saveDraft();
+  });
+});
+
+document.querySelectorAll('input[name="assessment-mode"]').forEach((input) => {
+  input.addEventListener("change", () => {
+    selectedMode = input.value;
     saveDraft();
   });
 });
@@ -1064,7 +1382,7 @@ quizForm.addEventListener("submit", (event) => {
     return;
   }
   const studentVector = calculateStudentVector(answers);
-  const weighted = applySubjectWeight(studentVector.score, subjectScores);
+  const weighted = applySubjectWeight(studentVector.score);
   const rankedMajors = rankMajors(weighted.score);
   const schoolRecommendation = rankSchoolMajors(weighted.score, schoolMajorText);
   const confidence = calculateConfidence(answers, rankedMajors);
@@ -1075,6 +1393,7 @@ quizForm.addEventListener("submit", (event) => {
   resultBox.scrollIntoView({ behavior: "smooth", block: "start" });
   emitEvent("complete_assessment", {
     mode: selectedMode,
+    student_type: studentProfile.type,
     question_count: activeQuestions.length,
     confidence_score: confidence.score,
     top_major: rankedMajors[0]?.name || "",
@@ -1099,3 +1418,7 @@ resultBox.addEventListener("click", (event) => {
     }
   }
 });
+
+applyMode(selectedMode);
+loadDraft();
+showIntroStep(introStep);
