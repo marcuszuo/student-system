@@ -10,7 +10,7 @@
 - 说明页：`pages/`
 - 脚本：`assets/js/`
 - 样式：`assets/css/`
-- 手机登录接入说明：`docs/PHONE_LOGIN_SETUP.md`
+- 用户名密码登录说明：`docs/USERNAME_LOGIN_SETUP.md`
 - 域名配置说明：`docs/DOMAIN_SETUP.md`
 
 ## 本地预览
@@ -39,4 +39,4 @@ http://127.0.0.1:4173/
 
 这是纯静态站点，没有前端构建步骤。修改 HTML、CSS、JS 后提交并推送到 `main`，GitHub Pages 会自动更新。
 
-手机号验证码登录已经有前端门禁和 Worker 模板，但线上要真正启用，需要先部署验证码接口，并配置 `window.AUTH_API_BASE_URL`。
+当前版本使用轻量级用户名密码登录门禁，适合内部试用和小范围受限访问。由于项目仍是纯静态站点，账号校验在前端完成，不适合作为高安全级别的正式账号系统。

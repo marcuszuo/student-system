@@ -26,25 +26,22 @@
     <section class="card" id="quiz-card">
       <section id="auth-gate" class="auth-gate">
         <div class="auth-card">
-          <p class="auth-kicker">手机号验证</p>
+          <p class="auth-kicker">账号登录</p>
           <h2>登录后开始测评</h2>
-          <p class="auth-copy">输入手机号并完成验证码验证后，即可进入测评流程。</p>
+          <p class="auth-copy">请输入用户名和密码，登录后即可进入测评流程。</p>
           <div class="auth-form">
             <label class="single-field">
-              <span>手机号码</span>
-              <input id="auth-phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="请输入 11 位手机号">
+              <span>用户名</span>
+              <input id="auth-username" type="text" autocomplete="username" placeholder="请输入用户名">
             </label>
-            <div class="auth-code-row">
-              <label class="single-field auth-code-field">
-                <span>验证码</span>
-                <input id="auth-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="请输入验证码">
-              </label>
-              <button type="button" id="send-code-btn" class="btn btn-ghost auth-send-btn">发送验证码</button>
-            </div>
+            <label class="single-field">
+              <span>密码</span>
+              <input id="auth-password" type="password" autocomplete="current-password" placeholder="请输入密码">
+            </label>
             <div class="auth-actions">
-              <button type="button" id="verify-code-btn" class="btn btn-primary">验证并进入</button>
+              <button type="button" id="login-btn" class="btn btn-primary">登录并进入</button>
             </div>
-            <p id="auth-status" class="auth-status">请输入手机号开始验证</p>
+            <p id="auth-status" class="auth-status">请输入用户名和密码</p>
           </div>
         </div>
       </section>

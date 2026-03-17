@@ -97,21 +97,6 @@ body {
   gap: 12px;
 }
 
-.auth-code-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 156px;
-  gap: 12px;
-  align-items: end;
-}
-
-.auth-code-field {
-  margin-bottom: 0;
-}
-
-.auth-send-btn {
-  min-height: 52px;
-}
-
 .auth-actions {
   display: flex;
   justify-content: flex-end;
@@ -840,12 +825,7 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .auth-code-row {
-    grid-template-columns: 1fr;
-  }
-
-  .auth-actions .btn,
-  .auth-send-btn {
+  .auth-actions .btn {
     width: 100%;
   }
 
