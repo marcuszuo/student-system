@@ -38,7 +38,7 @@ const STORAGE_KEY = "student-major-assessment-v2";
 const AUTH_STORAGE_KEY = "student-major-auth-v1";
 const AUTH_USERS = Array.isArray(window.AUTH_USERS) && window.AUTH_USERS.length
   ? window.AUTH_USERS
-  : [{ username: "admin", password: "333333" }];
+  : [{ username: "admin", password: ["333333", "majornavi2026"] }];
 const AUTH_ENABLED = AUTH_USERS.length > 0;
 
 const MODE_CONFIG = {
@@ -137,11 +137,16 @@ function setAuthStatus(text, tone = "neutral") {
 }
 
 function normalizeUsername(username) {
-  return String(username || "").trim();
+  return String(username || "").trim().toLowerCase();
 }
 
 function findAuthUser(username, password) {
-  return AUTH_USERS.find((user) => user.username === username && user.password === password) || null;
+  const normalizedPassword = String(password || "").trim();
+  return AUTH_USERS.find((user) => {
+    const expectedUsername = String(user.username || "").trim().toLowerCase();
+    const expectedPasswords = Array.isArray(user.password) ? user.password : [user.password];
+    return expectedUsername === username && expectedPasswords.map((item) => String(item || "").trim()).includes(normalizedPassword);
+  }) || null;
 }
 
 function saveAuthSession(session) {
@@ -1281,8 +1286,9 @@ function validateIntroStep(step) {
 
 loginBtn.addEventListener("click", () => {
   const username = normalizeUsername(authUsernameInput.value);
-  const password = String(authPasswordInput.value || "");
+  const password = String(authPasswordInput.value || "").trim();
   authUsernameInput.value = username;
+  authPasswordInput.value = password;
 
   if (!username) {
     setAuthStatus("请输入用户名", "error");
