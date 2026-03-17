@@ -73,7 +73,7 @@ async function sendSmsWithProvider(env, phone, code) {
   }
 
   throw new Error(
-    "尚未配置真实短信服务商。请在 worker.js 中接入你的短信供应商，或先把 SMS_PROVIDER 设为 console 做联调。"
+    "尚未配置真实短信服务商。当前建议接入阿里云号码认证服务的短信认证服务（SendSmsVerifyCode / VerifySmsCode），或先把 SMS_PROVIDER 设为 console 做联调。"
   );
 }
 
