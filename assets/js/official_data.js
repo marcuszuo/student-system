@@ -1389,7 +1389,7 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "列步骤逐项做",
-          "dim": "cognition.system"
+          "dim": "cognition.data"
         },
         {
           "key": "C",
@@ -1399,7 +1399,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "多角度发散想",
-          "dim": "cognition.data"
+          "dim": "cognition.verbal"
         }
       ]
     },
@@ -1416,12 +1416,12 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "规则执行",
-          "dim": "cognition.data"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
           "text": "理解人和关系",
-          "dim": "cognition.data"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
@@ -1443,17 +1443,17 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "想要评判标准",
-          "dim": "cognition.data"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
           "text": "看现实效果",
-          "dim": "cognition.data"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "自由探索",
-          "dim": "cognition.data"
+          "dim": "cognition.verbal"
         }
       ]
     },
@@ -1470,17 +1470,17 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "按规则",
-          "dim": "cognition.data"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
           "text": "看情况",
-          "dim": "cognition.data"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "跟感觉",
-          "dim": "cognition.data"
+          "dim": "cognition.verbal"
         }
       ]
     },
@@ -1492,22 +1492,22 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "分析",
-          "dim": "cognition.data"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
           "text": "计划",
-          "dim": "cognition.data"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
           "text": "经验",
-          "dim": "cognition.data"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "灵感",
-          "dim": "cognition.data"
+          "dim": "cognition.verbal"
         }
       ]
     },
@@ -1524,12 +1524,12 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "方法/清单",
-          "dim": "cognition.data"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
           "text": "案例/故事",
-          "dim": "cognition.data"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
@@ -1551,7 +1551,7 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "步骤表",
-          "dim": "cognition.system"
+          "dim": "cognition.data"
         },
         {
           "key": "C",
@@ -1583,12 +1583,12 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "人物动机/关系",
-          "dim": "cognition.data"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "亮点与创意",
-          "dim": "cognition.data"
+          "dim": "cognition.verbal"
         }
       ]
     },
@@ -1600,22 +1600,22 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "依据是什么？",
-          "dim": "cognition.data"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
           "text": "怎么落地？",
-          "dim": "cognition.data"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
           "text": "对人有什么影响？",
-          "dim": "cognition.data"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "有没有更有趣的说法？",
-          "dim": "cognition.data"
+          "dim": "cognition.verbal"
         }
       ]
     },
@@ -1627,12 +1627,12 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "高（可推演）",
-          "dim": "cognition.data"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
           "text": "中（要规则）",
-          "dim": "cognition.data"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
@@ -1642,7 +1642,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "高（可探索）",
-          "dim": "cognition.data"
+          "dim": "cognition.verbal"
         }
       ]
     },
@@ -1664,12 +1664,12 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "案例分析",
-          "dim": "cognition.data"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "开放创作",
-          "dim": "cognition.data"
+          "dim": "cognition.verbal"
         }
       ]
     },
@@ -1686,12 +1686,12 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "刷题归纳",
-          "dim": "cognition.data"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
           "text": "联系现实",
-          "dim": "cognition.data"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
@@ -1718,7 +1718,7 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "现实结果",
-          "dim": "cognition.data"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
@@ -1735,12 +1735,12 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "找一致性解释",
-          "dim": "cognition.data"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
           "text": "按权威/标准选",
-          "dim": "cognition.data"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
@@ -1750,7 +1750,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "接受多种可能",
-          "dim": "cognition.data"
+          "dim": "cognition.verbal"
         }
       ]
     },
@@ -1762,22 +1762,22 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "是否正确",
-          "dim": "cognition.data"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
           "text": "是否可行",
-          "dim": "cognition.data"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
           "text": "是否合理公平",
-          "dim": "cognition.data"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "是否新颖",
-          "dim": "cognition.data"
+          "dim": "cognition.verbal"
         }
       ]
     },
@@ -1799,12 +1799,12 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "拆成角色/利益",
-          "dim": "cognition.data"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "拆成创意路径",
-          "dim": "cognition.system"
+          "dim": "cognition.verbal"
         }
       ]
     },
@@ -1816,22 +1816,22 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "理解更深",
-          "dim": "cognition.data"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
           "text": "做得更快更准",
-          "dim": "cognition.data"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
           "text": "更懂别人/社会",
-          "dim": "cognition.data"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "作品更好看",
-          "dim": "cognition.data"
+          "dim": "cognition.verbal"
         }
       ]
     },
@@ -1848,17 +1848,17 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "等待规则明确",
-          "dim": "cognition.data"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
           "text": "用经验判断",
-          "dim": "cognition.data"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "先试再改",
-          "dim": "cognition.data"
+          "dim": "cognition.verbal"
         }
       ]
     },
@@ -1870,22 +1870,22 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "提炼论证结构",
-          "dim": "cognition.verbal"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
           "text": "提炼要点/提纲",
-          "dim": "cognition.data"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
           "text": "提炼立场/动机",
-          "dim": "cognition.data"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "提炼亮点/金句",
-          "dim": "cognition.data"
+          "dim": "cognition.verbal"
         }
       ]
     },
@@ -1912,7 +1912,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "讲故事/创意",
-          "dim": "cognition.data"
+          "dim": "cognition.verbal"
         }
       ]
     },
@@ -1924,7 +1924,7 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "独立深思",
-          "dim": "cognition.data"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
@@ -1934,12 +1934,12 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "与人互动",
-          "dim": "cognition.data"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "灵活创作",
-          "dim": "cognition.data"
+          "dim": "cognition.verbal"
         }
       ]
     },
@@ -1951,22 +1951,22 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "喜欢",
-          "dim": "cognition.data"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
           "text": "看实用性",
-          "dim": "cognition.data"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
           "text": "看是否有意义",
-          "dim": "cognition.data"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "更喜欢项目",
-          "dim": "cognition.data"
+          "dim": "cognition.verbal"
         }
       ]
     },
@@ -1983,17 +1983,17 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "推动落地方案",
-          "dim": "cognition.data"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
           "text": "照顾关系与影响",
-          "dim": "cognition.data"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "提供新点子",
-          "dim": "cognition.data"
+          "dim": "cognition.verbal"
         }
       ]
     },
@@ -2005,22 +2005,22 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "想太多忽略细节",
-          "dim": "cognition.data"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
           "text": "死板不变通",
-          "dim": "cognition.data"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
           "text": "情绪/关系影响判断",
-          "dim": "cognition.data"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "发散太多不收敛",
-          "dim": "cognition.data"
+          "dim": "cognition.verbal"
         }
       ]
     },
