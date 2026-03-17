@@ -35,6 +35,12 @@ const majors = mergeMajors(baseMajors, extraMajors);
 
 const ITEMS_PER_PAGE = 8;
 const STORAGE_KEY = "student-major-assessment-v2";
+const AUTH_STORAGE_KEY = "student-major-auth-v1";
+const AUTH_CONFIG = {
+  apiBaseUrl: window.AUTH_API_BASE_URL || "",
+  mockMode: window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
+};
+const AUTH_ENABLED = AUTH_CONFIG.mockMode || Boolean(AUTH_CONFIG.apiBaseUrl);
 
 const MODE_CONFIG = {
   standard: { label: "标准版", selector: (q) => {
@@ -62,11 +68,21 @@ const dimensionNameMap = Object.fromEntries(
 const startBtn = document.getElementById("start-btn");
 const intro = document.getElementById("intro");
 const introPanels = Array.from(document.querySelectorAll("[data-intro-step]"));
-const stepChips = Array.from(document.querySelectorAll("[data-step-chip]"));
 const introNext1Btn = document.getElementById("intro-next-1");
 const introPrev2Btn = document.getElementById("intro-prev-2");
 const introNext2Btn = document.getElementById("intro-next-2");
 const introPrev3Btn = document.getElementById("intro-prev-3");
+const authGate = document.getElementById("auth-gate");
+const assessmentShell = document.getElementById("assessment-shell");
+const authPhoneInput = document.getElementById("auth-phone");
+const authCodeInput = document.getElementById("auth-code");
+const sendCodeBtn = document.getElementById("send-code-btn");
+const verifyCodeBtn = document.getElementById("verify-code-btn");
+const authStatus = document.getElementById("auth-status");
+const authActions = document.querySelector(".auth-actions");
+const authSessionText = document.getElementById("auth-session-text");
+const authSessionBar = document.querySelector(".auth-session-bar");
+const logoutBtn = document.getElementById("logout-btn");
 const quizForm = document.getElementById("quiz-form");
 const questionList = document.getElementById("question-list");
 const progressText = document.getElementById("progress-text");
@@ -104,6 +120,9 @@ let studentProfile = { type: "public", grade: "" };
 let publicSubjectScores = { cn: null, math: null, en: null, phy: null, chem: null, bio: null };
 let internationalProfile = { curriculumName: "", scoreText: "" };
 let schoolMajorText = "";
+let authSession = null;
+let authCountdown = 0;
+let authTimer = null;
 
 function formatTime(date) {
   return date.toLocaleTimeString("zh-CN", { hour12: false });
@@ -115,6 +134,127 @@ function setSaveStatus(text) {
 
 function setSchoolFileStatus(text) {
   schoolMajorFileStatus.textContent = text;
+}
+
+function setAuthStatus(text, tone = "neutral") {
+  authStatus.textContent = text;
+  authStatus.dataset.tone = tone;
+}
+
+function normalizePhone(phone) {
+  return String(phone || "").replace(/\D/g, "").slice(0, 11);
+}
+
+function isValidChineseMobile(phone) {
+  return /^1\d{10}$/.test(normalizePhone(phone));
+}
+
+function saveAuthSession(session) {
+  authSession = session;
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+}
+
+function clearAuthSession() {
+  authSession = null;
+  localStorage.removeItem(AUTH_STORAGE_KEY);
+}
+
+function loadAuthSession() {
+  const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed?.phone || !parsed?.verifiedAt) return null;
+    authSession = parsed;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function renderAuthState() {
+  if (!AUTH_ENABLED) {
+    authGate.classList.add("hidden");
+    assessmentShell.classList.remove("hidden");
+    authSessionBar.classList.add("hidden");
+    return;
+  }
+
+  const authed = Boolean(authSession?.phone);
+  authGate.classList.toggle("hidden", authed);
+  assessmentShell.classList.toggle("hidden", !authed);
+  authSessionBar.classList.remove("hidden");
+  if (authed) {
+    authSessionText.textContent = `已登录手机号：${authSession.phone}`;
+  }
+}
+
+function startAuthCountdown(seconds = 60) {
+  authCountdown = seconds;
+  if (authTimer) window.clearInterval(authTimer);
+  const tick = () => {
+    sendCodeBtn.disabled = authCountdown > 0;
+    sendCodeBtn.textContent = authCountdown > 0 ? `${authCountdown}s 后重发` : "发送验证码";
+    if (authCountdown <= 0 && authTimer) {
+      window.clearInterval(authTimer);
+      authTimer = null;
+      return;
+    }
+    authCountdown -= 1;
+  };
+  tick();
+  authTimer = window.setInterval(tick, 1000);
+}
+
+async function sendVerificationCode(phone) {
+  if (AUTH_CONFIG.mockMode && !AUTH_CONFIG.apiBaseUrl) {
+    window.sessionStorage.setItem("mock-auth-code", "123456");
+    return { success: true, message: "本地预览模式验证码为 123456" };
+  }
+
+  if (!AUTH_CONFIG.apiBaseUrl) {
+    throw new Error("验证码服务尚未配置，请先部署短信验证接口");
+  }
+
+  const response = await fetch(`${AUTH_CONFIG.apiBaseUrl}/send-code`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phone })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data?.error || "验证码发送失败");
+  }
+  return data;
+}
+
+async function verifySmsCode(phone, code) {
+  if (AUTH_CONFIG.mockMode && !AUTH_CONFIG.apiBaseUrl) {
+    const savedCode = window.sessionStorage.getItem("mock-auth-code");
+    if (code !== savedCode) {
+      throw new Error("验证码错误，请输入 123456");
+    }
+    return {
+      success: true,
+      token: "mock-token",
+      user: { phone }
+    };
+  }
+
+  if (!AUTH_CONFIG.apiBaseUrl) {
+    throw new Error("验证码服务尚未配置，请先部署短信验证接口");
+  }
+
+  const response = await fetch(`${AUTH_CONFIG.apiBaseUrl}/verify-code`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phone, code })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data?.error || "验证码校验失败");
+  }
+  return data;
 }
 
 function selectedStudentType() {
@@ -138,11 +278,6 @@ function showIntroStep(step) {
   introStep = clamp(step, 1, 3);
   introPanels.forEach((panel) => {
     panel.classList.toggle("hidden", Number(panel.dataset.introStep) !== introStep);
-  });
-  stepChips.forEach((chip) => {
-    const chipStep = Number(chip.dataset.stepChip);
-    chip.classList.toggle("is-active", chipStep === introStep);
-    chip.classList.toggle("is-done", chipStep < introStep);
   });
   updateStudentTypeUI();
 }
@@ -1217,6 +1352,64 @@ function validateIntroStep(step) {
   return true;
 }
 
+sendCodeBtn.addEventListener("click", async () => {
+  const phone = normalizePhone(authPhoneInput.value);
+  authPhoneInput.value = phone;
+  if (!isValidChineseMobile(phone)) {
+    setAuthStatus("请输入正确的 11 位手机号", "error");
+    return;
+  }
+
+  sendCodeBtn.disabled = true;
+  setAuthStatus("验证码发送中...", "neutral");
+  try {
+    const result = await sendVerificationCode(phone);
+    startAuthCountdown(60);
+    setAuthStatus(result?.message || "验证码已发送，请查收短信", "success");
+  } catch (error) {
+    sendCodeBtn.disabled = false;
+    setAuthStatus(error.message || "验证码发送失败", "error");
+  }
+});
+
+verifyCodeBtn.addEventListener("click", async () => {
+  const phone = normalizePhone(authPhoneInput.value);
+  const code = String(authCodeInput.value || "").trim();
+  authPhoneInput.value = phone;
+  if (!isValidChineseMobile(phone)) {
+    setAuthStatus("请输入正确的 11 位手机号", "error");
+    return;
+  }
+  if (!/^\d{4,6}$/.test(code)) {
+    setAuthStatus("请输入 4-6 位验证码", "error");
+    return;
+  }
+
+  verifyCodeBtn.disabled = true;
+  setAuthStatus("正在校验验证码...", "neutral");
+  try {
+    const result = await verifySmsCode(phone, code);
+    saveAuthSession({
+      phone,
+      token: result?.token || "",
+      verifiedAt: new Date().toISOString()
+    });
+    renderAuthState();
+    setAuthStatus("验证成功", "success");
+  } catch (error) {
+    setAuthStatus(error.message || "验证码校验失败", "error");
+  } finally {
+    verifyCodeBtn.disabled = false;
+  }
+});
+
+logoutBtn.addEventListener("click", () => {
+  clearAuthSession();
+  renderAuthState();
+  authCodeInput.value = "";
+  setAuthStatus("请输入手机号开始验证", "neutral");
+});
+
 introNext1Btn.addEventListener("click", () => {
   if (!validateIntroStep(1)) return;
   showIntroStep(2);
@@ -1416,3 +1609,5 @@ resultBox.addEventListener("click", (event) => {
 applyMode(selectedMode);
 loadDraft();
 showIntroStep(introStep);
+loadAuthSession();
+renderAuthState();

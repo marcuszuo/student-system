@@ -1,0 +1,11 @@
+name = "majornavi-auth"
+main = "worker.js"
+compatibility_date = "2026-03-17"
+
+[[kv_namespaces]]
+binding = "AUTH_CODES"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+
+[vars]
+SMS_PROVIDER = "console"
+SESSION_SECRET = "replace-with-a-long-random-string"

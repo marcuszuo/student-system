@@ -24,116 +24,148 @@
     </section>
 
     <section class="card" id="quiz-card">
-      <div id="intro" class="intro">
-        <section class="intro-panel" data-intro-step="1">
-          <h3>选择学生类型与年级</h3>
-          <div class="student-type-grid">
-            <label class="type-card">
-              <input type="radio" name="student-type" value="public" checked>
-              <span>
-                <strong>公立学校学生</strong>
-              </span>
-            </label>
-            <label class="type-card">
-              <input type="radio" name="student-type" value="international">
-              <span>
-                <strong>国际学生</strong>
-              </span>
-            </label>
-          </div>
-          <label class="single-field">
-            <span>当前年级</span>
-            <input id="student-grade" type="text" autocomplete="off" placeholder="如 高一、11年级、G10">
-          </label>
-          <div class="wizard-actions">
-            <button type="button" id="intro-next-1" class="btn btn-primary">下一步</button>
-          </div>
-        </section>
-
-        <section class="intro-panel hidden" data-intro-step="2">
-          <h3>填写成绩信息</h3>
-          <div id="public-score-panel" class="score-panel">
-            <div class="subject-inputs">
-              <p class="subject-title">公立学校成绩（建议尽量填写，0-100 分）</p>
-              <label>语文<input id="score-cn" type="number" min="0" max="100" inputmode="numeric" autocomplete="off" placeholder="如 92"></label>
-              <label>数学<input id="score-math" type="number" min="0" max="100" inputmode="numeric" autocomplete="off" placeholder="如 88"></label>
-              <label>英语<input id="score-en" type="number" min="0" max="100" inputmode="numeric" autocomplete="off" placeholder="如 90"></label>
-              <label>物理<input id="score-phy" type="number" min="0" max="100" inputmode="numeric" autocomplete="off" placeholder="如 85"></label>
-              <label>化学<input id="score-chem" type="number" min="0" max="100" inputmode="numeric" autocomplete="off" placeholder="如 82"></label>
-              <label>生物<input id="score-bio" type="number" min="0" max="100" inputmode="numeric" autocomplete="off" placeholder="如 84"></label>
-            </div>
-          </div>
-
-          <div id="international-score-panel" class="score-panel hidden">
+      <section id="auth-gate" class="auth-gate">
+        <div class="auth-card">
+          <p class="auth-kicker">手机号验证</p>
+          <h2>登录后开始测评</h2>
+          <p class="auth-copy">输入手机号并完成验证码验证后，即可进入测评流程。</p>
+          <div class="auth-form">
             <label class="single-field">
-              <span>国际课程名称</span>
-              <input id="international-curriculum-name" type="text" autocomplete="off" placeholder="如 A-Level、IB、AP、DSE、OSSD、IGCSE 或其他">
+              <span>手机号码</span>
+              <input id="auth-phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="请输入 11 位手机号">
             </label>
-            <label class="single-field">
-              <span>课程与成绩</span>
-              <textarea id="international-score-text" rows="7" placeholder="请按一行一门填写，支持中英文，例如：&#10;Mathematics A*&#10;Physics A&#10;Economics B&#10;或&#10;IB Math AA HL 6&#10;IB English A 5"></textarea>
-            </label>
-          </div>
-
-          <div class="school-major-box">
-            <label class="subject-title">学校专业清单约束（可选）</label>
-            <div class="upload-row">
-              <label class="btn btn-ghost upload-btn" for="school-major-file">上传 Excel/CSV/TXT</label>
-              <input id="school-major-file" type="file" accept=".xlsx,.xls,.csv,.txt" hidden>
-              <label class="btn btn-ghost upload-btn" for="school-major-image">上传图片识别</label>
-              <input id="school-major-image" type="file" accept="image/*" hidden>
-              <span id="school-major-file-status" class="upload-status">未上传文件</span>
+            <div class="auth-code-row">
+              <label class="single-field auth-code-field">
+                <span>验证码</span>
+                <input id="auth-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="请输入验证码">
+              </label>
+              <button type="button" id="send-code-btn" class="btn btn-ghost auth-send-btn">发送验证码</button>
             </div>
+            <div class="auth-actions">
+              <button type="button" id="verify-code-btn" class="btn btn-primary">验证并进入</button>
+            </div>
+            <p id="auth-status" class="auth-status">请输入手机号开始验证</p>
           </div>
-          <div class="wizard-actions">
-            <button type="button" id="intro-prev-2" class="btn btn-ghost">上一步</button>
-            <button type="button" id="intro-next-2" class="btn btn-primary">下一步</button>
-          </div>
-        </section>
+        </div>
+      </section>
 
-        <section class="intro-panel hidden" data-intro-step="3">
-          <h3>选择测评版本</h3>
-          <div class="mode-picker">
-            <label class="mode-item">
-              <input type="radio" name="assessment-mode" value="standard" checked>
-              标准版（66题）
+      <div id="assessment-shell" class="hidden">
+        <div class="auth-session-bar">
+          <span id="auth-session-text">已登录</span>
+          <button type="button" id="logout-btn" class="btn btn-ghost btn-small">退出登录</button>
+        </div>
+
+        <div id="intro" class="intro">
+          <section class="intro-panel" data-intro-step="1">
+            <h3>选择学生类型与年级</h3>
+            <div class="student-type-grid">
+              <label class="type-card">
+                <input type="radio" name="student-type" value="public" checked>
+                <span>
+                  <strong>公立学校学生</strong>
+                </span>
+              </label>
+              <label class="type-card">
+                <input type="radio" name="student-type" value="international">
+                <span>
+                  <strong>国际学生</strong>
+                </span>
+              </label>
+            </div>
+            <label class="single-field">
+              <span>当前年级</span>
+              <input id="student-grade" type="text" autocomplete="off" placeholder="如 高一、11年级、G10">
             </label>
-            <label class="mode-item">
-              <input type="radio" name="assessment-mode" value="full">
-              完整版（110题）
-            </label>
+            <div class="wizard-actions">
+              <button type="button" id="intro-next-1" class="btn btn-primary">下一步</button>
+            </div>
+          </section>
+
+          <section class="intro-panel hidden" data-intro-step="2">
+            <h3>填写成绩信息</h3>
+            <div id="public-score-panel" class="score-panel">
+              <div class="subject-inputs">
+                <p class="subject-title">公立学校成绩（建议尽量填写，0-100 分）</p>
+                <label>语文<input id="score-cn" type="number" min="0" max="100" inputmode="numeric" autocomplete="off" placeholder="如 92"></label>
+                <label>数学<input id="score-math" type="number" min="0" max="100" inputmode="numeric" autocomplete="off" placeholder="如 88"></label>
+                <label>英语<input id="score-en" type="number" min="0" max="100" inputmode="numeric" autocomplete="off" placeholder="如 90"></label>
+                <label>物理<input id="score-phy" type="number" min="0" max="100" inputmode="numeric" autocomplete="off" placeholder="如 85"></label>
+                <label>化学<input id="score-chem" type="number" min="0" max="100" inputmode="numeric" autocomplete="off" placeholder="如 82"></label>
+                <label>生物<input id="score-bio" type="number" min="0" max="100" inputmode="numeric" autocomplete="off" placeholder="如 84"></label>
+              </div>
+            </div>
+
+            <div id="international-score-panel" class="score-panel hidden">
+              <label class="single-field">
+                <span>国际课程名称</span>
+                <input id="international-curriculum-name" type="text" autocomplete="off" placeholder="如 A-Level、IB、AP、DSE、OSSD、IGCSE 或其他">
+              </label>
+              <label class="single-field">
+                <span>课程与成绩</span>
+                <textarea id="international-score-text" rows="7" placeholder="请按一行一门填写，支持中英文，例如：&#10;Mathematics A*&#10;Physics A&#10;Economics B&#10;或&#10;IB Math AA HL 6&#10;IB English A 5"></textarea>
+              </label>
+            </div>
+
+            <div class="school-major-box">
+              <label class="subject-title">学校专业清单约束（可选）</label>
+              <div class="upload-row">
+                <label class="btn btn-ghost upload-btn" for="school-major-file">上传 Excel/CSV/TXT</label>
+                <input id="school-major-file" type="file" accept=".xlsx,.xls,.csv,.txt" hidden>
+                <label class="btn btn-ghost upload-btn" for="school-major-image">上传图片识别</label>
+                <input id="school-major-image" type="file" accept="image/*" hidden>
+                <span id="school-major-file-status" class="upload-status">未上传文件</span>
+              </div>
+            </div>
+            <div class="wizard-actions">
+              <button type="button" id="intro-prev-2" class="btn btn-ghost">上一步</button>
+              <button type="button" id="intro-next-2" class="btn btn-primary">下一步</button>
+            </div>
+          </section>
+
+          <section class="intro-panel hidden" data-intro-step="3">
+            <h3>选择测评版本</h3>
+            <div class="mode-picker">
+              <label class="mode-item">
+                <input type="radio" name="assessment-mode" value="standard" checked>
+                标准版（66题）
+              </label>
+              <label class="mode-item">
+                <input type="radio" name="assessment-mode" value="full">
+                完整版（110题）
+              </label>
+            </div>
+            <div class="wizard-actions">
+              <button type="button" id="intro-prev-3" class="btn btn-ghost">上一步</button>
+              <button id="start-btn" type="button" class="btn btn-primary">开始答题</button>
+            </div>
+          </section>
+        </div>
+
+        <form id="quiz-form" class="hidden">
+          <div class="progress-wrap">
+            <div class="progress-label">
+              <span>答题进度</span>
+              <span id="progress-text">0 / 24</span>
+            </div>
+            <div class="progress-bar">
+              <div id="progress-fill"></div>
+            </div>
+            <p id="save-status" class="save-status">草稿未保存</p>
           </div>
-          <div class="wizard-actions">
-            <button type="button" id="intro-prev-3" class="btn btn-ghost">上一步</button>
-            <button id="start-btn" type="button" class="btn btn-primary">开始答题</button>
+          <div class="pager-meta">
+            <span id="page-text">第 1 / 1 页</span>
+            <button type="button" id="clear-btn" class="btn btn-ghost">清空作答</button>
           </div>
-        </section>
+          <div id="question-list"></div>
+          <div class="actions">
+            <button type="button" id="prev-btn" class="btn btn-ghost">上一页</button>
+            <button type="button" id="next-btn" class="btn btn-primary">下一页</button>
+            <button type="submit" id="submit-btn" class="btn btn-primary hidden">生成推荐结果</button>
+          </div>
+        </form>
+
+        <section id="result" class="hidden"></section>
       </div>
-
-      <form id="quiz-form" class="hidden">
-        <div class="progress-wrap">
-          <div class="progress-label">
-            <span>答题进度</span>
-            <span id="progress-text">0 / 24</span>
-          </div>
-          <div class="progress-bar">
-            <div id="progress-fill"></div>
-          </div>
-          <p id="save-status" class="save-status">草稿未保存</p>
-        </div>
-        <div class="pager-meta">
-          <span id="page-text">第 1 / 1 页</span>
-          <button type="button" id="clear-btn" class="btn btn-ghost">清空作答</button>
-        </div>
-        <div id="question-list"></div>
-        <div class="actions">
-          <button type="button" id="prev-btn" class="btn btn-ghost">上一页</button>
-          <button type="button" id="next-btn" class="btn btn-primary">下一页</button>
-          <button type="submit" id="submit-btn" class="btn btn-primary hidden">生成推荐结果</button>
-        </div>
-      </form>
-
-      <section id="result" class="hidden"></section>
     </section>
     <footer class="footer-links">
       <a href="./pages/disclaimer.html" target="_blank" rel="noopener noreferrer">测评声明</a>

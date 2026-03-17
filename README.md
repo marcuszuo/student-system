@@ -10,6 +10,7 @@
 - 说明页：`pages/`
 - 脚本：`assets/js/`
 - 样式：`assets/css/`
+- 手机登录接入说明：`docs/PHONE_LOGIN_SETUP.md`
 - 域名配置说明：`docs/DOMAIN_SETUP.md`
 
 ## 本地预览
