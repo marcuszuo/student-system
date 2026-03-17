@@ -49,7 +49,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "先问同学/老师怎么学最快",
-          "dim": "ability.math"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -71,7 +71,7 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "先放一放，找动力再回来",
-          "dim": "ability.math"
+          "dim": "ability.focus"
         },
         {
           "key": "D",
@@ -93,12 +93,12 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "练习册/题型总结",
-          "dim": "ability.writing"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
           "text": "案例/故事/视频",
-          "dim": "ability.math"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
@@ -115,17 +115,17 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "讲清逻辑框架",
-          "dim": "ability.math"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
           "text": "讲清做题套路",
-          "dim": "ability.math"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
           "text": "讲有趣的例子",
-          "dim": "ability.math"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
@@ -142,22 +142,22 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "整理知识体系",
-          "dim": "ability.math"
+          "dim": "cognition.system"
         },
         {
           "key": "B",
           "text": "刷题找规律",
-          "dim": "cognition.system"
+          "dim": "ability.math"
         },
         {
           "key": "C",
           "text": "挑自己感兴趣的部分",
-          "dim": "ability.math"
+          "dim": "ability.focus"
         },
         {
           "key": "D",
           "text": "和同学一起互测",
-          "dim": "ability.math"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -169,7 +169,7 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "研究规则/语法/原理",
-          "dim": "ability.math"
+          "dim": "cognition.system"
         },
         {
           "key": "B",
@@ -184,7 +184,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "找人对练",
-          "dim": "ability.math"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -196,7 +196,7 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "爱推导，追求通用解法",
-          "dim": "ability.math"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
@@ -206,7 +206,7 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "爱找直观理解",
-          "dim": "ability.math"
+          "dim": "cognition.spatial"
         },
         {
           "key": "D",
@@ -228,7 +228,7 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "按模板写出标准答案",
-          "dim": "cognition.verbal"
+          "dim": "ability.memory"
         },
         {
           "key": "C",
@@ -238,7 +238,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "先聊清楚再写",
-          "dim": "cognition.verbal"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -260,12 +260,12 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "记灵感、例子",
-          "dim": "ability.math"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "记老师/同学的提示",
-          "dim": "ability.math"
+          "dim": "ability.memory"
         }
       ]
     },
@@ -277,22 +277,22 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "理解底层逻辑",
-          "dim": "ability.math"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
           "text": "大量练习与纠错",
-          "dim": "ability.math"
+          "dim": "ability.focus"
         },
         {
           "key": "C",
           "text": "找到兴趣点后爆发",
-          "dim": "ability.math"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "有人带/反馈及时",
-          "dim": "ability.math"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -304,22 +304,22 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "先挑最难的把逻辑理清",
-          "dim": "ability.math"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
           "text": "按清单逐个完成",
-          "dim": "ability.math"
+          "dim": "ability.focus"
         },
         {
           "key": "C",
           "text": "先做喜欢的保持状态",
-          "dim": "ability.math"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "约人一起做互相监督",
-          "dim": "ability.math"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -346,7 +346,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "考察合作与展示",
-          "dim": "ability.math"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -358,22 +358,22 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "找到它的逻辑价值",
-          "dim": "ability.math"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
           "text": "按要求完成拿分",
-          "dim": "ability.math"
+          "dim": "ability.focus"
         },
         {
           "key": "C",
           "text": "靠兴趣点勉强维持",
-          "dim": "ability.math"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "靠老师/同学带着学",
-          "dim": "ability.math"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -385,22 +385,22 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "必须先懂再刷",
-          "dim": "ability.math"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
           "text": "刷题本身最有效",
-          "dim": "ability.math"
+          "dim": "ability.focus"
         },
         {
           "key": "C",
           "text": "刷题太枯燥要有趣",
-          "dim": "ability.math"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "刷题最好有人陪",
-          "dim": "ability.math"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -417,12 +417,12 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "先列任务分工",
-          "dim": "ability.math"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
           "text": "先想创意呈现",
-          "dim": "ability.math"
+          "dim": "cognition.spatial"
         },
         {
           "key": "D",
@@ -439,22 +439,22 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "找共通原理整合",
-          "dim": "ability.math"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
           "text": "按科目分块完成",
-          "dim": "ability.math"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
           "text": "挑有兴趣的先做",
-          "dim": "ability.math"
+          "dim": "ability.focus"
         },
         {
           "key": "D",
           "text": "拉人一起分担",
-          "dim": "ability.math"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -466,12 +466,12 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "举一反三扩展",
-          "dim": "ability.math"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
           "text": "总结成可复用步骤",
-          "dim": "ability.writing"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
@@ -481,7 +481,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "讲给别人听",
-          "dim": "ability.math"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -493,22 +493,22 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "总结原理漏洞",
-          "dim": "ability.writing"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
           "text": "总结题型套路",
-          "dim": "ability.writing"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
           "text": "记录当时想法与感受",
-          "dim": "ability.math"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "记录别人提醒的点",
-          "dim": "ability.math"
+          "dim": "ability.memory"
         }
       ]
     },
@@ -535,7 +535,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "先问他人怎么取舍",
-          "dim": "ability.math"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -557,12 +557,12 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "作文/开放题",
-          "dim": "ability.math"
+          "dim": "ability.writing"
         },
         {
           "key": "D",
           "text": "口试/展示",
-          "dim": "ability.math"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -574,17 +574,17 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "更想知道为什么",
-          "dim": "ability.math"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
           "text": "有答案就能练",
-          "dim": "ability.math"
+          "dim": "ability.memory"
         },
         {
           "key": "C",
           "text": "标准答案限制发挥",
-          "dim": "ability.math"
+          "dim": "ability.writing"
         },
         {
           "key": "D",
@@ -601,22 +601,22 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "搞懂的成就感",
-          "dim": "ability.math"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
           "text": "成绩/排名/结果",
-          "dim": "ability.math"
+          "dim": "risk.pressure"
         },
         {
           "key": "C",
           "text": "兴趣/热爱",
-          "dim": "ability.math"
+          "dim": "interest.a"
         },
         {
           "key": "D",
           "text": "认可/关系/团队",
-          "dim": "ability.math"
+          "dim": "interest.s"
         }
       ]
     },
@@ -628,7 +628,7 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "逻辑与思维",
-          "dim": "ability.math"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
@@ -638,7 +638,7 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "表达与创意",
-          "dim": "ability.comm"
+          "dim": "ability.writing"
         },
         {
           "key": "D",
@@ -655,22 +655,22 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "原理是什么？",
-          "dim": "ability.math"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
           "text": "怎么做题？",
-          "dim": "ability.math"
+          "dim": "cognition.system"
         },
         {
           "key": "C",
           "text": "有什么用？",
-          "dim": "ability.math"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "别人怎么学？",
-          "dim": "ability.math"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -682,22 +682,22 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "理解型",
-          "dim": "ability.math"
+          "dim": "cognition.abstract"
         },
         {
           "key": "B",
           "text": "执行型",
-          "dim": "ability.math"
+          "dim": "ability.focus"
         },
         {
           "key": "C",
           "text": "兴趣型",
-          "dim": "ability.math"
+          "dim": "cognition.contextual"
         },
         {
           "key": "D",
           "text": "互动型",
-          "dim": "ability.math"
+          "dim": "ability.comm"
         }
       ]
     },
