@@ -38,3 +38,5 @@ http://127.0.0.1:4173/
 ## 备注
 
 这是纯静态站点，没有前端构建步骤。修改 HTML、CSS、JS 后提交并推送到 `main`，GitHub Pages 会自动更新。
+
+手机号验证码登录已经有前端门禁和 Worker 模板，但线上要真正启用，需要先部署验证码接口，并配置 `window.AUTH_API_BASE_URL`。

@@ -54,21 +54,38 @@
 ## Worker 部署步骤
 
 1. 安装并登录 Wrangler
-2. 创建 KV Namespace，用于保存验证码
-3. 复制 `backend/cloudflare-worker/wrangler.toml.example` 为 `wrangler.toml`
-4. 把 KV Namespace ID 填进去
-5. 设置 `SESSION_SECRET`
-6. 根据你的短信服务商，补全 `sendSmsWithProvider()`
-7. 部署 Worker
+2. 复制 `backend/cloudflare-worker/wrangler.toml.example` 为 `wrangler.toml`
+3. 设置 Worker 环境变量
+4. 部署 Worker
+
+## 需要的环境变量
+
+- `ALIYUN_ACCESS_KEY_ID`
+- `ALIYUN_ACCESS_KEY_SECRET`
+- `ALIYUN_SMS_SIGN_NAME`
+- `ALIYUN_SMS_TEMPLATE_CODE`
+- `SESSION_SECRET`
+
+可选：
+
+- `ALIYUN_SMS_SCHEME_NAME`
+- `ALIYUN_SMS_VALID_TIME`
+- `ALIYUN_SMS_INTERVAL`
+- `ALIYUN_SMS_CODE_LENGTH`
+- `ALIYUN_SMS_CODE_TYPE`
+- `ALIYUN_SMS_DUPLICATE_POLICY`
+- `ALIYUN_SMS_TEMPLATE_CODE_KEY`
+- `ALIYUN_SMS_TEMPLATE_MIN_KEY`
 
 ## 需要补的生产项
 
-`worker.js` 里目前只内置了 `console` 联调模式，还没有绑定真实阿里云短信认证接口。
+`worker.js` 已经补成阿里云短信认证接口版本，但上线前你还需要把阿里云资源参数填完整。
 
 也就是说：
 
 - 前端门禁、验证码流程、登录态、接口协议都已经搭好
-- 真实短信发送这一步，需要把 Worker 接到阿里云接口
+- Worker 已经会调用阿里云接口
+- 还需要你在阿里云控制台准备好 AccessKey、签名、模板和号码认证服务配置
 
 ## 建议
 
@@ -76,5 +93,6 @@
 
 1. 在阿里云开通号码认证服务
 2. 配好短信认证服务的签名/模板
-3. 我来把 Worker 补成阿里云可直接调用版本
-4. 再把 `window.AUTH_API_BASE_URL` 配到正式站点
+3. 把 `ALIYUN_ACCESS_KEY_ID / SECRET` 等环境变量配到 Worker
+4. 把 `window.AUTH_API_BASE_URL` 配到正式站点
+5. 完成一次真机短信测试
