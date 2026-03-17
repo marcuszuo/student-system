@@ -15,7 +15,7 @@
 ```js
 const AUTH_USERS = Array.isArray(window.AUTH_USERS) && window.AUTH_USERS.length
   ? window.AUTH_USERS
-  : [{ username: "admin", password: "majornavi2026" }];
+  : [{ username: "admin", password: "333333" }];
 ```
 
 你可以直接修改默认账号密码，或者在页面里通过 `window.AUTH_USERS` 覆盖。

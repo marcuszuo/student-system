@@ -38,7 +38,7 @@ const STORAGE_KEY = "student-major-assessment-v2";
 const AUTH_STORAGE_KEY = "student-major-auth-v1";
 const AUTH_USERS = Array.isArray(window.AUTH_USERS) && window.AUTH_USERS.length
   ? window.AUTH_USERS
-  : [{ username: "admin", password: "majornavi2026" }];
+  : [{ username: "admin", password: "333333" }];
 const AUTH_ENABLED = AUTH_USERS.length > 0;
 
 const MODE_CONFIG = {
