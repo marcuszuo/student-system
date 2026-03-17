@@ -2059,7 +2059,7 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "整理思路再做",
-          "dim": "risk.pressure"
+          "dim": "risk.stability"
         },
         {
           "key": "B",
@@ -2069,12 +2069,12 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "情绪波动大",
-          "dim": "risk.pressure"
+          "dim": "value.security"
         },
         {
           "key": "D",
           "text": "需要安慰/支持",
-          "dim": "risk.pressure"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -2091,17 +2091,17 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "先停一停避免再错",
-          "dim": "risk.pressure"
+          "dim": "risk.stability"
         },
         {
           "key": "C",
           "text": "明显低落",
-          "dim": "risk.pressure"
+          "dim": "value.security"
         },
         {
           "key": "D",
           "text": "找人聊/求助",
-          "dim": "risk.pressure"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -2118,17 +2118,17 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "按清单逐项完成",
-          "dim": "risk.pressure"
+          "dim": "ability.focus"
         },
         {
           "key": "C",
           "text": "拖延内耗",
-          "dim": "risk.pressure"
+          "dim": "value.security"
         },
         {
           "key": "D",
           "text": "需要外部推动",
-          "dim": "risk.pressure"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -2145,17 +2145,17 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "按要求改",
-          "dim": "risk.pressure"
+          "dim": "ability.focus"
         },
         {
           "key": "C",
           "text": "很受打击",
-          "dim": "risk.pressure"
+          "dim": "value.security"
         },
         {
           "key": "D",
           "text": "想解释/争取理解",
-          "dim": "risk.pressure"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -2172,17 +2172,17 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "增加练习",
-          "dim": "risk.pressure"
+          "dim": "ability.focus"
         },
         {
           "key": "C",
           "text": "怀疑自己",
-          "dim": "risk.pressure"
+          "dim": "value.security"
         },
         {
           "key": "D",
           "text": "需要别人鼓励",
-          "dim": "risk.pressure"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -2199,17 +2199,17 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "能适应但要规则",
-          "dim": "risk.pressure"
+          "dim": "risk.stability"
         },
         {
           "key": "C",
           "text": "容易焦虑",
-          "dim": "risk.pressure"
+          "dim": "value.security"
         },
         {
           "key": "D",
           "text": "更想换环境",
-          "dim": "risk.pressure"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -2221,17 +2221,17 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "讲道理解决",
-          "dim": "risk.pressure"
+          "dim": "risk.stability"
         },
         {
           "key": "B",
           "text": "按规则处理",
-          "dim": "risk.pressure"
+          "dim": "ability.focus"
         },
         {
           "key": "C",
           "text": "回避",
-          "dim": "risk.pressure"
+          "dim": "value.security"
         },
         {
           "key": "D",
@@ -2253,17 +2253,17 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "有标准就安心",
-          "dim": "risk.pressure"
+          "dim": "risk.stability"
         },
         {
           "key": "C",
           "text": "容易焦虑",
-          "dim": "risk.pressure"
+          "dim": "value.security"
         },
         {
           "key": "D",
           "text": "先做点别的",
-          "dim": "risk.pressure"
+          "dim": "ability.focus"
         }
       ]
     },
@@ -2275,22 +2275,22 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "逻辑矛盾",
-          "dim": "risk.pressure"
+          "dim": "risk.stability"
         },
         {
           "key": "B",
           "text": "流程混乱",
-          "dim": "risk.pressure"
+          "dim": "ability.focus"
         },
         {
           "key": "C",
           "text": "关系冲突",
-          "dim": "risk.pressure"
+          "dim": "ability.comm"
         },
         {
           "key": "D",
           "text": "无聊重复",
-          "dim": "risk.pressure"
+          "dim": "value.security"
         }
       ]
     },
@@ -2302,17 +2302,17 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "独处思考",
-          "dim": "risk.pressure"
+          "dim": "risk.stability"
         },
         {
           "key": "B",
           "text": "按节奏执行",
-          "dim": "risk.pressure"
+          "dim": "ability.focus"
         },
         {
           "key": "C",
           "text": "情绪平复",
-          "dim": "risk.pressure"
+          "dim": "value.security"
         },
         {
           "key": "D",
@@ -2329,7 +2329,7 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "变得更理性",
-          "dim": "risk.pressure"
+          "dim": "risk.stability"
         },
         {
           "key": "B",
@@ -2339,12 +2339,12 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "变得更敏感",
-          "dim": "risk.pressure"
+          "dim": "value.security"
         },
         {
           "key": "D",
           "text": "变得更依赖他人",
-          "dim": "risk.pressure"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -2366,12 +2366,12 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "开始崩",
-          "dim": "risk.pressure"
+          "dim": "value.security"
         },
         {
           "key": "D",
           "text": "换方向",
-          "dim": "risk.pressure"
+          "dim": "risk.stability"
         }
       ]
     },
@@ -2383,12 +2383,12 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "认可其逻辑",
-          "dim": "risk.pressure"
+          "dim": "risk.stability"
         },
         {
           "key": "B",
           "text": "愿意遵守",
-          "dim": "risk.pressure"
+          "dim": "ability.focus"
         },
         {
           "key": "C",
@@ -2398,7 +2398,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "看人看关系",
-          "dim": "risk.pressure"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -2415,12 +2415,12 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "推进执行",
-          "dim": "risk.pressure"
+          "dim": "ability.focus"
         },
         {
           "key": "C",
           "text": "照顾情绪氛围",
-          "dim": "risk.pressure"
+          "dim": "risk.stability"
         },
         {
           "key": "D",
@@ -2442,17 +2442,17 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "能扛但要计划",
-          "dim": "risk.pressure"
+          "dim": "ability.focus"
         },
         {
           "key": "C",
           "text": "很难",
-          "dim": "risk.pressure"
+          "dim": "value.security"
         },
         {
           "key": "D",
           "text": "除非有人带",
-          "dim": "risk.pressure"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -2469,17 +2469,17 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "按流程补救",
-          "dim": "risk.pressure"
+          "dim": "ability.focus"
         },
         {
           "key": "C",
           "text": "自责内耗",
-          "dim": "risk.pressure"
+          "dim": "value.security"
         },
         {
           "key": "D",
           "text": "找人商量",
-          "dim": "risk.pressure"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -2491,22 +2491,22 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "想不明白",
-          "dim": "risk.pressure"
+          "dim": "risk.stability"
         },
         {
           "key": "B",
           "text": "做不完",
-          "dim": "risk.pressure"
+          "dim": "ability.focus"
         },
         {
           "key": "C",
           "text": "被否定",
-          "dim": "risk.pressure"
+          "dim": "value.security"
         },
         {
           "key": "D",
           "text": "被孤立",
-          "dim": "risk.pressure"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -2518,22 +2518,22 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "越难越专注",
-          "dim": "ability.focus"
+          "dim": "risk.pressure"
         },
         {
           "key": "B",
           "text": "越忙越机械",
-          "dim": "risk.pressure"
+          "dim": "ability.focus"
         },
         {
           "key": "C",
           "text": "越忙越崩",
-          "dim": "risk.pressure"
+          "dim": "value.security"
         },
         {
           "key": "D",
           "text": "越忙越需要支持",
-          "dim": "risk.pressure"
+          "dim": "ability.comm"
         }
       ]
     },
@@ -2545,17 +2545,17 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "思考/总结",
-          "dim": "risk.pressure"
+          "dim": "risk.stability"
         },
         {
           "key": "B",
           "text": "运动/执行",
-          "dim": "risk.pressure"
+          "dim": "ability.focus"
         },
         {
           "key": "C",
           "text": "发泄/情绪",
-          "dim": "risk.pressure"
+          "dim": "value.security"
         },
         {
           "key": "D",
@@ -2577,17 +2577,17 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "流程执行型",
-          "dim": "risk.pressure"
+          "dim": "ability.focus"
         },
         {
           "key": "C",
           "text": "情绪波动型",
-          "dim": "risk.pressure"
+          "dim": "value.security"
         },
         {
           "key": "D",
           "text": "外部支持型",
-          "dim": "risk.pressure"
+          "dim": "ability.comm"
         }
       ]
     },
