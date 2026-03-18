@@ -9,6 +9,25 @@ function clamp01(value) {
   return Math.max(0, Math.min(1, value));
 }
 
+function randomIndex(max) {
+  if (max <= 0) return 0;
+  if (window.crypto && typeof window.crypto.getRandomValues === "function") {
+    const buffer = new Uint32Array(1);
+    window.crypto.getRandomValues(buffer);
+    return buffer[0] % max;
+  }
+  return Math.floor(Math.random() * max);
+}
+
+function shuffleArray(items) {
+  const output = items.slice();
+  for (let i = output.length - 1; i > 0; i -= 1) {
+    const j = randomIndex(i + 1);
+    [output[i], output[j]] = [output[j], output[i]];
+  }
+  return output;
+}
+
 function mergeMajors(base, extras) {
   const baseMap = new Map(base.map((m) => [m.name, m]));
   const output = [...base];
@@ -109,6 +128,7 @@ const schoolMajorFileStatus = document.getElementById("school-major-file-status"
 
 let selectedMode = "standard";
 let activeQuestions = [];
+let questionOrder = [];
 let totalPages = 1;
 let currentPage = 1;
 let answers = {};
@@ -229,6 +249,7 @@ function saveDraft() {
     introStep,
     studentProfile,
     mode: selectedMode,
+    questionOrder,
     publicSubjectScores,
     internationalProfile,
     schoolMajorText,
@@ -240,9 +261,35 @@ function saveDraft() {
   setSaveStatus(`草稿已保存 ${formatTime(new Date())}`);
 }
 
-function applyMode(mode) {
+function buildQuestionOrder(mode, savedOrder = []) {
+  const selected = allQuestions.filter(MODE_CONFIG[mode].selector);
+  const selectedIds = new Set(selected.map((q) => q.id));
+  const savedValid = Array.isArray(savedOrder)
+    && savedOrder.length === selected.length
+    && savedOrder.every((id) => selectedIds.has(id));
+  if (savedValid) return savedOrder.slice();
+
+  const moduleBuckets = new Map();
+  selected.forEach((question) => {
+    if (!moduleBuckets.has(question.module)) {
+      moduleBuckets.set(question.module, []);
+    }
+    moduleBuckets.get(question.module).push(question);
+  });
+
+  return Array.from(moduleBuckets.keys())
+    .sort()
+    .flatMap((module) => shuffleArray(moduleBuckets.get(module)).map((question) => question.id));
+}
+
+function applyMode(mode, savedOrder = []) {
   selectedMode = mode in MODE_CONFIG ? mode : "standard";
-  activeQuestions = allQuestions.filter(MODE_CONFIG[selectedMode].selector);
+  questionOrder = buildQuestionOrder(selectedMode, savedOrder);
+  const orderMap = new Map(questionOrder.map((id, index) => [id, index]));
+  activeQuestions = allQuestions
+    .filter(MODE_CONFIG[selectedMode].selector)
+    .slice()
+    .sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0));
   totalPages = Math.max(1, Math.ceil(activeQuestions.length / ITEMS_PER_PAGE));
   currentPage = Math.min(Math.max(currentPage, 1), totalPages);
 }
@@ -258,7 +305,7 @@ function loadDraft() {
     publicSubjectScores = parsed.publicSubjectScores || publicSubjectScores;
     internationalProfile = parsed.internationalProfile || internationalProfile;
     schoolMajorText = parsed.schoolMajorText || "";
-    applyMode(parsed.mode || selectedMode);
+    applyMode(parsed.mode || selectedMode, parsed.questionOrder || []);
     currentPage = Number(parsed.page) || 1;
     currentPage = Math.min(Math.max(currentPage, 1), totalPages);
     const modeInput = document.querySelector(`input[name="assessment-mode"][value="${selectedMode}"]`);
@@ -307,6 +354,11 @@ function clearDraft() {
   schoolMajorImageInput.value = "";
   setSchoolFileStatus("未上传文件");
   currentPage = 1;
+  selectedMode = "standard";
+  const standardModeInput = document.querySelector('input[name="assessment-mode"][value="standard"]');
+  if (standardModeInput) standardModeInput.checked = true;
+  applyMode("standard");
+  questionOrder = [];
   localStorage.removeItem(STORAGE_KEY);
   setSaveStatus("已清空草稿");
   showIntroStep(1);

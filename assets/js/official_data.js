@@ -736,17 +736,17 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "调整方法继续",
-          "dim": "interest.r"
+          "dim": "interest.i"
         },
         {
           "key": "B",
           "text": "坚持到目标节点",
-          "dim": "interest.e"
+          "dim": "interest.c"
         },
         {
           "key": "C",
           "text": "开始动摇",
-          "dim": "interest.r"
+          "dim": "risk.stability"
         },
         {
           "key": "D",
@@ -763,7 +763,7 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "继续深挖",
-          "dim": "interest.r"
+          "dim": "interest.i"
         },
         {
           "key": "B",
@@ -773,12 +773,12 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "动力明显下降",
-          "dim": "interest.r"
+          "dim": "risk.stability"
         },
         {
           "key": "D",
           "text": "很快厌倦",
-          "dim": "interest.e"
+          "dim": "interest.a"
         }
       ]
     },
@@ -817,7 +817,7 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "不影响",
-          "dim": "interest.e"
+          "dim": "interest.i"
         },
         {
           "key": "B",
@@ -827,12 +827,12 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "会动摇",
-          "dim": "interest.r"
+          "dim": "interest.s"
         },
         {
           "key": "D",
           "text": "可能换方向",
-          "dim": "interest.r"
+          "dim": "risk.stability"
         }
       ]
     },
@@ -844,7 +844,7 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "太抽象难懂",
-          "dim": "interest.r"
+          "dim": "interest.i"
         },
         {
           "key": "B",
@@ -854,7 +854,7 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "看不到意义",
-          "dim": "interest.r"
+          "dim": "interest.s"
         },
         {
           "key": "D",
@@ -871,22 +871,22 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "能接受",
-          "dim": "interest.r"
+          "dim": "interest.i"
         },
         {
           "key": "B",
           "text": "标准清楚就行",
-          "dim": "interest.r"
+          "dim": "interest.c"
         },
         {
           "key": "C",
           "text": "会焦虑",
-          "dim": "interest.r"
+          "dim": "value.security"
         },
         {
           "key": "D",
           "text": "很难坚持",
-          "dim": "interest.r"
+          "dim": "interest.e"
         }
       ]
     },
@@ -903,12 +903,12 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "目标驱动稳定",
-          "dim": "risk.stability"
+          "dim": "interest.e"
         },
         {
           "key": "C",
           "text": "情绪/意义驱动",
-          "dim": "interest.r"
+          "dim": "interest.s"
         },
         {
           "key": "D",
@@ -925,12 +925,12 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "提升能力/理解",
-          "dim": "interest.r"
+          "dim": "interest.i"
         },
         {
           "key": "B",
           "text": "拿到证书/成绩",
-          "dim": "interest.r"
+          "dim": "interest.e"
         },
         {
           "key": "C",
@@ -952,7 +952,7 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "仍愿意投入",
-          "dim": "interest.r"
+          "dim": "interest.i"
         },
         {
           "key": "B",
@@ -962,12 +962,12 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "明显降温",
-          "dim": "interest.r"
+          "dim": "interest.a"
         },
         {
           "key": "D",
           "text": "很快放弃",
-          "dim": "interest.e"
+          "dim": "risk.stability"
         }
       ]
     },
@@ -979,7 +979,7 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "难度变大",
-          "dim": "interest.r"
+          "dim": "interest.i"
         },
         {
           "key": "B",
@@ -989,7 +989,7 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "意义感下降",
-          "dim": "interest.r"
+          "dim": "interest.s"
         },
         {
           "key": "D",
@@ -1006,17 +1006,17 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "慢但扎实",
-          "dim": "interest.r"
+          "dim": "risk.stability"
         },
         {
           "key": "B",
           "text": "阶段性里程碑",
-          "dim": "interest.r"
+          "dim": "interest.c"
         },
         {
           "key": "C",
           "text": "需要持续正反馈",
-          "dim": "interest.r"
+          "dim": "interest.s"
         },
         {
           "key": "D",
@@ -1043,12 +1043,12 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "坚持不久",
-          "dim": "interest.r"
+          "dim": "risk.stability"
         },
         {
           "key": "D",
           "text": "很难坚持",
-          "dim": "interest.r"
+          "dim": "interest.a"
         }
       ]
     },
@@ -1060,7 +1060,7 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "更想比理解深度",
-          "dim": "interest.r"
+          "dim": "interest.i"
         },
         {
           "key": "B",
@@ -1070,12 +1070,12 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "竞争会影响情绪",
-          "dim": "interest.e"
+          "dim": "value.security"
         },
         {
           "key": "D",
           "text": "更想换到轻松赛道",
-          "dim": "interest.r"
+          "dim": "risk.stability"
         }
       ]
     },
@@ -1087,7 +1087,7 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "把问题弄明白",
-          "dim": "interest.r"
+          "dim": "interest.i"
         },
         {
           "key": "B",
@@ -1097,12 +1097,12 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "这件事的意义",
-          "dim": "interest.r"
+          "dim": "interest.s"
         },
         {
           "key": "D",
           "text": "过程是否有趣",
-          "dim": "interest.r"
+          "dim": "interest.a"
         }
       ]
     },
@@ -1114,7 +1114,7 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "先保理解和长线",
-          "dim": "interest.r"
+          "dim": "interest.i"
         },
         {
           "key": "B",
@@ -1124,12 +1124,12 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "看意义再决定",
-          "dim": "interest.r"
+          "dim": "interest.s"
         },
         {
           "key": "D",
           "text": "看当下感觉",
-          "dim": "interest.r"
+          "dim": "interest.a"
         }
       ]
     },
@@ -1168,7 +1168,7 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "深入长期",
-          "dim": "interest.r"
+          "dim": "interest.i"
         },
         {
           "key": "B",
@@ -1183,7 +1183,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "变化快",
-          "dim": "interest.e"
+          "dim": "interest.a"
         }
       ]
     },
@@ -1195,22 +1195,22 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "正常",
-          "dim": "interest.r"
+          "dim": "interest.i"
         },
         {
           "key": "B",
           "text": "可接受",
-          "dim": "interest.r"
+          "dim": "risk.stability"
         },
         {
           "key": "C",
           "text": "不安",
-          "dim": "interest.r"
+          "dim": "value.security"
         },
         {
           "key": "D",
           "text": "不适应",
-          "dim": "interest.r"
+          "dim": "interest.e"
         }
       ]
     },
@@ -1254,17 +1254,17 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "坚持到节点",
-          "dim": "interest.r"
+          "dim": "interest.e"
         },
         {
           "key": "C",
           "text": "情绪波动大",
-          "dim": "interest.r"
+          "dim": "value.security"
         },
         {
           "key": "D",
           "text": "转移注意力",
-          "dim": "interest.r"
+          "dim": "interest.a"
         }
       ]
     },
@@ -1276,7 +1276,7 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "越学越上头",
-          "dim": "interest.r"
+          "dim": "interest.i"
         },
         {
           "key": "B",
@@ -1286,12 +1286,12 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "忽冷忽热",
-          "dim": "interest.r"
+          "dim": "interest.s"
         },
         {
           "key": "D",
           "text": "三分钟热度",
-          "dim": "interest.r"
+          "dim": "interest.a"
         }
       ]
     },
@@ -1308,17 +1308,17 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "中",
-          "dim": "interest.r"
+          "dim": "interest.c"
         },
         {
           "key": "C",
           "text": "低",
-          "dim": "interest.r"
+          "dim": "interest.e"
         },
         {
           "key": "D",
           "text": "很低",
-          "dim": "interest.r"
+          "dim": "interest.a"
         }
       ]
     },
@@ -1335,17 +1335,17 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "证书/分数",
-          "dim": "interest.r"
+          "dim": "interest.e"
         },
         {
           "key": "C",
           "text": "影响/反馈",
-          "dim": "interest.e"
+          "dim": "interest.s"
         },
         {
           "key": "D",
           "text": "作品/呈现",
-          "dim": "interest.r"
+          "dim": "interest.a"
         }
       ]
     },
@@ -1357,7 +1357,7 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "内在驱动",
-          "dim": "interest.r"
+          "dim": "interest.i"
         },
         {
           "key": "B",
@@ -1367,12 +1367,12 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "意义驱动",
-          "dim": "interest.r"
+          "dim": "interest.s"
         },
         {
           "key": "D",
           "text": "刺激驱动",
-          "dim": "interest.r"
+          "dim": "interest.a"
         }
       ]
     },
@@ -2599,7 +2599,7 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "非常支持我自主决定",
-          "dim": "value.wealth"
+          "dim": "value.influence"
         },
         {
           "key": "B",
@@ -2614,7 +2614,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "支持取决于是否稳定/安全",
-          "dim": "risk.stability"
+          "dim": "value.security"
         }
       ]
     },
@@ -2631,7 +2631,7 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "只要回报清晰我愿意",
-          "dim": "value.wealth"
+          "dim": "value.security"
         },
         {
           "key": "C",
@@ -2641,7 +2641,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "更倾向周期短",
-          "dim": "value.wealth"
+          "dim": "risk.stability"
         }
       ]
     },
@@ -2658,7 +2658,7 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "收入与稳定",
-          "dim": "risk.stability"
+          "dim": "value.security"
         },
         {
           "key": "C",
@@ -2685,17 +2685,17 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "可以少量试错",
-          "dim": "value.wealth"
+          "dim": "risk.stability"
         },
         {
           "key": "C",
           "text": "试错会让我焦虑",
-          "dim": "value.wealth"
+          "dim": "value.security"
         },
         {
           "key": "D",
           "text": "尽量不试错",
-          "dim": "value.wealth"
+          "dim": "value.security"
         }
       ]
     },
@@ -2707,7 +2707,7 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "支持探索",
-          "dim": "value.wealth"
+          "dim": "value.influence"
         },
         {
           "key": "B",
@@ -2722,7 +2722,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "更希望稳妥就近",
-          "dim": "risk.stability"
+          "dim": "value.security"
         }
       ]
     },
@@ -2739,7 +2739,7 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "愿意但要明确路径",
-          "dim": "value.wealth"
+          "dim": "risk.stability"
         },
         {
           "key": "C",
@@ -2749,7 +2749,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "更想避开",
-          "dim": "value.wealth"
+          "dim": "value.security"
         }
       ]
     },
@@ -2761,7 +2761,7 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "不确定但上限高",
-          "dim": "value.security"
+          "dim": "value.wealth"
         },
         {
           "key": "B",
@@ -2776,7 +2776,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "自由灵活",
-          "dim": "value.wealth"
+          "dim": "value.influence"
         }
       ]
     },
@@ -2793,7 +2793,7 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "愿意做为拿结果",
-          "dim": "value.wealth"
+          "dim": "value.influence"
         },
         {
           "key": "C",
@@ -2803,7 +2803,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "愿意做有趣的",
-          "dim": "value.wealth"
+          "dim": "risk.stability"
         }
       ]
     },
@@ -2820,17 +2820,17 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "回报确定的学校/专业",
-          "dim": "value.wealth"
+          "dim": "value.security"
         },
         {
           "key": "C",
           "text": "价值感强的学校/专业",
-          "dim": "value.wealth"
+          "dim": "value.responsibility"
         },
         {
           "key": "D",
           "text": "体验感好的学校/专业",
-          "dim": "value.wealth"
+          "dim": "value.influence"
         }
       ]
     },
@@ -2842,7 +2842,7 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "沟通后坚持自己的逻辑",
-          "dim": "value.wealth"
+          "dim": "value.influence"
         },
         {
           "key": "B",
@@ -2852,12 +2852,12 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "会看是否符合价值",
-          "dim": "value.wealth"
+          "dim": "value.responsibility"
         },
         {
           "key": "D",
           "text": "会尽量减少冲突",
-          "dim": "value.wealth"
+          "dim": "value.security"
         }
       ]
     },
@@ -2869,12 +2869,12 @@ const OFFICIAL_DATA = {
         {
           "key": "A",
           "text": "找替代方案继续走",
-          "dim": "value.wealth"
+          "dim": "value.influence"
         },
         {
           "key": "B",
           "text": "选择更稳妥的路",
-          "dim": "risk.stability"
+          "dim": "value.security"
         },
         {
           "key": "C",
@@ -2884,7 +2884,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "先选择轻松再说",
-          "dim": "value.wealth"
+          "dim": "risk.stability"
         }
       ]
     },
@@ -2901,7 +2901,7 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "中高强度但要结果",
-          "dim": "value.wealth"
+          "dim": "value.influence"
         },
         {
           "key": "C",
@@ -2911,7 +2911,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "不喜欢高强度",
-          "dim": "value.wealth"
+          "dim": "value.security"
         }
       ]
     },
@@ -2928,7 +2928,7 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "更看重回报与资源",
-          "dim": "value.wealth"
+          "dim": "value.influence"
         },
         {
           "key": "C",
@@ -2938,7 +2938,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "更看重生活体验",
-          "dim": "value.wealth"
+          "dim": "value.security"
         }
       ]
     },
@@ -2965,7 +2965,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "自由创作/沟通",
-          "dim": "value.wealth"
+          "dim": "value.influence"
         }
       ]
     },
@@ -2982,7 +2982,7 @@ const OFFICIAL_DATA = {
         {
           "key": "B",
           "text": "稳健回报型",
-          "dim": "value.wealth"
+          "dim": "value.security"
         },
         {
           "key": "C",
@@ -2992,7 +2992,7 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "体验灵活型",
-          "dim": "value.wealth"
+          "dim": "value.influence"
         }
       ]
     }
