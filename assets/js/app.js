@@ -1,18 +1,20 @@
 const MODULE_META = {
-  A: { label: "学习方式", tags: ["learning-style", "study-habit"] },
-  B: { label: "兴趣驱动", tags: ["motivation", "interest-drive"] },
-  C: { label: "认知风格", tags: ["cognition", "thinking-style"] },
-  D: { label: "抗压韧性", tags: ["resilience", "stress-response"] },
-  E: { label: "价值偏好", tags: ["values", "decision-bias"] }
+  A: { order: 1, label: "学习方式", tags: ["learning-style", "study-habit"], intent: "学习投入与任务偏好" },
+  B: { order: 2, label: "兴趣驱动", tags: ["motivation", "interest-drive"], intent: "兴趣来源与行动驱动力" },
+  C: { order: 3, label: "认知风格", tags: ["cognition", "thinking-style"], intent: "信息处理与问题判断方式" },
+  D: { order: 4, label: "抗压韧性", tags: ["resilience", "stress-response"], intent: "压力反应与恢复方式" },
+  E: { order: 5, label: "价值偏好", tags: ["values", "decision-bias"], intent: "结果取向与决策偏好" }
 };
 
 function normalizeQuestion(question) {
   const sequence = Number(String(question.id || "").slice(1)) || 0;
-  const meta = MODULE_META[question.module] || { label: question.module, tags: [] };
+  const meta = MODULE_META[question.module] || { order: 99, label: question.module, tags: [], intent: question.module };
   return {
     ...question,
     sequence,
+    moduleOrder: meta.order,
     moduleLabel: meta.label,
+    intent: meta.intent,
     tags: [...meta.tags],
     dimensionSet: [...new Set(question.options.map((option) => option.dim))]
   };
@@ -79,10 +81,11 @@ const AUTH_USERS = Array.isArray(window.AUTH_USERS) && window.AUTH_USERS.length
   ? window.AUTH_USERS
   : [{ username: "admin", password: "333333" }];
 const AUTH_ENABLED = AUTH_USERS.length > 0;
-const STANDARD_LIMITS = { A: 15, B: 15, C: 15, D: 12, E: 9 };
+const STANDARD_CORE_LIMITS = { A: 12, B: 12, C: 12, D: 10, E: 8 };
+const STANDARD_CALIBRATION_COUNT = 12;
 
 const MODE_CONFIG = {
-  standard: { label: "标准版" },
+  standard: { label: "标准版（核心评估 + 自动校准）" },
   full: { label: "完整版" }
 };
 
@@ -119,6 +122,7 @@ const quizForm = document.getElementById("quiz-form");
 const questionList = document.getElementById("question-list");
 const progressText = document.getElementById("progress-text");
 const progressFill = document.getElementById("progress-fill");
+const phaseHint = document.getElementById("phase-hint");
 const resultBox = document.getElementById("result");
 const prevBtn = document.getElementById("prev-btn");
 const nextBtn = document.getElementById("next-btn");
@@ -145,6 +149,9 @@ const schoolMajorFileStatus = document.getElementById("school-major-file-status"
 let selectedMode = "standard";
 let activeQuestions = [];
 let questionOrder = [];
+let reserveQuestionIds = [];
+let coreQuestionCount = 0;
+let calibrationAdded = false;
 let totalPages = 1;
 let currentPage = 1;
 let answers = {};
@@ -266,6 +273,9 @@ function saveDraft() {
     studentProfile,
     mode: selectedMode,
     questionOrder,
+    reserveQuestionIds,
+    coreQuestionCount,
+    calibrationAdded,
     publicSubjectScores,
     internationalProfile,
     schoolMajorText,
@@ -327,23 +337,93 @@ function pickCoverageQuestions(questions, limit) {
   return selected;
 }
 
+function buildPriorityDims(studentScore, rankedMajors) {
+  const topMajor = rankedMajors[0];
+  const compareMajor = rankedMajors[1];
+  const lowDims = dimensionKeys
+    .map((dim) => ({ dim, value: studentScore[dim] || 0 }))
+    .sort((a, b) => a.value - b.value)
+    .slice(0, 4)
+    .map((item) => item.dim);
+  const topCore = topMajor ? getMajorCoreDims(topMajor, 5) : [];
+  const compareCore = compareMajor ? getMajorCoreDims(compareMajor, 5) : [];
+  return [...new Set([...topCore, ...compareCore, ...lowDims])];
+}
+
+function selectCalibrationQuestions(pool, priorityDims, count) {
+  if (!pool.length || count <= 0) return [];
+  const remaining = pool.slice();
+  const selected = [];
+  const coveredPriority = new Set();
+  const moduleCount = new Map();
+
+  while (selected.length < count && remaining.length) {
+    let bestIndex = 0;
+    let bestScore = -Infinity;
+
+    remaining.forEach((question, index) => {
+      const priorityGain = question.dimensionSet.filter((dim) => priorityDims.includes(dim) && !coveredPriority.has(dim)).length;
+      const priorityHits = question.dimensionSet.filter((dim) => priorityDims.includes(dim)).length;
+      const modulePenalty = moduleCount.get(question.module) || 0;
+      const score = priorityGain * 100 + priorityHits * 20 + question.dimensionSet.length * 5 - modulePenalty * 8;
+      if (score > bestScore) {
+        bestScore = score;
+        bestIndex = index;
+      }
+    });
+
+    const [picked] = remaining.splice(bestIndex, 1);
+    selected.push(picked);
+    picked.dimensionSet.forEach((dim) => {
+      if (priorityDims.includes(dim)) coveredPriority.add(dim);
+    });
+    moduleCount.set(picked.module, (moduleCount.get(picked.module) || 0) + 1);
+  }
+
+  return selected;
+}
+
 function buildSelectedQuestions(mode) {
   if (mode === "full") return allQuestions.slice();
   const output = [];
-  Object.entries(STANDARD_LIMITS).forEach(([module, limit]) => {
+  Object.entries(STANDARD_CORE_LIMITS).forEach(([module, limit]) => {
     const moduleQuestions = allQuestions.filter((question) => question.module === module);
     output.push(...pickCoverageQuestions(moduleQuestions, limit));
   });
   return output;
 }
 
-function applyMode(mode, savedOrder = []) {
+function applyMode(mode, draftState = {}) {
   selectedMode = mode in MODE_CONFIG ? mode : "standard";
-  questionOrder = buildQuestionOrder(selectedMode, savedOrder);
+  if (selectedMode === "full") {
+    reserveQuestionIds = [];
+    calibrationAdded = false;
+    activeQuestions = allQuestions.slice();
+    coreQuestionCount = activeQuestions.length;
+    questionOrder = buildQuestionOrder(selectedMode, draftState.questionOrder || []);
+  } else {
+    const coreQuestions = buildSelectedQuestions(selectedMode);
+    const coreIds = new Set(coreQuestions.map((question) => question.id));
+    const reservePool = allQuestions.filter((question) => !coreIds.has(question.id));
+    coreQuestionCount = Number(draftState.coreQuestionCount) || coreQuestions.length;
+    calibrationAdded = Boolean(draftState.calibrationAdded);
+    reserveQuestionIds = Array.isArray(draftState.reserveQuestionIds) ? draftState.reserveQuestionIds.slice() : reservePool.map((question) => question.id);
+    questionOrder = Array.isArray(draftState.questionOrder) && draftState.questionOrder.length ? draftState.questionOrder.slice() : buildQuestionOrder(selectedMode, []);
+    const activeIds = new Set(questionOrder);
+    activeQuestions = allQuestions.filter((question) => activeIds.has(question.id))
+      .slice()
+      .sort((a, b) => questionOrder.indexOf(a.id) - questionOrder.indexOf(b.id));
+    if (!activeQuestions.length) {
+      activeQuestions = coreQuestions.slice();
+      questionOrder = activeQuestions.map((question) => question.id);
+      reserveQuestionIds = reservePool.map((question) => question.id);
+      coreQuestionCount = coreQuestions.length;
+      calibrationAdded = false;
+    }
+  }
+
   const orderMap = new Map(questionOrder.map((id, index) => [id, index]));
-  activeQuestions = buildSelectedQuestions(selectedMode)
-    .slice()
-    .sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0));
+  activeQuestions = activeQuestions.slice().sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0));
   totalPages = Math.max(1, Math.ceil(activeQuestions.length / ITEMS_PER_PAGE));
   currentPage = Math.min(Math.max(currentPage, 1), totalPages);
 }
@@ -359,7 +439,7 @@ function loadDraft() {
     publicSubjectScores = parsed.publicSubjectScores || publicSubjectScores;
     internationalProfile = parsed.internationalProfile || internationalProfile;
     schoolMajorText = parsed.schoolMajorText || "";
-    applyMode(parsed.mode || selectedMode, parsed.questionOrder || []);
+    applyMode(parsed.mode || selectedMode, parsed);
     currentPage = Number(parsed.page) || 1;
     currentPage = Math.min(Math.max(currentPage, 1), totalPages);
     const modeInput = document.querySelector(`input[name="assessment-mode"][value="${selectedMode}"]`);
@@ -411,8 +491,10 @@ function clearDraft() {
   selectedMode = "standard";
   const standardModeInput = document.querySelector('input[name="assessment-mode"][value="standard"]');
   if (standardModeInput) standardModeInput.checked = true;
+  reserveQuestionIds = [];
+  coreQuestionCount = 0;
+  calibrationAdded = false;
   applyMode("standard");
-  questionOrder = [];
   localStorage.removeItem(STORAGE_KEY);
   setSaveStatus("已清空当前记录");
   showIntroStep(1);
@@ -454,9 +536,28 @@ function renderCurrentPage() {
     .join("");
 
   pageText.textContent = `第 ${currentPage} / ${totalPages} 页（${MODE_CONFIG[selectedMode].label} ${activeQuestions.length}题）`;
+  if (phaseHint) {
+    const reserveCount = reserveQuestionIds.length;
+    const calibrationCount = Math.max(0, activeQuestions.length - coreQuestionCount);
+    if (selectedMode === "standard" && !calibrationAdded) {
+      phaseHint.textContent = `当前处于核心评估阶段。系统将在核心题完成后，结合你的初步画像补充 ${STANDARD_CALIBRATION_COUNT} 道个性化校准题，以提高结果解释的稳定性。`;
+      phaseHint.classList.remove("hidden");
+    } else if (selectedMode === "standard" && calibrationAdded) {
+      phaseHint.textContent = `当前处于个性化校准阶段。本阶段题目从剩余题库中按学生画像自动抽取，已补充 ${calibrationCount} 道校准题，剩余可调度题目 ${reserveCount} 道。`;
+      phaseHint.classList.remove("hidden");
+    } else {
+      phaseHint.classList.add("hidden");
+      phaseHint.textContent = "";
+    }
+  }
   prevBtn.disabled = currentPage === 1;
   nextBtn.classList.toggle("hidden", currentPage === totalPages);
   submitBtn.classList.toggle("hidden", currentPage !== totalPages);
+  if (!submitBtn.classList.contains("hidden")) {
+    submitBtn.textContent = selectedMode === "standard" && !calibrationAdded
+      ? "进入校准题"
+      : "生成评估报告";
+  }
 }
 
 function updateProgress() {
@@ -1226,6 +1327,30 @@ function getPreviewPersona() {
   return personas[key] || personas.engineering;
 }
 
+function appendCalibrationQuestions() {
+  const reservePool = reserveQuestionIds
+    .map((id) => allQuestions.find((question) => question.id === id))
+    .filter(Boolean);
+  if (!reservePool.length) return false;
+
+  const provisionalVector = calculateStudentVector(answers);
+  const weighted = applySubjectWeight(provisionalVector.score);
+  const rankedMajors = rankMajors(weighted.score);
+  const priorityDims = buildPriorityDims(weighted.score, rankedMajors);
+  const selected = selectCalibrationQuestions(reservePool, priorityDims, STANDARD_CALIBRATION_COUNT);
+  if (!selected.length) return false;
+
+  const selectedIds = new Set(selected.map((question) => question.id));
+  activeQuestions = [...activeQuestions, ...selected];
+  questionOrder = activeQuestions.map((question) => question.id);
+  reserveQuestionIds = reserveQuestionIds.filter((id) => !selectedIds.has(id));
+  calibrationAdded = true;
+  totalPages = Math.max(1, Math.ceil(activeQuestions.length / ITEMS_PER_PAGE));
+  currentPage = Math.min(totalPages, currentPage + 1);
+  setSaveStatus("核心评估已完成，已进入自动校准题。");
+  return true;
+}
+
 function maybeRenderPreviewReport() {
   const params = new URLSearchParams(window.location.search);
   if (params.get("preview_report") !== "1") return false;
@@ -1737,8 +1862,23 @@ quizForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const allAnswered = activeQuestions.every((q) => answers[q.id]);
   if (!allAnswered) {
-    alert("还有题目未完成，请全部作答后再生成结果。");
+    alert("仍有题目未完成，请完成全部题目后再生成评估报告。");
     return;
+  }
+  if (selectedMode === "standard" && !calibrationAdded) {
+    const appended = appendCalibrationQuestions();
+    if (appended) {
+      saveDraft();
+      renderCurrentPage();
+      updateProgress();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      emitEvent("append_calibration_questions", {
+        mode: selectedMode,
+        total_questions: activeQuestions.length,
+        calibration_questions: activeQuestions.length - coreQuestionCount
+      });
+      return;
+    }
   }
   const studentVector = calculateStudentVector(answers);
   const weighted = applySubjectWeight(studentVector.score);

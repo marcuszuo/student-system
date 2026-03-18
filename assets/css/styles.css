@@ -367,6 +367,17 @@ body {
   font-size: 0.86rem;
 }
 
+.phase-hint {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(95, 143, 123, 0.16);
+  background: rgba(95, 143, 123, 0.08);
+  color: #466f60;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
 .pager-meta {
   display: flex;
   justify-content: space-between;
