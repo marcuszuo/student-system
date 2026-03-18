@@ -2663,12 +2663,12 @@ const OFFICIAL_DATA = {
         {
           "key": "C",
           "text": "社会影响/意义",
-          "dim": "value.influence"
+          "dim": "value.responsibility"
         },
         {
           "key": "D",
           "text": "自由与体验",
-          "dim": "value.wealth"
+          "dim": "value.influence"
         }
       ]
     },
@@ -2684,7 +2684,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "B",
-          "text": "可以少量试错",
+          "text": "可以少量试错，但希望节奏可控",
           "dim": "risk.stability"
         },
         {
@@ -2694,8 +2694,8 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "D",
-          "text": "尽量不试错",
-          "dim": "value.security"
+          "text": "愿意只为更有价值的方向承担试错",
+          "dim": "value.responsibility"
         }
       ]
     },
@@ -2927,18 +2927,18 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "B",
-          "text": "更看重回报与资源",
-          "dim": "value.influence"
+          "text": "更看重回报确定性与资源",
+          "dim": "value.security"
         },
         {
           "key": "C",
           "text": "更看重社会影响",
-          "dim": "value.influence"
+          "dim": "value.responsibility"
         },
         {
           "key": "D",
           "text": "更看重生活体验",
-          "dim": "value.security"
+          "dim": "value.influence"
         }
       ]
     },

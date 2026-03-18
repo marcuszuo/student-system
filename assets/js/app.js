@@ -1,4 +1,24 @@
-const allQuestions = OFFICIAL_DATA.questions;
+const MODULE_META = {
+  A: { label: "学习方式", tags: ["learning-style", "study-habit"] },
+  B: { label: "兴趣驱动", tags: ["motivation", "interest-drive"] },
+  C: { label: "认知风格", tags: ["cognition", "thinking-style"] },
+  D: { label: "抗压韧性", tags: ["resilience", "stress-response"] },
+  E: { label: "价值偏好", tags: ["values", "decision-bias"] }
+};
+
+function normalizeQuestion(question) {
+  const sequence = Number(String(question.id || "").slice(1)) || 0;
+  const meta = MODULE_META[question.module] || { label: question.module, tags: [] };
+  return {
+    ...question,
+    sequence,
+    moduleLabel: meta.label,
+    tags: [...meta.tags],
+    dimensionSet: [...new Set(question.options.map((option) => option.dim))]
+  };
+}
+
+const allQuestions = OFFICIAL_DATA.questions.map(normalizeQuestion);
 const dimensions = OFFICIAL_DATA.dimensions;
 const baseMajors = OFFICIAL_DATA.majors;
 const actions = OFFICIAL_DATA.actions;
@@ -62,7 +82,7 @@ const AUTH_ENABLED = AUTH_USERS.length > 0;
 
 const MODE_CONFIG = {
   standard: { label: "标准版", selector: (q) => {
-    const n = Number(q.id.slice(1));
+    const n = q.sequence || Number(q.id.slice(1));
     if (q.module === "A") return n <= 15;
     if (q.module === "B") return n <= 15;
     if (q.module === "C") return n <= 15;
