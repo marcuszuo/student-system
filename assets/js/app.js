@@ -83,6 +83,8 @@ const AUTH_USERS = Array.isArray(window.AUTH_USERS) && window.AUTH_USERS.length
 const AUTH_ENABLED = AUTH_USERS.length > 0;
 const STANDARD_CORE_LIMITS = { A: 12, B: 12, C: 12, D: 10, E: 8 };
 const STANDARD_CALIBRATION_COUNT = 12;
+const FOLLOW_UP_QUESTION_COUNT = 4;
+const FOLLOW_UP_GAP_THRESHOLD = 3;
 
 const MODE_CONFIG = {
   standard: { label: "标准版（核心评估 + 自动校准）" },
@@ -153,6 +155,7 @@ let reserveQuestionIds = [];
 let coreQuestionCount = 0;
 let calibrationAdded = false;
 let calibrationContext = null;
+let followUpAdded = false;
 let totalPages = 1;
 let currentPage = 1;
 let answers = {};
@@ -278,6 +281,7 @@ function saveDraft() {
     coreQuestionCount,
     calibrationAdded,
     calibrationContext,
+    followUpAdded,
     publicSubjectScores,
     internationalProfile,
     schoolMajorText,
@@ -415,6 +419,46 @@ function selectCalibrationQuestions(pool, calibrationPlan, count) {
   return selected;
 }
 
+function needsBoundaryFollowUp(rankedMajors) {
+  if (!Array.isArray(rankedMajors) || rankedMajors.length < 2) return false;
+  return Math.abs((rankedMajors[0]?.matchIndex || 0) - (rankedMajors[1]?.matchIndex || 0)) <= FOLLOW_UP_GAP_THRESHOLD;
+}
+
+function selectFollowUpQuestions(pool, boundaryDims, count) {
+  if (!pool.length || !boundaryDims.length || count <= 0) return [];
+  return pool
+    .map((question) => {
+      const boundaryHits = question.dimensionSet.filter((dim) => boundaryDims.includes(dim)).length;
+      const exactCoreHits = question.dimensionSet.filter((dim) => boundaryDims.slice(0, 2).includes(dim)).length;
+      return { question, score: exactCoreHits * 100 + boundaryHits * 40 + question.dimensionSet.length * 5 };
+    })
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, count)
+    .map((item) => item.question);
+}
+
+function appendBoundaryFollowUpQuestions() {
+  if (!calibrationContext?.boundaryDims?.length || followUpAdded) return false;
+  const reservePool = reserveQuestionIds
+    .map((id) => allQuestions.find((question) => question.id === id))
+    .filter(Boolean);
+  if (!reservePool.length) return false;
+
+  const selected = selectFollowUpQuestions(reservePool, calibrationContext.boundaryDims, FOLLOW_UP_QUESTION_COUNT);
+  if (!selected.length) return false;
+
+  const selectedIds = new Set(selected.map((question) => question.id));
+  activeQuestions = [...activeQuestions, ...selected];
+  questionOrder = activeQuestions.map((question) => question.id);
+  reserveQuestionIds = reserveQuestionIds.filter((id) => !selectedIds.has(id));
+  followUpAdded = true;
+  totalPages = Math.max(1, Math.ceil(activeQuestions.length / ITEMS_PER_PAGE));
+  currentPage = Math.min(totalPages, currentPage + 1);
+  setSaveStatus("首选与次选仍较接近，已追加分流追问题。");
+  return true;
+}
+
 function buildSelectedQuestions(mode) {
   if (mode === "full") return allQuestions.slice();
   const output = [];
@@ -431,6 +475,7 @@ function applyMode(mode, draftState = {}) {
     reserveQuestionIds = [];
     calibrationAdded = false;
     calibrationContext = null;
+    followUpAdded = false;
     activeQuestions = allQuestions.slice();
     coreQuestionCount = activeQuestions.length;
     questionOrder = buildQuestionOrder(selectedMode, draftState.questionOrder || []);
@@ -441,6 +486,7 @@ function applyMode(mode, draftState = {}) {
     coreQuestionCount = Number(draftState.coreQuestionCount) || coreQuestions.length;
     calibrationAdded = Boolean(draftState.calibrationAdded);
     calibrationContext = draftState.calibrationContext || null;
+    followUpAdded = Boolean(draftState.followUpAdded);
     reserveQuestionIds = Array.isArray(draftState.reserveQuestionIds) ? draftState.reserveQuestionIds.slice() : reservePool.map((question) => question.id);
     questionOrder = Array.isArray(draftState.questionOrder) && draftState.questionOrder.length ? draftState.questionOrder.slice() : buildQuestionOrder(selectedMode, []);
     const activeIds = new Set(questionOrder);
@@ -454,6 +500,7 @@ function applyMode(mode, draftState = {}) {
       coreQuestionCount = coreQuestions.length;
       calibrationAdded = false;
       calibrationContext = null;
+      followUpAdded = false;
     }
   }
 
@@ -530,6 +577,7 @@ function clearDraft() {
   coreQuestionCount = 0;
   calibrationAdded = false;
   calibrationContext = null;
+  followUpAdded = false;
   applyMode("standard");
   localStorage.removeItem(STORAGE_KEY);
   setSaveStatus("已清空当前记录");
@@ -577,6 +625,12 @@ function renderCurrentPage() {
     const calibrationCount = Math.max(0, activeQuestions.length - coreQuestionCount);
     if (selectedMode === "standard" && !calibrationAdded) {
       phaseHint.textContent = `当前处于核心评估阶段。系统将在核心题完成后，结合你的初步画像补充 ${STANDARD_CALIBRATION_COUNT} 道个性化校准题，以提高结果解释的稳定性。`;
+      phaseHint.classList.remove("hidden");
+    } else if (selectedMode === "standard" && calibrationAdded && followUpAdded) {
+      const focusText = calibrationContext?.boundaryDims?.length
+        ? `当前重点判别维度：${calibrationContext.boundaryDims.map((dim) => dimensionNameMap[dim] || dim).join("、")}。`
+        : "";
+      phaseHint.textContent = `当前处于分流追问题阶段。由于优先方向仍较接近，系统追加了 ${FOLLOW_UP_QUESTION_COUNT} 道判别题，以进一步区分首选与次选方向。${focusText}`;
       phaseHint.classList.remove("hidden");
     } else if (selectedMode === "standard" && calibrationAdded) {
       const focusText = calibrationContext?.boundaryDims?.length
@@ -1390,6 +1444,7 @@ function appendCalibrationQuestions() {
     boundaryDims: calibrationPlan.boundaryDims || [],
     lowDims: calibrationPlan.lowDims || []
   };
+  followUpAdded = false;
   totalPages = Math.max(1, Math.ceil(activeQuestions.length / ITEMS_PER_PAGE));
   currentPage = Math.min(totalPages, currentPage + 1);
   setSaveStatus("核心评估已完成，已进入自动校准题。");
@@ -1591,7 +1646,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
     ? `
     <section class="advice">
       <h3>标准版自动校准说明</h3>
-      <p>本次标准版在核心评估完成后，围绕 ${calibrationContext.topMajor || "当前优先方向"}${calibrationContext.compareMajor ? ` 与 ${calibrationContext.compareMajor}` : ""} 的关键分流维度，追加了针对性校准题。重点校准维度包括：${calibrationContext.boundaryDims.map((dim) => dimensionNameMap[dim] || dim).join("、")}；同时补充关注了当前相对薄弱的维度：${(calibrationContext.lowDims || []).map((dim) => dimensionNameMap[dim] || dim).join("、")}。</p>
+      <p>本次标准版在核心评估完成后，围绕 ${calibrationContext.topMajor || "当前优先方向"}${calibrationContext.compareMajor ? ` 与 ${calibrationContext.compareMajor}` : ""} 的关键分流维度，追加了针对性校准题。重点校准维度包括：${calibrationContext.boundaryDims.map((dim) => dimensionNameMap[dim] || dim).join("、")}；同时补充关注了当前相对薄弱的维度：${(calibrationContext.lowDims || []).map((dim) => dimensionNameMap[dim] || dim).join("、")}。${followUpAdded ? "由于校准后优先方向仍然接近，系统已进一步追加分流追问题，以增强排序判别力。" : ""}</p>
     </section>
   `
     : "";
@@ -1937,6 +1992,28 @@ quizForm.addEventListener("submit", (event) => {
   const studentVector = calculateStudentVector(answers);
   const weighted = applySubjectWeight(studentVector.score);
   const rankedMajors = rankMajors(weighted.score);
+  if (selectedMode === "standard" && calibrationAdded && !followUpAdded && needsBoundaryFollowUp(rankedMajors)) {
+    calibrationContext = {
+      ...(calibrationContext || {}),
+      topMajor: rankedMajors[0]?.name || calibrationContext?.topMajor || "",
+      compareMajor: rankedMajors[1]?.name || calibrationContext?.compareMajor || "",
+      boundaryDims: getBoundaryDims(rankedMajors[0], rankedMajors[1], 4),
+      lowDims: (calibrationContext?.lowDims || [])
+    };
+    const appended = appendBoundaryFollowUpQuestions();
+    if (appended) {
+      saveDraft();
+      renderCurrentPage();
+      updateProgress();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      emitEvent("append_followup_questions", {
+        mode: selectedMode,
+        total_questions: activeQuestions.length,
+        followup_questions: FOLLOW_UP_QUESTION_COUNT
+      });
+      return;
+    }
+  }
   const schoolRecommendation = rankSchoolMajors(weighted.score, schoolMajorText);
   renderResult({ ...studentVector, score: weighted.score }, rankedMajors, weighted.summary, schoolRecommendation);
   localStorage.removeItem(STORAGE_KEY);
