@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
 
-const STANDARD_CORE_LIMITS = { A: 12, B: 12, C: 12, D: 10, E: 8 };
+const FULL_CORE_LIMITS = { A: 18, B: 18, C: 18, D: 14, E: 12 };
 const root = path.resolve(__dirname, "..");
 const officialDataPath = path.join(root, "assets/js/official_data.js");
 
@@ -89,9 +89,9 @@ function main() {
   });
 
   lines.push("");
-  lines.push("## 标准版核心题覆盖");
+  lines.push("## 正式完整评估核心题覆盖");
 
-  Object.entries(STANDARD_CORE_LIMITS).forEach(([module, limit]) => {
+  Object.entries(FULL_CORE_LIMITS).forEach(([module, limit]) => {
     const moduleQuestions = questions.filter((question) => question.module === module);
     const selected = pickCoverageQuestions(moduleQuestions, limit);
     const coveredDims = [...new Set(selected.flatMap((question) => question.dimensionSet))];

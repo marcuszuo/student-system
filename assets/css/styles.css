@@ -256,6 +256,12 @@ body {
   margin: 12px 0 14px;
 }
 
+.mode-note {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
 .mode-item {
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.84);

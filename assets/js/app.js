@@ -81,14 +81,17 @@ const AUTH_USERS = Array.isArray(window.AUTH_USERS) && window.AUTH_USERS.length
   ? window.AUTH_USERS
   : [{ username: "admin", password: "333333" }];
 const AUTH_ENABLED = AUTH_USERS.length > 0;
+const DEFAULT_MODE = "full";
 const STANDARD_CORE_LIMITS = { A: 12, B: 12, C: 12, D: 10, E: 8 };
 const STANDARD_CALIBRATION_COUNT = 12;
+const FULL_CORE_LIMITS = { A: 18, B: 18, C: 18, D: 14, E: 12 };
+const FULL_CALIBRATION_COUNT = 18;
 const FOLLOW_UP_QUESTION_COUNT = 4;
 const FOLLOW_UP_GAP_THRESHOLD = 3;
 
 const MODE_CONFIG = {
-  standard: { label: "标准版（核心评估 + 自动校准）" },
-  full: { label: "完整版" }
+  standard: { label: "快速预评估" },
+  full: { label: "正式完整评估" }
 };
 
 const CONSISTENCY_PAIRS = [
@@ -148,7 +151,7 @@ const schoolMajorFileInput = document.getElementById("school-major-file");
 const schoolMajorImageInput = document.getElementById("school-major-image");
 const schoolMajorFileStatus = document.getElementById("school-major-file-status");
 
-let selectedMode = "standard";
+let selectedMode = DEFAULT_MODE;
 let activeQuestions = [];
 let questionOrder = [];
 let reserveQuestionIds = [];
@@ -314,6 +317,18 @@ function buildQuestionOrder(mode, savedOrder = []) {
     .flatMap((module) => shuffleArray(moduleBuckets.get(module)).map((question) => question.id));
 }
 
+function isAdaptiveMode(mode) {
+  return mode === "standard" || mode === "full";
+}
+
+function getCoreLimits(mode) {
+  return mode === "full" ? FULL_CORE_LIMITS : STANDARD_CORE_LIMITS;
+}
+
+function getCalibrationCount(mode) {
+  return mode === "full" ? FULL_CALIBRATION_COUNT : STANDARD_CALIBRATION_COUNT;
+}
+
 function pickCoverageQuestions(questions, limit) {
   if (questions.length <= limit) return shuffleArray(questions);
   const pool = shuffleArray(questions);
@@ -460,9 +475,8 @@ function appendBoundaryFollowUpQuestions() {
 }
 
 function buildSelectedQuestions(mode) {
-  if (mode === "full") return allQuestions.slice();
   const output = [];
-  Object.entries(STANDARD_CORE_LIMITS).forEach(([module, limit]) => {
+  Object.entries(getCoreLimits(mode)).forEach(([module, limit]) => {
     const moduleQuestions = allQuestions.filter((question) => question.module === module);
     output.push(...pickCoverageQuestions(moduleQuestions, limit));
   });
@@ -470,16 +484,8 @@ function buildSelectedQuestions(mode) {
 }
 
 function applyMode(mode, draftState = {}) {
-  selectedMode = mode in MODE_CONFIG ? mode : "standard";
-  if (selectedMode === "full") {
-    reserveQuestionIds = [];
-    calibrationAdded = false;
-    calibrationContext = null;
-    followUpAdded = false;
-    activeQuestions = allQuestions.slice();
-    coreQuestionCount = activeQuestions.length;
-    questionOrder = buildQuestionOrder(selectedMode, draftState.questionOrder || []);
-  } else {
+  selectedMode = mode in MODE_CONFIG ? mode : DEFAULT_MODE;
+  if (isAdaptiveMode(selectedMode)) {
     const coreQuestions = buildSelectedQuestions(selectedMode);
     const coreIds = new Set(coreQuestions.map((question) => question.id));
     const reservePool = allQuestions.filter((question) => !coreIds.has(question.id));
@@ -502,6 +508,14 @@ function applyMode(mode, draftState = {}) {
       calibrationContext = null;
       followUpAdded = false;
     }
+  } else {
+    reserveQuestionIds = [];
+    calibrationAdded = false;
+    calibrationContext = null;
+    followUpAdded = false;
+    activeQuestions = allQuestions.slice();
+    coreQuestionCount = activeQuestions.length;
+    questionOrder = buildQuestionOrder(selectedMode, draftState.questionOrder || []);
   }
 
   const orderMap = new Map(questionOrder.map((id, index) => [id, index]));
@@ -521,11 +535,21 @@ function loadDraft() {
     publicSubjectScores = parsed.publicSubjectScores || publicSubjectScores;
     internationalProfile = parsed.internationalProfile || internationalProfile;
     schoolMajorText = parsed.schoolMajorText || "";
-    applyMode(parsed.mode || selectedMode, parsed);
+    const draftState = parsed.mode === DEFAULT_MODE
+      ? parsed
+      : {
+        ...parsed,
+        mode: DEFAULT_MODE,
+        questionOrder: [],
+        reserveQuestionIds: [],
+        coreQuestionCount: 0,
+        calibrationAdded: false,
+        calibrationContext: null,
+        followUpAdded: false
+      };
+    applyMode(DEFAULT_MODE, draftState);
     currentPage = Number(parsed.page) || 1;
     currentPage = Math.min(Math.max(currentPage, 1), totalPages);
-    const modeInput = document.querySelector(`input[name="assessment-mode"][value="${selectedMode}"]`);
-    if (modeInput) modeInput.checked = true;
     const studentTypeInput = document.querySelector(`input[name="student-type"][value="${studentProfile.type}"]`);
     if (studentTypeInput) studentTypeInput.checked = true;
     gradeInput.value = studentProfile.grade || "";
@@ -544,7 +568,7 @@ function loadDraft() {
     answers = {};
     currentPage = 1;
     introStep = 1;
-    applyMode("standard");
+    applyMode(DEFAULT_MODE);
   }
 }
 
@@ -570,15 +594,13 @@ function clearDraft() {
   schoolMajorImageInput.value = "";
   setSchoolFileStatus("暂未上传文件");
   currentPage = 1;
-  selectedMode = "standard";
-  const standardModeInput = document.querySelector('input[name="assessment-mode"][value="standard"]');
-  if (standardModeInput) standardModeInput.checked = true;
+  selectedMode = DEFAULT_MODE;
   reserveQuestionIds = [];
   coreQuestionCount = 0;
   calibrationAdded = false;
   calibrationContext = null;
   followUpAdded = false;
-  applyMode("standard");
+  applyMode(DEFAULT_MODE);
   localStorage.removeItem(STORAGE_KEY);
   setSaveStatus("已清空当前记录");
   showIntroStep(1);
@@ -623,16 +645,16 @@ function renderCurrentPage() {
   if (phaseHint) {
     const reserveCount = reserveQuestionIds.length;
     const calibrationCount = Math.max(0, activeQuestions.length - coreQuestionCount);
-    if (selectedMode === "standard" && !calibrationAdded) {
-      phaseHint.textContent = `当前处于核心评估阶段。系统将在核心题完成后，结合你的初步画像补充 ${STANDARD_CALIBRATION_COUNT} 道个性化校准题，以提高结果解释的稳定性。`;
+    if (isAdaptiveMode(selectedMode) && !calibrationAdded) {
+      phaseHint.textContent = `当前处于核心评估阶段。系统将在核心题完成后，结合你的初步画像补充 ${getCalibrationCount(selectedMode)} 道个性化校准题，以提高结果解释的稳定性。`;
       phaseHint.classList.remove("hidden");
-    } else if (selectedMode === "standard" && calibrationAdded && followUpAdded) {
+    } else if (isAdaptiveMode(selectedMode) && calibrationAdded && followUpAdded) {
       const focusText = calibrationContext?.boundaryDims?.length
         ? `当前重点判别维度：${calibrationContext.boundaryDims.map((dim) => dimensionNameMap[dim] || dim).join("、")}。`
         : "";
       phaseHint.textContent = `当前处于分流追问题阶段。由于优先方向仍较接近，系统追加了 ${FOLLOW_UP_QUESTION_COUNT} 道判别题，以进一步区分首选与次选方向。${focusText}`;
       phaseHint.classList.remove("hidden");
-    } else if (selectedMode === "standard" && calibrationAdded) {
+    } else if (isAdaptiveMode(selectedMode) && calibrationAdded) {
       const focusText = calibrationContext?.boundaryDims?.length
         ? `本轮重点校准维度：${calibrationContext.boundaryDims.map((dim) => dimensionNameMap[dim] || dim).join("、")}。`
         : "";
@@ -647,7 +669,7 @@ function renderCurrentPage() {
   nextBtn.classList.toggle("hidden", currentPage === totalPages);
   submitBtn.classList.toggle("hidden", currentPage !== totalPages);
   if (!submitBtn.classList.contains("hidden")) {
-    submitBtn.textContent = selectedMode === "standard" && !calibrationAdded
+    submitBtn.textContent = isAdaptiveMode(selectedMode) && !calibrationAdded
       ? "进入校准题"
       : "生成评估报告";
   }
@@ -1430,7 +1452,7 @@ function appendCalibrationQuestions() {
   const weighted = applySubjectWeight(provisionalVector.score);
   const rankedMajors = rankMajors(weighted.score);
   const calibrationPlan = buildPriorityDims(weighted.score, rankedMajors);
-  const selected = selectCalibrationQuestions(reservePool, calibrationPlan, STANDARD_CALIBRATION_COUNT);
+  const selected = selectCalibrationQuestions(reservePool, calibrationPlan, getCalibrationCount(selectedMode));
   if (!selected.length) return false;
 
   const selectedIds = new Set(selected.map((question) => question.id));
@@ -1642,11 +1664,11 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
     </section>
   `
     : "";
-  const calibrationHTML = selectedMode === "standard" && calibrationContext?.boundaryDims?.length
+  const calibrationHTML = isAdaptiveMode(selectedMode) && calibrationContext?.boundaryDims?.length
     ? `
     <section class="advice">
-      <h3>标准版自动校准说明</h3>
-      <p>本次标准版在核心评估完成后，围绕 ${calibrationContext.topMajor || "当前优先方向"}${calibrationContext.compareMajor ? ` 与 ${calibrationContext.compareMajor}` : ""} 的关键分流维度，追加了针对性校准题。重点校准维度包括：${calibrationContext.boundaryDims.map((dim) => dimensionNameMap[dim] || dim).join("、")}；同时补充关注了当前相对薄弱的维度：${(calibrationContext.lowDims || []).map((dim) => dimensionNameMap[dim] || dim).join("、")}。${followUpAdded ? "由于校准后优先方向仍然接近，系统已进一步追加分流追问题，以增强排序判别力。" : ""}</p>
+      <h3>完整评估自适应校准说明</h3>
+      <p>本次正式完整评估在核心评估完成后，围绕 ${calibrationContext.topMajor || "当前优先方向"}${calibrationContext.compareMajor ? ` 与 ${calibrationContext.compareMajor}` : ""} 的关键分流维度，追加了针对性校准题。重点校准维度包括：${calibrationContext.boundaryDims.map((dim) => dimensionNameMap[dim] || dim).join("、")}；同时补充关注了当前相对薄弱的维度：${(calibrationContext.lowDims || []).map((dim) => dimensionNameMap[dim] || dim).join("、")}。${followUpAdded ? "由于校准后优先方向仍然接近，系统已进一步追加分流追问题，以增强排序判别力。" : ""}</p>
     </section>
   `
     : "";
@@ -1840,8 +1862,7 @@ introPrev3Btn.addEventListener("click", () => {
 
 startBtn.addEventListener("click", () => {
   if (!validateIntroStep(1) || !validateIntroStep(2)) return;
-  const modeInput = document.querySelector('input[name="assessment-mode"]:checked');
-  applyMode(modeInput ? modeInput.value : "standard");
+  applyMode(DEFAULT_MODE);
   studentProfile = readStudentProfile();
   publicSubjectScores = readPublicSubjectScores();
   internationalProfile = readInternationalProfile();
@@ -1885,13 +1906,6 @@ studentTypeInputs.forEach((input) => {
   input.addEventListener("change", () => {
     studentProfile = readStudentProfile();
     updateStudentTypeUI();
-    saveDraft();
-  });
-});
-
-document.querySelectorAll('input[name="assessment-mode"]').forEach((input) => {
-  input.addEventListener("change", () => {
-    selectedMode = input.value;
     saveDraft();
   });
 });
@@ -1974,7 +1988,7 @@ quizForm.addEventListener("submit", (event) => {
     alert("仍有题目未完成，请完成全部题目后再生成评估报告。");
     return;
   }
-  if (selectedMode === "standard" && !calibrationAdded) {
+  if (isAdaptiveMode(selectedMode) && !calibrationAdded) {
     const appended = appendCalibrationQuestions();
     if (appended) {
       saveDraft();
@@ -1992,7 +2006,7 @@ quizForm.addEventListener("submit", (event) => {
   const studentVector = calculateStudentVector(answers);
   const weighted = applySubjectWeight(studentVector.score);
   const rankedMajors = rankMajors(weighted.score);
-  if (selectedMode === "standard" && calibrationAdded && !followUpAdded && needsBoundaryFollowUp(rankedMajors)) {
+  if (isAdaptiveMode(selectedMode) && calibrationAdded && !followUpAdded && needsBoundaryFollowUp(rankedMajors)) {
     calibrationContext = {
       ...(calibrationContext || {}),
       topMajor: rankedMajors[0]?.name || calibrationContext?.topMajor || "",
@@ -2041,7 +2055,7 @@ resultBox.addEventListener("click", (event) => {
   }
 });
 
-applyMode(selectedMode);
+applyMode(DEFAULT_MODE);
 loadDraft();
 showIntroStep(introStep);
 loadAuthSession();
