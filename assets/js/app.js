@@ -152,6 +152,7 @@ let questionOrder = [];
 let reserveQuestionIds = [];
 let coreQuestionCount = 0;
 let calibrationAdded = false;
+let calibrationContext = null;
 let totalPages = 1;
 let currentPage = 1;
 let answers = {};
@@ -276,6 +277,7 @@ function saveDraft() {
     reserveQuestionIds,
     coreQuestionCount,
     calibrationAdded,
+    calibrationContext,
     publicSubjectScores,
     internationalProfile,
     schoolMajorText,
@@ -337,6 +339,18 @@ function pickCoverageQuestions(questions, limit) {
   return selected;
 }
 
+function getBoundaryDims(firstMajor, secondMajor, topN = 4) {
+  if (!firstMajor || !secondMajor) return [];
+  return dimensionKeys
+    .map((dim) => ({
+      dim,
+      gap: Math.abs((firstMajor.vector?.[dim] || 0) - (secondMajor.vector?.[dim] || 0))
+    }))
+    .sort((a, b) => b.gap - a.gap)
+    .slice(0, topN)
+    .map((item) => item.dim);
+}
+
 function buildPriorityDims(studentScore, rankedMajors) {
   const topMajor = rankedMajors[0];
   const compareMajor = rankedMajors[1];
@@ -347,11 +361,22 @@ function buildPriorityDims(studentScore, rankedMajors) {
     .map((item) => item.dim);
   const topCore = topMajor ? getMajorCoreDims(topMajor, 5) : [];
   const compareCore = compareMajor ? getMajorCoreDims(compareMajor, 5) : [];
-  return [...new Set([...topCore, ...compareCore, ...lowDims])];
+  const boundaryDims = getBoundaryDims(topMajor, compareMajor, 4);
+  const priorityDims = [...new Set([...boundaryDims, ...topCore, ...compareCore, ...lowDims])];
+  return {
+    priorityDims,
+    boundaryDims,
+    lowDims,
+    topCore,
+    compareCore
+  };
 }
 
-function selectCalibrationQuestions(pool, priorityDims, count) {
+function selectCalibrationQuestions(pool, calibrationPlan, count) {
   if (!pool.length || count <= 0) return [];
+  const priorityDims = calibrationPlan.priorityDims || [];
+  const boundaryDims = calibrationPlan.boundaryDims || [];
+  const lowDims = calibrationPlan.lowDims || [];
   const remaining = pool.slice();
   const selected = [];
   const coveredPriority = new Set();
@@ -364,8 +389,15 @@ function selectCalibrationQuestions(pool, priorityDims, count) {
     remaining.forEach((question, index) => {
       const priorityGain = question.dimensionSet.filter((dim) => priorityDims.includes(dim) && !coveredPriority.has(dim)).length;
       const priorityHits = question.dimensionSet.filter((dim) => priorityDims.includes(dim)).length;
+      const boundaryHits = question.dimensionSet.filter((dim) => boundaryDims.includes(dim)).length;
+      const supportHits = question.dimensionSet.filter((dim) => lowDims.includes(dim)).length;
       const modulePenalty = moduleCount.get(question.module) || 0;
-      const score = priorityGain * 100 + priorityHits * 20 + question.dimensionSet.length * 5 - modulePenalty * 8;
+      const score = priorityGain * 100
+        + boundaryHits * 40
+        + priorityHits * 20
+        + supportHits * 14
+        + question.dimensionSet.length * 5
+        - modulePenalty * 8;
       if (score > bestScore) {
         bestScore = score;
         bestIndex = index;
@@ -398,6 +430,7 @@ function applyMode(mode, draftState = {}) {
   if (selectedMode === "full") {
     reserveQuestionIds = [];
     calibrationAdded = false;
+    calibrationContext = null;
     activeQuestions = allQuestions.slice();
     coreQuestionCount = activeQuestions.length;
     questionOrder = buildQuestionOrder(selectedMode, draftState.questionOrder || []);
@@ -407,6 +440,7 @@ function applyMode(mode, draftState = {}) {
     const reservePool = allQuestions.filter((question) => !coreIds.has(question.id));
     coreQuestionCount = Number(draftState.coreQuestionCount) || coreQuestions.length;
     calibrationAdded = Boolean(draftState.calibrationAdded);
+    calibrationContext = draftState.calibrationContext || null;
     reserveQuestionIds = Array.isArray(draftState.reserveQuestionIds) ? draftState.reserveQuestionIds.slice() : reservePool.map((question) => question.id);
     questionOrder = Array.isArray(draftState.questionOrder) && draftState.questionOrder.length ? draftState.questionOrder.slice() : buildQuestionOrder(selectedMode, []);
     const activeIds = new Set(questionOrder);
@@ -419,6 +453,7 @@ function applyMode(mode, draftState = {}) {
       reserveQuestionIds = reservePool.map((question) => question.id);
       coreQuestionCount = coreQuestions.length;
       calibrationAdded = false;
+      calibrationContext = null;
     }
   }
 
@@ -494,6 +529,7 @@ function clearDraft() {
   reserveQuestionIds = [];
   coreQuestionCount = 0;
   calibrationAdded = false;
+  calibrationContext = null;
   applyMode("standard");
   localStorage.removeItem(STORAGE_KEY);
   setSaveStatus("已清空当前记录");
@@ -543,7 +579,10 @@ function renderCurrentPage() {
       phaseHint.textContent = `当前处于核心评估阶段。系统将在核心题完成后，结合你的初步画像补充 ${STANDARD_CALIBRATION_COUNT} 道个性化校准题，以提高结果解释的稳定性。`;
       phaseHint.classList.remove("hidden");
     } else if (selectedMode === "standard" && calibrationAdded) {
-      phaseHint.textContent = `当前处于个性化校准阶段。本阶段题目从剩余题库中按学生画像自动抽取，已补充 ${calibrationCount} 道校准题，剩余可调度题目 ${reserveCount} 道。`;
+      const focusText = calibrationContext?.boundaryDims?.length
+        ? `本轮重点校准维度：${calibrationContext.boundaryDims.map((dim) => dimensionNameMap[dim] || dim).join("、")}。`
+        : "";
+      phaseHint.textContent = `当前处于个性化校准阶段。本阶段题目从剩余题库中按学生画像自动抽取，已补充 ${calibrationCount} 道校准题，剩余可调度题目 ${reserveCount} 道。${focusText}`;
       phaseHint.classList.remove("hidden");
     } else {
       phaseHint.classList.add("hidden");
@@ -1336,8 +1375,8 @@ function appendCalibrationQuestions() {
   const provisionalVector = calculateStudentVector(answers);
   const weighted = applySubjectWeight(provisionalVector.score);
   const rankedMajors = rankMajors(weighted.score);
-  const priorityDims = buildPriorityDims(weighted.score, rankedMajors);
-  const selected = selectCalibrationQuestions(reservePool, priorityDims, STANDARD_CALIBRATION_COUNT);
+  const calibrationPlan = buildPriorityDims(weighted.score, rankedMajors);
+  const selected = selectCalibrationQuestions(reservePool, calibrationPlan, STANDARD_CALIBRATION_COUNT);
   if (!selected.length) return false;
 
   const selectedIds = new Set(selected.map((question) => question.id));
@@ -1345,6 +1384,12 @@ function appendCalibrationQuestions() {
   questionOrder = activeQuestions.map((question) => question.id);
   reserveQuestionIds = reserveQuestionIds.filter((id) => !selectedIds.has(id));
   calibrationAdded = true;
+  calibrationContext = {
+    topMajor: rankedMajors[0]?.name || "",
+    compareMajor: rankedMajors[1]?.name || "",
+    boundaryDims: calibrationPlan.boundaryDims || [],
+    lowDims: calibrationPlan.lowDims || []
+  };
   totalPages = Math.max(1, Math.ceil(activeQuestions.length / ITEMS_PER_PAGE));
   currentPage = Math.min(totalPages, currentPage + 1);
   setSaveStatus("核心评估已完成，已进入自动校准题。");
@@ -1542,6 +1587,14 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
     </section>
   `
     : "";
+  const calibrationHTML = selectedMode === "standard" && calibrationContext?.boundaryDims?.length
+    ? `
+    <section class="advice">
+      <h3>标准版自动校准说明</h3>
+      <p>本次标准版在核心评估完成后，围绕 ${calibrationContext.topMajor || "当前优先方向"}${calibrationContext.compareMajor ? ` 与 ${calibrationContext.compareMajor}` : ""} 的关键分流维度，追加了针对性校准题。重点校准维度包括：${calibrationContext.boundaryDims.map((dim) => dimensionNameMap[dim] || dim).join("、")}；同时补充关注了当前相对薄弱的维度：${(calibrationContext.lowDims || []).map((dim) => dimensionNameMap[dim] || dim).join("、")}。</p>
+    </section>
+  `
+    : "";
   const studentSummaryCards = `
     <div class="student-summary-grid">
       <article class="student-summary-card">
@@ -1632,6 +1685,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
       </div>
     </div>
     <div class="rank-grid">${cards}</div>
+    ${calibrationHTML}
     ${comparisonHTML}
     ${reverseAdviceHTML}
     ${schoolRestrictedHTML}
