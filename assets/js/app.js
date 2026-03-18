@@ -1766,6 +1766,9 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
   const summaryText = tieTop
     ? "两类方向当前都具备较强匹配性，建议结合学科基础、培养方案、课程强度与未来发展路径做进一步比较判断。"
     : `${primaryDirection?.label || top3[0].name}与当前学生画像的整体匹配度最高，可作为优先评估方向；具体专业建议应在此方向内进一步筛选。`;
+  const directionSummary = directionRecommendations.length
+    ? `方向判断：优先考虑${primaryDirection?.label || "当前优先方向"}${secondaryDirection ? `，其次可关注${secondaryDirection.label}` : ""}。`
+    : "";
   const comparisonHTML = choiceComparison
     ? `
     <section class="advice">
@@ -1790,21 +1793,6 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
     </section>
   `
     : "";
-  const directionHTML = directionRecommendations.slice(0, 2).map((direction, index) => `
-    <article class="direction-card">
-      <div class="rank-card-top">
-        <div>
-          <p class="rank-label">${index === 0 ? "优先方向组" : "次优方向组"}</p>
-          <h3>${direction.label}</h3>
-        </div>
-        <p class="score">${direction.topScore} / 100</p>
-      </div>
-      <p class="rank-summary">${direction.summary}</p>
-      <p class="evidence"><strong>方向判断：</strong>该方向与学生当前画像具有较高一致性，尤其体现在${direction.supportDims.map((dim) => `${dim.label}${dim.score}分`).join("、")}等维度。</p>
-      <p class="evidence"><strong>培养特征：</strong>${direction.training}</p>
-      <p class="evidence"><strong>代表专业：</strong>${direction.representativeMajors.join("、")}</p>
-    </article>
-  `).join("");
   const studentSummaryCards = `
     <div class="student-summary-grid">
       <article class="student-summary-card">
@@ -1883,6 +1871,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
         <span>${weightingSummary}</span>
         <span>Holland：${hollandCode}</span>
       </div>
+      ${directionSummary ? `<p class="result-meta">${directionSummary}</p>` : ""}
       <p class="result-meta">综合画像采用 8 维模型：6维兴趣（Holland）+ 2维能力韧性（选专业更实用）。</p>
     </div>
     <div class="result-tools">
@@ -1894,10 +1883,6 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
         ${radarProfile.map((x) => `<span>${x.label} ${x.value}</span>`).join("")}
       </div>
     </div>
-    <section class="direction-section">
-      <h3>方向组判断</h3>
-      <div class="rank-grid">${directionHTML}</div>
-    </section>
     <div class="rank-grid">${cards}</div>
     ${calibrationHTML}
     ${comparisonHTML}

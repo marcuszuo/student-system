@@ -473,15 +473,6 @@ body {
   justify-content: flex-end;
 }
 
-.direction-section {
-  margin: 18px 0 12px;
-}
-
-.direction-section h3 {
-  margin: 0 0 12px;
-  font-size: 1.05rem;
-}
-
 .radar-wrap {
   margin: 10px 0 16px;
   display: flex;
