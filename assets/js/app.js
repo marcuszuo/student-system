@@ -1035,17 +1035,6 @@ function calculateConsistency(answerMap) {
   return aligned / usable.length;
 }
 
-function calculateConfidence(answerMap, rankedMajors) {
-  const pairConsistency = calculateConsistency(answerMap);
-  const gap = Math.max(0, (rankedMajors[0].matchIndex || 0) - (rankedMajors[1]?.matchIndex || 0));
-  const gapPart = Math.min(gap / 15, 1);
-  const modeWeight = selectedMode === "full" ? 1 : 0.82;
-  const score = Math.round((pairConsistency * 0.5 + gapPart * 0.35 + modeWeight * 0.15) * 100);
-  if (score >= 80) return { score, level: "高" };
-  if (score >= 60) return { score, level: "中" };
-  return { score, level: "低" };
-}
-
 function getMajorCoreDims(major, topN = 4) {
   if (major.coreDims && major.coreDims.length) return major.coreDims.slice(0, topN);
   return dimensionKeys
@@ -1148,25 +1137,10 @@ function buildReverseAdvice(rankedMajors, studentScore) {
   return `当前不建议把强依赖 ${dimText} 的方向作为第一志愿去硬冲，例如 ${majorText}。如果后续真的想走这类路径，建议先用课程体验或短项目验证能不能补上核心短板。`;
 }
 
-function getConfidenceTone(score) {
-  if (score >= 80) return "high";
-  if (score >= 60) return "medium";
-  return "low";
-}
-
 function getFitTone(score) {
   if (score >= 75) return { tone: "high", label: "校内优先" };
   if (score >= 58) return { tone: "medium", label: "校内可冲" };
   return { tone: "low", label: "谨慎填报" };
-}
-
-function buildActionPlan(topMajor, action) {
-  if (!action) return [];
-  return [
-    `30天：围绕 ${topMajor.name} 做一次轻量验证，优先试一门公开课、一次社团任务或一次案例拆解。`,
-    `60天：把结果落到作品或输出上，例如一份研究笔记、一次主题展示或一个小项目。`,
-    `90天：复盘投入感、成就感和压力感，判断是否继续把 ${topMajor.name} 作为主方向。`
-  ];
 }
 
 function buildRadarProfile(studentScore) {
@@ -1276,7 +1250,7 @@ function drawRadarChart(canvasId, profile) {
   }
 }
 
-function renderResult(studentVector, rankedMajors, confidence, weightingSummary, schoolRecommendation) {
+function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecommendation) {
   const topTraits = getTopDimensions(studentVector.score, 3);
   const traitText = topTraits.map((t) => `${t.label} ${t.score}分`).join("、");
   const radarProfile = buildRadarProfile(studentVector.score);
@@ -1285,9 +1259,6 @@ function renderResult(studentVector, rankedMajors, confidence, weightingSummary,
   const choiceComparison = buildChoiceComparison(top3, studentVector.score);
   const reverseAdvice = buildReverseAdvice(rankedMajors, studentVector.score);
   const tieTop = (top3[0].matchIndex - top3[1].matchIndex) <= 3;
-  const confidenceTone = getConfidenceTone(confidence.score);
-  const firstAction = getActionByCategory(top3[0].category);
-  const actionPlan = buildActionPlan(top3[0], firstAction);
 
   const rankNames = tieTop
     ? ["首选（并列A）", "首选（并列B）", "备选"]
@@ -1329,26 +1300,12 @@ function renderResult(studentVector, rankedMajors, confidence, weightingSummary,
     })
     .join("");
 
-  const actionHTML = firstAction
-    ? `
-      <section id="action-plan" class="advice">
-        <h3>下一步行动</h3>
-        <p><strong>家长可读结论：</strong>当前结果置信度为 ${confidence.level}（${confidence.score}/100），建议先以低成本验证代替直接定方向。</p>
-        <p><strong>学习重点：</strong>${firstAction.focus}</p>
-        <p><strong>验证方式：</strong>${firstAction.validation}</p>
-        <div class="action-plan-list">
-          ${actionPlan.map((item) => `<p>${item}</p>`).join("")}
-        </div>
-      </section>
-    `
-    : "";
-
   const summaryTitle = tieTop
     ? `当前最适合：${top3[0].name} / ${top3[1].name}`
     : `当前最适合：${top3[0].name}`;
   const summaryText = tieTop
-    ? "两条方向分差很小，建议结合学科成绩和真实体验做二选一。"
-    : `${top3[0].name} 是当前优先验证方向，次选可作为补充参考。`;
+    ? "两条方向当前都具备较强匹配性，建议结合学科基础和未来发展路径做最终判断。"
+    : `${top3[0].name} 与当前学生画像最匹配，可作为优先关注方向，次选用于补充比较。`;
   const comparisonHTML = choiceComparison
     ? `
     <section class="advice">
@@ -1438,11 +1395,6 @@ function renderResult(studentVector, rankedMajors, confidence, weightingSummary,
       <h2>${summaryTitle}</h2>
       <p class="result-summary">${summaryText}</p>
       ${studentSummaryCards}
-      <div class="confidence-badge confidence-${confidenceTone}">
-        <span>结果置信度</span>
-        <strong>${confidence.level} ${confidence.score}/100</strong>
-      </div>
-      <p class="confidence-note">${tieTop ? "首选并列：先看成绩与真实体验，再定主方向。" : "当前分差明确，可先围绕首选方向做验证。"} </p>
       <div class="summary-chips">
         <span>优势特征：${traitText}</span>
         <span>${weightingSummary}</span>
@@ -1452,7 +1404,6 @@ function renderResult(studentVector, rankedMajors, confidence, weightingSummary,
     </div>
     <div class="result-tools">
       <button type="button" id="export-pdf-btn" class="btn btn-ghost">导出 PDF（打印版）</button>
-      <button type="button" id="jump-action-btn" class="btn btn-primary">查看 90 天行动</button>
     </div>
     <div class="radar-wrap">
       <canvas id="profile-radar" width="360" height="360"></canvas>
@@ -1464,7 +1415,6 @@ function renderResult(studentVector, rankedMajors, confidence, weightingSummary,
     ${comparisonHTML}
     ${reverseAdviceHTML}
     ${schoolRestrictedHTML}
-    ${actionHTML}
   `;
   drawRadarChart("profile-radar", radarProfile);
 }
@@ -1699,8 +1649,7 @@ quizForm.addEventListener("submit", (event) => {
   const weighted = applySubjectWeight(studentVector.score);
   const rankedMajors = rankMajors(weighted.score);
   const schoolRecommendation = rankSchoolMajors(weighted.score, schoolMajorText);
-  const confidence = calculateConfidence(answers, rankedMajors);
-  renderResult({ ...studentVector, score: weighted.score }, rankedMajors, confidence, weighted.summary, schoolRecommendation);
+  renderResult({ ...studentVector, score: weighted.score }, rankedMajors, weighted.summary, schoolRecommendation);
   localStorage.removeItem(STORAGE_KEY);
   setSaveStatus("已提交并清除本地草稿");
   resultBox.classList.remove("hidden");
@@ -1709,7 +1658,6 @@ quizForm.addEventListener("submit", (event) => {
     mode: selectedMode,
     student_type: studentProfile.type,
     question_count: activeQuestions.length,
-    confidence_score: confidence.score,
     top_major: rankedMajors[0]?.name || "",
     match_index: rankedMajors[0]?.matchIndex || 0,
     school_restricted_mode: Boolean(schoolRecommendation?.ranked?.length)
@@ -1724,12 +1672,6 @@ resultBox.addEventListener("click", (event) => {
       label: "report_export"
     });
     window.print();
-  }
-  if (target instanceof HTMLElement && target.id === "jump-action-btn") {
-    const actionPlan = document.getElementById("action-plan");
-    if (actionPlan) {
-      actionPlan.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
   }
 });
 
