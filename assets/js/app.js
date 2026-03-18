@@ -1046,8 +1046,17 @@ function calculateConfidence(answerMap, rankedMajors) {
   return { score, level: "低" };
 }
 
+function getMajorCoreDims(major, topN = 4) {
+  if (major.coreDims && major.coreDims.length) return major.coreDims.slice(0, topN);
+  return dimensionKeys
+    .map((dim) => ({ dim, value: major.vector?.[dim] || 0 }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, topN)
+    .map((item) => item.dim);
+}
+
 function buildEvidence(major, studentScore) {
-  const core = major.coreDims.length ? major.coreDims : dimensionKeys.slice(0, 4);
+  const core = getMajorCoreDims(major);
   const positives = core
     .map((dim) => ({ dim, value: Math.round((studentScore[dim] || 0) * 100) }))
     .sort((a, b) => b.value - a.value)
@@ -1067,7 +1076,7 @@ function formatDimensionScore(dim, studentScore) {
 }
 
 function buildMajorNarrative(major, studentScore) {
-  const core = major.coreDims.length ? major.coreDims : dimensionKeys.slice(0, 4);
+  const core = getMajorCoreDims(major);
   const rankedCore = core
     .map((dim) => ({ dim, value: Math.round((studentScore[dim] || 0) * 100) }))
     .sort((a, b) => b.value - a.value);
@@ -1090,8 +1099,10 @@ function buildMajorNarrative(major, studentScore) {
 function buildChoiceComparison(topMajors, studentScore) {
   if (!topMajors[1]) return "";
   const [first, second] = topMajors;
-  const firstOnly = (first.coreDims || []).filter((dim) => !(second.coreDims || []).includes(dim));
-  const secondOnly = (second.coreDims || []).filter((dim) => !(first.coreDims || []).includes(dim));
+  const firstCore = getMajorCoreDims(first);
+  const secondCore = getMajorCoreDims(second);
+  const firstOnly = firstCore.filter((dim) => !secondCore.includes(dim));
+  const secondOnly = secondCore.filter((dim) => !firstCore.includes(dim));
   const pickBest = (dims) => dims
     .map((dim) => ({ dim, value: studentScore[dim] || 0 }))
     .sort((a, b) => b.value - a.value)[0];
@@ -1117,7 +1128,7 @@ function buildReverseAdvice(rankedMajors, studentScore) {
     .slice(-3)
     .reverse()
     .map((major) => {
-      const weakMatches = (major.coreDims || [])
+      const weakMatches = getMajorCoreDims(major)
         .map((dim) => ({ dim, value: studentScore[dim] || 0 }))
         .sort((a, b) => a.value - b.value)
         .slice(0, 2)
