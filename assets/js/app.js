@@ -79,18 +79,11 @@ const AUTH_USERS = Array.isArray(window.AUTH_USERS) && window.AUTH_USERS.length
   ? window.AUTH_USERS
   : [{ username: "admin", password: "333333" }];
 const AUTH_ENABLED = AUTH_USERS.length > 0;
+const STANDARD_LIMITS = { A: 15, B: 15, C: 15, D: 12, E: 9 };
 
 const MODE_CONFIG = {
-  standard: { label: "标准版", selector: (q) => {
-    const n = q.sequence || Number(q.id.slice(1));
-    if (q.module === "A") return n <= 15;
-    if (q.module === "B") return n <= 15;
-    if (q.module === "C") return n <= 15;
-    if (q.module === "D") return n <= 12;
-    if (q.module === "E") return n <= 9;
-    return false;
-  }},
-  full: { label: "完整版", selector: () => true }
+  standard: { label: "标准版" },
+  full: { label: "完整版" }
 };
 
 const CONSISTENCY_PAIRS = [
@@ -285,7 +278,7 @@ function saveDraft() {
 }
 
 function buildQuestionOrder(mode, savedOrder = []) {
-  const selected = allQuestions.filter(MODE_CONFIG[mode].selector);
+  const selected = buildSelectedQuestions(mode);
   const selectedIds = new Set(selected.map((q) => q.id));
   const savedValid = Array.isArray(savedOrder)
     && savedOrder.length === selected.length
@@ -305,12 +298,50 @@ function buildQuestionOrder(mode, savedOrder = []) {
     .flatMap((module) => shuffleArray(moduleBuckets.get(module)).map((question) => question.id));
 }
 
+function pickCoverageQuestions(questions, limit) {
+  if (questions.length <= limit) return shuffleArray(questions);
+  const pool = shuffleArray(questions);
+  const selected = [];
+  const coveredDims = new Set();
+
+  while (selected.length < limit && pool.length) {
+    let bestIndex = 0;
+    let bestGain = -1;
+    let bestBreadth = -1;
+
+    pool.forEach((question, index) => {
+      const gain = question.dimensionSet.filter((dim) => !coveredDims.has(dim)).length;
+      const breadth = question.dimensionSet.length;
+      if (gain > bestGain || (gain === bestGain && breadth > bestBreadth)) {
+        bestGain = gain;
+        bestBreadth = breadth;
+        bestIndex = index;
+      }
+    });
+
+    const [picked] = pool.splice(bestIndex, 1);
+    selected.push(picked);
+    picked.dimensionSet.forEach((dim) => coveredDims.add(dim));
+  }
+
+  return selected;
+}
+
+function buildSelectedQuestions(mode) {
+  if (mode === "full") return allQuestions.slice();
+  const output = [];
+  Object.entries(STANDARD_LIMITS).forEach(([module, limit]) => {
+    const moduleQuestions = allQuestions.filter((question) => question.module === module);
+    output.push(...pickCoverageQuestions(moduleQuestions, limit));
+  });
+  return output;
+}
+
 function applyMode(mode, savedOrder = []) {
   selectedMode = mode in MODE_CONFIG ? mode : "standard";
   questionOrder = buildQuestionOrder(selectedMode, savedOrder);
   const orderMap = new Map(questionOrder.map((id, index) => [id, index]));
-  activeQuestions = allQuestions
-    .filter(MODE_CONFIG[selectedMode].selector)
+  activeQuestions = buildSelectedQuestions(selectedMode)
     .slice()
     .sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0));
   totalPages = Math.max(1, Math.ceil(activeQuestions.length / ITEMS_PER_PAGE));
@@ -1077,6 +1108,35 @@ function buildChoiceComparison(topMajors, studentScore) {
   return `${leadMajor} 在 ${dimensionNameMap[lead.dim] || lead.dim} 这一要求上更鲜明，这也是它与相近方向拉开差异的地方。`;
 }
 
+function buildReverseAdvice(rankedMajors, studentScore) {
+  const lowDims = dimensionKeys
+    .map((dim) => ({ dim, value: studentScore[dim] || 0 }))
+    .sort((a, b) => a.value - b.value)
+    .slice(0, 3);
+  const cautionMajors = rankedMajors
+    .slice(-3)
+    .reverse()
+    .map((major) => {
+      const weakMatches = (major.coreDims || [])
+        .map((dim) => ({ dim, value: studentScore[dim] || 0 }))
+        .sort((a, b) => a.value - b.value)
+        .slice(0, 2)
+        .filter((item) => item.value < 0.5);
+      return { major, weakMatches };
+    })
+    .filter((item) => item.weakMatches.length);
+
+  if (!cautionMajors.length) return "";
+
+  const dimText = lowDims.map((item) => dimensionNameMap[item.dim] || item.dim).join("、");
+  const majorText = cautionMajors
+    .slice(0, 2)
+    .map(({ major, weakMatches }) => `${major.name}（更吃 ${weakMatches.map((x) => dimensionNameMap[x.dim] || x.dim).join(" / ")}）`)
+    .join("；");
+
+  return `当前不建议把强依赖 ${dimText} 的方向作为第一志愿去硬冲，例如 ${majorText}。如果后续真的想走这类路径，建议先用课程体验或短项目验证能不能补上核心短板。`;
+}
+
 function getConfidenceTone(score) {
   if (score >= 80) return "high";
   if (score >= 60) return "medium";
@@ -1212,6 +1272,7 @@ function renderResult(studentVector, rankedMajors, confidence, weightingSummary,
   const hollandCode = getHollandCode(studentVector.score);
   const top3 = rankedMajors.slice(0, 3);
   const choiceComparison = buildChoiceComparison(top3, studentVector.score);
+  const reverseAdvice = buildReverseAdvice(rankedMajors, studentVector.score);
   const tieTop = (top3[0].matchIndex - top3[1].matchIndex) <= 3;
   const confidenceTone = getConfidenceTone(confidence.score);
   const firstAction = getActionByCategory(top3[0].category);
@@ -1282,6 +1343,14 @@ function renderResult(studentVector, rankedMajors, confidence, weightingSummary,
     <section class="advice">
       <h3>首选与次选的关键差异</h3>
       <p>${choiceComparison}</p>
+    </section>
+  `
+    : "";
+  const reverseAdviceHTML = reverseAdvice
+    ? `
+    <section class="advice">
+      <h3>当前不建议硬冲的方向</h3>
+      <p>${reverseAdvice}</p>
     </section>
   `
     : "";
@@ -1382,6 +1451,7 @@ function renderResult(studentVector, rankedMajors, confidence, weightingSummary,
     </div>
     <div class="rank-grid">${cards}</div>
     ${comparisonHTML}
+    ${reverseAdviceHTML}
     ${schoolRestrictedHTML}
     ${actionHTML}
   `;
