@@ -38,12 +38,12 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "B",
-          "text": "先看例题/步骤，照着练",
+          "text": "先看例题或步骤，再按方法练习",
           "dim": "cognition.system"
         },
         {
           "key": "C",
-          "text": "先找有趣/应用场景再学",
+          "text": "先理解应用场景，再进入学习",
           "dim": "cognition.contextual"
         },
         {
@@ -124,7 +124,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "C",
-          "text": "讲有趣的例子",
+          "text": "结合案例说明",
           "dim": "cognition.contextual"
         },
         {
@@ -146,7 +146,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "B",
-          "text": "刷题找规律",
+          "text": "通过练习归纳规律",
           "dim": "ability.math"
         },
         {
@@ -191,7 +191,7 @@ const OFFICIAL_DATA = {
     {
       "id": "A07",
       "module": "A",
-      "text": "你在理科/数理题上更像：",
+      "text": "你在理科或数理题上的表现更接近：",
       "options": [
         {
           "key": "A",
@@ -218,7 +218,7 @@ const OFFICIAL_DATA = {
     {
       "id": "A08",
       "module": "A",
-      "text": "你在文科/写作上更像：",
+      "text": "你在文科或写作任务中的表现更接近：",
       "options": [
         {
           "key": "A",
@@ -237,7 +237,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "D",
-          "text": "先聊清楚再写",
+          "text": "先讨论清楚再写",
           "dim": "ability.comm"
         }
       ]
@@ -245,7 +245,7 @@ const OFFICIAL_DATA = {
     {
       "id": "A09",
       "module": "A",
-      "text": "你做笔记更像：",
+      "text": "你做笔记时更接近：",
       "options": [
         {
           "key": "A",
@@ -286,7 +286,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "C",
-          "text": "找到兴趣点后爆发",
+          "text": "找到兴趣切入点后投入度明显提升",
           "dim": "cognition.contextual"
         },
         {
@@ -372,7 +372,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "D",
-          "text": "靠老师/同学带着学",
+          "text": "依赖老师或同学的带动",
           "dim": "ability.comm"
         }
       ]
@@ -380,7 +380,7 @@ const OFFICIAL_DATA = {
     {
       "id": "A14",
       "module": "A",
-      "text": "你对“刷题”的态度更接近：",
+      "text": "你对大量针对性练习的态度更接近：",
       "options": [
         {
           "key": "A",
@@ -389,17 +389,17 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "B",
-          "text": "刷题本身最有效",
+          "text": "大量练习本身最有效",
           "dim": "ability.focus"
         },
         {
           "key": "C",
-          "text": "刷题太枯燥要有趣",
+          "text": "练习过程需要保持兴趣感",
           "dim": "cognition.contextual"
         },
         {
           "key": "D",
-          "text": "刷题最好有人陪",
+          "text": "练习过程更适合有人陪伴或反馈",
           "dim": "ability.comm"
         }
       ]
@@ -407,7 +407,7 @@ const OFFICIAL_DATA = {
     {
       "id": "A15",
       "module": "A",
-      "text": "你做项目/作业更像：",
+      "text": "你在完成项目或作业时更接近：",
       "options": [
         {
           "key": "A",
@@ -600,7 +600,7 @@ const OFFICIAL_DATA = {
       "options": [
         {
           "key": "A",
-          "text": "搞懂的成就感",
+          "text": "理解透彻后的成就感",
           "dim": "cognition.abstract"
         },
         {
@@ -632,7 +632,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "B",
-          "text": "刷题速度与准确率",
+          "text": "练习速度与准确率",
           "dim": "ability.math"
         },
         {
@@ -677,7 +677,7 @@ const OFFICIAL_DATA = {
     {
       "id": "A25",
       "module": "A",
-      "text": "总体上，你的学习风格更像：",
+      "text": "总体来看，你的学习风格更接近：",
       "options": [
         {
           "key": "A",
@@ -708,7 +708,7 @@ const OFFICIAL_DATA = {
       "options": [
         {
           "key": "A",
-          "text": "想搞懂原理",
+          "text": "希望理解原理",
           "dim": "interest.i"
         },
         {
@@ -723,7 +723,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "D",
-          "text": "新鲜好玩",
+          "text": "新鲜感与体验感",
           "dim": "interest.a"
         }
       ]
@@ -885,7 +885,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "D",
-          "text": "很难坚持",
+          "text": "较难长期坚持",
           "dim": "interest.e"
         }
       ]
@@ -893,7 +893,7 @@ const OFFICIAL_DATA = {
     {
       "id": "B08",
       "module": "B",
-      "text": "你更像哪种兴趣：",
+      "text": "你的兴趣状态更接近：",
       "options": [
         {
           "key": "A",
@@ -993,7 +993,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "D",
-          "text": "出现更好玩的事",
+          "text": "出现更有吸引力的事务",
           "dim": "interest.a"
         }
       ]
@@ -1047,7 +1047,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "D",
-          "text": "很难坚持",
+          "text": "较难长期坚持",
           "dim": "interest.a"
         }
       ]
@@ -1074,7 +1074,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "D",
-          "text": "更想换到轻松赛道",
+          "text": "更倾向调整到压力较低的方向",
           "dim": "risk.stability"
         }
       ]
@@ -1101,7 +1101,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "D",
-          "text": "过程是否有趣",
+          "text": "过程是否具有吸引力",
           "dim": "interest.a"
         }
       ]
@@ -1128,7 +1128,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "D",
-          "text": "看当下感觉",
+          "text": "更看重当前主观感受",
           "dim": "interest.a"
         }
       ]
@@ -1258,7 +1258,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "C",
-          "text": "情绪波动大",
+          "text": "情绪起伏较明显",
           "dim": "value.security"
         },
         {
@@ -1275,7 +1275,7 @@ const OFFICIAL_DATA = {
       "options": [
         {
           "key": "A",
-          "text": "越学越上头",
+          "text": "学习越深入，投入感越强",
           "dim": "interest.i"
         },
         {
@@ -1285,12 +1285,12 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "C",
-          "text": "忽冷忽热",
+          "text": "投入状态波动较大",
           "dim": "interest.s"
         },
         {
           "key": "D",
-          "text": "三分钟热度",
+          "text": "短期投入后难以持续",
           "dim": "interest.a"
         }
       ]
@@ -1352,7 +1352,7 @@ const OFFICIAL_DATA = {
     {
       "id": "B25",
       "module": "B",
-      "text": "总体来说，你的兴趣更像：",
+      "text": "总体来看，你的兴趣驱动更接近：",
       "options": [
         {
           "key": "A",
@@ -1614,7 +1614,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "D",
-          "text": "有没有更有趣的说法？",
+          "text": "是否有更具启发性的表达方式？",
           "dim": "cognition.verbal"
         }
       ]
@@ -1685,7 +1685,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "B",
-          "text": "刷题归纳",
+          "text": "通过练习进行归纳",
           "dim": "cognition.system"
         },
         {
@@ -1730,7 +1730,7 @@ const OFFICIAL_DATA = {
     {
       "id": "C14",
       "module": "C",
-      "text": "你面对冲突信息更像：",
+      "text": "你面对冲突信息时更接近：",
       "options": [
         {
           "key": "A",
@@ -1865,7 +1865,7 @@ const OFFICIAL_DATA = {
     {
       "id": "C19",
       "module": "C",
-      "text": "你处理文字材料更像：",
+      "text": "你在处理文字材料时更接近：",
       "options": [
         {
           "key": "A",
@@ -2027,7 +2027,7 @@ const OFFICIAL_DATA = {
     {
       "id": "C25",
       "module": "C",
-      "text": "总体思维更像：",
+      "text": "总体思维方式更接近：",
       "options": [
         {
           "key": "A",
@@ -2068,7 +2068,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "C",
-          "text": "情绪波动大",
+          "text": "情绪起伏明显",
           "dim": "value.security"
         },
         {
@@ -2090,7 +2090,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "B",
-          "text": "先停一停避免再错",
+          "text": "先暂停并调整状态，避免继续失误",
           "dim": "risk.stability"
         },
         {
@@ -2100,7 +2100,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "D",
-          "text": "找人聊/求助",
+          "text": "主动寻求他人支持",
           "dim": "ability.comm"
         }
       ]
@@ -2108,7 +2108,7 @@ const OFFICIAL_DATA = {
     {
       "id": "D03",
       "module": "D",
-      "text": "任务很重时你更像：",
+      "text": "任务负荷较重时，你更接近：",
       "options": [
         {
           "key": "A",
@@ -2122,7 +2122,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "C",
-          "text": "拖延内耗",
+          "text": "拖延并伴随明显内耗",
           "dim": "value.security"
         },
         {
@@ -2149,7 +2149,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "C",
-          "text": "很受打击",
+          "text": "受到明显打击",
           "dim": "value.security"
         },
         {
@@ -2162,7 +2162,7 @@ const OFFICIAL_DATA = {
     {
       "id": "D05",
       "module": "D",
-      "text": "考试失利后你更像：",
+      "text": "考试失利后，你更接近：",
       "options": [
         {
           "key": "A",
@@ -2176,7 +2176,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "C",
-          "text": "怀疑自己",
+          "text": "对自身能力产生明显怀疑",
           "dim": "value.security"
         },
         {
@@ -2189,7 +2189,7 @@ const OFFICIAL_DATA = {
     {
       "id": "D06",
       "module": "D",
-      "text": "你对“高竞争环境”更像：",
+      "text": "你对高竞争环境的反应更接近：",
       "options": [
         {
           "key": "A",
@@ -2208,7 +2208,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "D",
-          "text": "更想换环境",
+          "text": "更倾向调整环境",
           "dim": "ability.comm"
         }
       ]
@@ -2243,11 +2243,11 @@ const OFFICIAL_DATA = {
     {
       "id": "D08",
       "module": "D",
-      "text": "面对不确定结果你更像：",
+      "text": "面对不确定结果时，你更接近：",
       "options": [
         {
           "key": "A",
-          "text": "能推演就不慌",
+          "text": "只要能够推演路径，就能保持稳定",
           "dim": "risk.pressure"
         },
         {
@@ -2262,7 +2262,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "D",
-          "text": "先做点别的",
+          "text": "先转向其他事项以缓冲压力",
           "dim": "ability.focus"
         }
       ]
@@ -2289,7 +2289,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "D",
-          "text": "无聊重复",
+          "text": "重复且缺乏变化的任务",
           "dim": "value.security"
         }
       ]
@@ -2365,7 +2365,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "C",
-          "text": "开始崩",
+          "text": "状态明显下滑",
           "dim": "value.security"
         },
         {
@@ -2378,7 +2378,7 @@ const OFFICIAL_DATA = {
     {
       "id": "D13",
       "module": "D",
-      "text": "对“权威/规矩”你更像：",
+      "text": "你对权威与规则的态度更接近：",
       "options": [
         {
           "key": "A",
@@ -2405,7 +2405,7 @@ const OFFICIAL_DATA = {
     {
       "id": "D14",
       "module": "D",
-      "text": "团队中你更像：",
+      "text": "在团队中，你更接近：",
       "options": [
         {
           "key": "A",
@@ -2432,7 +2432,7 @@ const OFFICIAL_DATA = {
     {
       "id": "D15",
       "module": "D",
-      "text": "你对“高强度长期训练”更像：",
+      "text": "你对高强度长期训练的反应更接近：",
       "options": [
         {
           "key": "A",
@@ -2446,7 +2446,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "C",
-          "text": "很难",
+          "text": "较难长期适应",
           "dim": "value.security"
         },
         {
@@ -2459,7 +2459,7 @@ const OFFICIAL_DATA = {
     {
       "id": "D16",
       "module": "D",
-      "text": "出现失误时你更像：",
+      "text": "出现失误时，你更接近：",
       "options": [
         {
           "key": "A",
@@ -2527,7 +2527,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "C",
-          "text": "越忙越崩",
+          "text": "事务增加时状态明显失衡",
           "dim": "value.security"
         },
         {
@@ -2559,7 +2559,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "D",
-          "text": "聊天/社交",
+          "text": "交流与社交支持",
           "dim": "ability.comm"
         }
       ]
@@ -2567,7 +2567,7 @@ const OFFICIAL_DATA = {
     {
       "id": "D20",
       "module": "D",
-      "text": "总体抗压风格更像：",
+      "text": "总体抗压方式更接近：",
       "options": [
         {
           "key": "A",
@@ -2702,7 +2702,7 @@ const OFFICIAL_DATA = {
     {
       "id": "E05",
       "module": "E",
-      "text": "家里对你出国/跨城读书的态度更像：",
+      "text": "家庭对你出国或跨城读书的态度更接近：",
       "options": [
         {
           "key": "A",
@@ -2748,7 +2748,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "D",
-          "text": "更想避开",
+          "text": "更倾向回避",
           "dim": "value.security"
         }
       ]
@@ -2760,7 +2760,7 @@ const OFFICIAL_DATA = {
       "options": [
         {
           "key": "A",
-          "text": "不确定但上限高",
+          "text": "不确定性较高但发展上限较高",
           "dim": "value.wealth"
         },
         {
@@ -2802,7 +2802,7 @@ const OFFICIAL_DATA = {
         },
         {
           "key": "D",
-          "text": "愿意做有趣的",
+          "text": "愿意参与更具兴趣驱动的项目",
           "dim": "risk.stability"
         }
       ]
@@ -2945,7 +2945,7 @@ const OFFICIAL_DATA = {
     {
       "id": "E14",
       "module": "E",
-      "text": "你希望未来工作更像：",
+      "text": "你希望未来工作更接近：",
       "options": [
         {
           "key": "A",
@@ -3062,7 +3062,7 @@ const OFFICIAL_DATA = {
       "key": "cognition.spatial",
       "name": "空间想象",
       "strengthText": "空间结构感较强，适合空间/结构/设计相关学习。",
-      "riskText": "空间结构感偏弱，空间建模要求高的专业更吃力。"
+      "riskText": "空间结构感偏弱，空间建模要求高的专业学习负担更重。"
     },
     {
       "key": "cognition.contextual",

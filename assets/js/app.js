@@ -920,7 +920,7 @@ function createSchoolMajorProfile(displayName, refs, options = {}) {
     name: displayName,
     category: options.category || refs.map(([name]) => name).join(" / "),
     courses: options.courses || "按院校培养方案为准",
-    careers: options.careers || "适合先看岗位方向与课程结构",
+    careers: options.careers || "建议结合岗位方向与课程结构综合判断",
     vector,
     coreDims: options.coreDims || [],
     sourceRef: refs.map(([name]) => name).join(" + ")
@@ -1098,7 +1098,7 @@ function buildChoiceComparison(topMajors, studentScore) {
   const firstLead = pickBest(firstOnly);
   const secondLead = pickBest(secondOnly);
   if (!firstLead && !secondLead) {
-    return `${first.name} 与 ${second.name} 的整体方向接近，建议重点比较课程内容和未来岗位场景。`;
+    return `${first.name} 与 ${second.name} 的整体方向接近，建议重点比较培养方案、课程结构与未来岗位场景。`;
   }
   if (firstLead && secondLead) {
     return `${first.name} 更看重 ${dimensionNameMap[firstLead.dim] || firstLead.dim}，而 ${second.name} 更看重 ${dimensionNameMap[secondLead.dim] || secondLead.dim}。按你当前画像，前者略占优势。`;
@@ -1131,16 +1131,16 @@ function buildReverseAdvice(rankedMajors, studentScore) {
   const dimText = lowDims.map((item) => dimensionNameMap[item.dim] || item.dim).join("、");
   const majorText = cautionMajors
     .slice(0, 2)
-    .map(({ major, weakMatches }) => `${major.name}（更吃 ${weakMatches.map((x) => dimensionNameMap[x.dim] || x.dim).join(" / ")}）`)
+    .map(({ major, weakMatches }) => `${major.name}（对 ${weakMatches.map((x) => dimensionNameMap[x.dim] || x.dim).join(" / ")} 要求更高）`)
     .join("；");
 
-  return `当前不建议把强依赖 ${dimText} 的方向作为第一志愿去硬冲，例如 ${majorText}。如果后续真的想走这类路径，建议先用课程体验或短项目验证能不能补上核心短板。`;
+  return `从当前画像看，不建议将强依赖 ${dimText} 的方向作为第一志愿优先填报，例如 ${majorText}。如后续仍希望考虑此类路径，建议先通过课程体验、项目实践或阶段性训练，进一步评估相关能力是否能够稳定提升。`;
 }
 
 function getFitTone(score) {
   if (score >= 75) return { tone: "high", label: "校内优先" };
-  if (score >= 58) return { tone: "medium", label: "校内可冲" };
-  return { tone: "low", label: "谨慎填报" };
+  if (score >= 58) return { tone: "medium", label: "校内重点比较" };
+  return { tone: "low", label: "校内谨慎评估" };
 }
 
 function buildRadarProfile(studentScore) {
@@ -1155,6 +1155,101 @@ function buildRadarProfile(studentScore) {
     { key: "logic", label: "数据逻辑", value: val((studentScore["cognition.data"] + studentScore["ability.math"] + studentScore["ability.stat"]) / 3) },
     { key: "resilience", label: "韧性稳定", value: val((studentScore["risk.pressure"] + studentScore["risk.stability"] + studentScore["value.security"]) / 3) }
   ];
+}
+
+function buildPersonaPreviewVector(base = {}) {
+  return {
+    "interest.r": 0.45,
+    "interest.i": 0.45,
+    "interest.a": 0.45,
+    "interest.s": 0.45,
+    "interest.e": 0.45,
+    "interest.c": 0.45,
+    "cognition.data": 0.45,
+    "cognition.verbal": 0.45,
+    "cognition.abstract": 0.45,
+    "cognition.system": 0.45,
+    "cognition.spatial": 0.45,
+    "cognition.contextual": 0.45,
+    "ability.math": 0.45,
+    "ability.stat": 0.45,
+    "ability.writing": 0.45,
+    "ability.comm": 0.45,
+    "ability.focus": 0.45,
+    "ability.memory": 0.45,
+    "risk.stability": 0.45,
+    "risk.pressure": 0.45,
+    "value.wealth": 0.45,
+    "value.influence": 0.45,
+    "value.responsibility": 0.45,
+    "value.security": 0.45,
+    ...base
+  };
+}
+
+function getPreviewPersona() {
+  const personas = {
+    engineering: {
+      type: "public",
+      grade: "高二",
+      scores: { cn: 112, math: 136, en: 128, phy: 92, chem: 88, bio: 81 },
+      summary: "已启用公立学校成绩加权（数学、英语）。",
+      vector: buildPersonaPreviewVector({
+        "interest.r": 0.82,
+        "interest.i": 0.72,
+        "interest.c": 0.7,
+        "cognition.abstract": 0.86,
+        "cognition.system": 0.84,
+        "ability.math": 0.88,
+        "ability.focus": 0.8,
+        "risk.pressure": 0.72
+      })
+    },
+    creative: {
+      type: "international",
+      grade: "G11",
+      curriculumName: "A-Level",
+      scoreText: "English A, Media A, Art A*, Economics A",
+      summary: "已启用 A-Level 成绩加权（English、Art）。",
+      vector: buildPersonaPreviewVector({
+        "interest.a": 0.9,
+        "interest.s": 0.62,
+        "cognition.verbal": 0.84,
+        "ability.writing": 0.88,
+        "ability.comm": 0.8,
+        "value.influence": 0.76
+      })
+    }
+  };
+  const params = new URLSearchParams(window.location.search);
+  const key = params.get("persona") || "engineering";
+  return personas[key] || personas.engineering;
+}
+
+function maybeRenderPreviewReport() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("preview_report") !== "1") return false;
+
+  const preview = getPreviewPersona();
+  selectedMode = "full";
+  applyMode("full");
+  studentProfile = { type: preview.type, grade: preview.grade };
+  publicSubjectScores = preview.scores || { cn: null, math: null, en: null, phy: null, chem: null, bio: null };
+  internationalProfile = {
+    curriculumName: preview.curriculumName || "",
+    scoreText: preview.scoreText || ""
+  };
+  schoolMajorText = "";
+
+  authGate?.classList.add("hidden");
+  assessmentShell?.classList.remove("hidden");
+  intro?.classList.add("hidden");
+  quizForm?.classList.add("hidden");
+  resultBox?.classList.remove("hidden");
+
+  const rankedMajors = rankMajors(preview.vector);
+  renderResult({ score: preview.vector }, rankedMajors, preview.summary, null);
+  return true;
 }
 
 function getHollandCode(studentScore) {
@@ -1261,8 +1356,8 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
   const tieTop = (top3[0].matchIndex - top3[1].matchIndex) <= 3;
 
   const rankNames = tieTop
-    ? ["首选（并列A）", "首选（并列B）", "备选"]
-    : ["首选", "次选", "末选（可冲刺/保底）"];
+    ? ["优先方向一", "优先方向二", "补充参考方向"]
+    : ["建议优先方向", "建议次优方向", "补充参考方向"];
 
   const cards = top3
     .map((major, index) => {
@@ -1270,8 +1365,8 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
       const narrative = buildMajorNarrative(major, studentVector.score);
       const headline =
         index === 0 && tieTop
-          ? `${major.name} 与另一方向接近，建议用成绩与实践体验做二次判断。`
-          : `${major.name} 当前与学生画像匹配度较高，可优先进入验证清单。`;
+          ? `${major.name} 与另一方向匹配度接近，建议结合学科成绩与实践经历做进一步判断。`
+          : `${major.name} 当前与学生画像匹配度较高，可列为优先评估方向。`;
       return `
       <article class="rank-card">
         <div class="rank-card-top">
@@ -1301,11 +1396,11 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
     .join("");
 
   const summaryTitle = tieTop
-    ? `当前最适合：${top3[0].name} / ${top3[1].name}`
-    : `当前最适合：${top3[0].name}`;
+    ? `建议重点比较：${top3[0].name} 与 ${top3[1].name}`
+    : `建议优先关注：${top3[0].name}`;
   const summaryText = tieTop
-    ? "两条方向当前都具备较强匹配性，建议结合学科基础和未来发展路径做最终判断。"
-    : `${top3[0].name} 与当前学生画像最匹配，可作为优先关注方向，次选用于补充比较。`;
+    ? "两条方向当前都具备较强匹配性，建议结合学科基础、培养方案与未来发展路径做最终判断。"
+    : `${top3[0].name} 与当前学生画像的整体匹配度最高，可作为优先评估方向；其余方向适合作为补充比较对象。`;
   const comparisonHTML = choiceComparison
     ? `
     <section class="advice">
@@ -1317,7 +1412,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
   const reverseAdviceHTML = reverseAdvice
     ? `
     <section class="advice">
-      <h3>当前不建议硬冲的方向</h3>
+      <h3>当前不建议优先填报的方向</h3>
       <p>${reverseAdvice}</p>
     </section>
   `
@@ -1347,7 +1442,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
     ? `
     <section class="restricted-section">
       <h3>该校可报范围内的替代推荐</h3>
-      <p class="restricted-note">理想专业用于判断学生“本来更适合什么”，下面这组结果用于回答“如果只在目标学校现有专业里选，哪些更接近学生画像”。</p>
+      <p class="restricted-note">理想专业用于判断学生的总体适配方向；以下结果用于回答“如果仅在目标学校现有专业中选择，哪些方向与学生画像更接近”。</p>
       <p class="restricted-source">已识别学校专业 ${schoolRecommendation.matchedCount} 个${schoolRecommendation.unmatchedCount ? `，另有 ${schoolRecommendation.unmatchedCount} 个名称未完成匹配` : ""}。</p>
       <div class="rank-grid">
         ${schoolRecommendation.ranked.slice(0, 3).map((major, index) => {
@@ -1365,7 +1460,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
                   <span class="fit-badge fit-${fit.tone}">${fit.label}</span>
                 </div>
               </div>
-              <p class="rank-summary">如果学校只开理工或应用型专业，${major.name} 是当前相对更稳的替代方向。</p>
+              <p class="rank-summary">在目标学校可报范围内，${major.name} 是当前与学生画像相对更接近的替代方向。</p>
               <div class="rank-meta-grid">
                 <span>校内替代类型：${major.category}</span>
                 <span>课程关键词：${major.courses}</span>
@@ -1377,7 +1472,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
           `;
         }).join("")}
       </div>
-      <p class="mapping-note"><strong>使用建议：</strong>如果理想专业与校内可报方向差异较大，优先选择“偏管理、偏服务、偏应用协同”的专业，不建议为进学校而硬上最硬核的设备制造或纯技术研发方向。</p>
+      <p class="mapping-note"><strong>使用建议：</strong>如果理想专业与校内可报方向差异较大，建议优先考虑“偏管理、偏服务、偏应用协同”的专业；不建议仅为进入学校而优先选择与学生画像明显不一致的高强度技术研发方向。</p>
     </section>
   `
     : schoolMajorText
@@ -1680,3 +1775,4 @@ loadDraft();
 showIntroStep(introStep);
 loadAuthSession();
 renderAuthState();
+maybeRenderPreviewReport();
