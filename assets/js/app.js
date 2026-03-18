@@ -102,6 +102,9 @@ const CONSISTENCY_PAIRS = [
 const dimensionNameMap = Object.fromEntries(
   dimensions.map((d) => [d.key, d.name || d.key])
 );
+const dimensionMetaMap = Object.fromEntries(
+  dimensions.map((d) => [d.key, d])
+);
 
 const startBtn = document.getElementById("start-btn");
 const intro = document.getElementById("intro");
@@ -1028,6 +1031,52 @@ function buildEvidence(major, studentScore) {
   return { positives, risks };
 }
 
+function formatDimensionScore(dim, studentScore) {
+  return `${dimensionNameMap[dim] || dim}${Math.round((studentScore[dim] || 0) * 100)}分`;
+}
+
+function buildMajorNarrative(major, studentScore) {
+  const core = major.coreDims.length ? major.coreDims : dimensionKeys.slice(0, 4);
+  const rankedCore = core
+    .map((dim) => ({ dim, value: Math.round((studentScore[dim] || 0) * 100) }))
+    .sort((a, b) => b.value - a.value);
+  const topCore = rankedCore.slice(0, 2);
+  const weakCore = rankedCore.filter((item) => item.value < 50).slice(0, 1);
+  const topText = topCore.map((item) => formatDimensionScore(item.dim, studentScore)).join("、");
+  const weakText = weakCore.map((item) => formatDimensionScore(item.dim, studentScore)).join("、");
+  const topMeta = topCore.map((item) => dimensionMetaMap[item.dim]?.strengthText).filter(Boolean);
+  const weakMeta = weakCore.map((item) => dimensionMetaMap[item.dim]?.riskText).filter(Boolean);
+
+  return {
+    fit: `${major.name} 更匹配你当前的 ${topText}，这和它要求的 ${major.courses} 比较贴合。`,
+    edge: topMeta[0] || `${major.name} 更适合作为当前优先验证方向。`,
+    caution: weakText
+      ? `继续往这个方向走时，要特别留意 ${weakText}。${weakMeta[0] || ""}`.trim()
+      : "当前没有明显的核心短板，后续重点观察真实投入感和持续性。"
+  };
+}
+
+function buildChoiceComparison(topMajors, studentScore) {
+  if (!topMajors[1]) return "";
+  const [first, second] = topMajors;
+  const firstOnly = (first.coreDims || []).filter((dim) => !(second.coreDims || []).includes(dim));
+  const secondOnly = (second.coreDims || []).filter((dim) => !(first.coreDims || []).includes(dim));
+  const pickBest = (dims) => dims
+    .map((dim) => ({ dim, value: studentScore[dim] || 0 }))
+    .sort((a, b) => b.value - a.value)[0];
+  const firstLead = pickBest(firstOnly);
+  const secondLead = pickBest(secondOnly);
+  if (!firstLead && !secondLead) {
+    return `${first.name} 与 ${second.name} 的整体方向接近，建议重点比较课程内容和未来岗位场景。`;
+  }
+  if (firstLead && secondLead) {
+    return `${first.name} 更看重 ${dimensionNameMap[firstLead.dim] || firstLead.dim}，而 ${second.name} 更看重 ${dimensionNameMap[secondLead.dim] || secondLead.dim}。按你当前画像，前者略占优势。`;
+  }
+  const lead = firstLead || secondLead;
+  const leadMajor = firstLead ? first.name : second.name;
+  return `${leadMajor} 在 ${dimensionNameMap[lead.dim] || lead.dim} 这一要求上更鲜明，这也是它与相近方向拉开差异的地方。`;
+}
+
 function getConfidenceTone(score) {
   if (score >= 80) return "high";
   if (score >= 60) return "medium";
@@ -1162,6 +1211,7 @@ function renderResult(studentVector, rankedMajors, confidence, weightingSummary,
   const radarProfile = buildRadarProfile(studentVector.score);
   const hollandCode = getHollandCode(studentVector.score);
   const top3 = rankedMajors.slice(0, 3);
+  const choiceComparison = buildChoiceComparison(top3, studentVector.score);
   const tieTop = (top3[0].matchIndex - top3[1].matchIndex) <= 3;
   const confidenceTone = getConfidenceTone(confidence.score);
   const firstAction = getActionByCategory(top3[0].category);
@@ -1174,6 +1224,7 @@ function renderResult(studentVector, rankedMajors, confidence, weightingSummary,
   const cards = top3
     .map((major, index) => {
       const ev = buildEvidence(major, studentVector.score);
+      const narrative = buildMajorNarrative(major, studentVector.score);
       const headline =
         index === 0 && tieTop
           ? `${major.name} 与另一方向接近，建议用成绩与实践体验做二次判断。`
@@ -1193,9 +1244,12 @@ function renderResult(studentVector, rankedMajors, confidence, weightingSummary,
           <span>课程关键词：${major.courses}</span>
           <span>典型去向：${major.careers}</span>
         </div>
+        <p class="evidence"><strong>核心判断：</strong>${narrative.fit}</p>
+        <p class="evidence"><strong>匹配亮点：</strong>${narrative.edge}</p>
         <p class="evidence"><strong>推荐证据：</strong>${ev.positives.join("、") || "综合匹配度较高"}</p>
         <details class="rank-details">
           <summary>查看详细解释</summary>
+          <p class="risk"><strong>继续验证时重点看：</strong>${narrative.caution}</p>
           <p class="risk"><strong>风险提示：</strong>${ev.risks.join("、") || "当前未见明显核心短板，可持续观察学业压力承受度"}</p>
         </details>
       </article>
@@ -1223,6 +1277,14 @@ function renderResult(studentVector, rankedMajors, confidence, weightingSummary,
   const summaryText = tieTop
     ? "两条方向分差很小，建议结合学科成绩和真实体验做二选一。"
     : `${top3[0].name} 是当前优先验证方向，次选可作为补充参考。`;
+  const comparisonHTML = choiceComparison
+    ? `
+    <section class="advice">
+      <h3>首选与次选的关键差异</h3>
+      <p>${choiceComparison}</p>
+    </section>
+  `
+    : "";
   const studentSummaryCards = `
     <div class="student-summary-grid">
       <article class="student-summary-card">
@@ -1319,6 +1381,7 @@ function renderResult(studentVector, rankedMajors, confidence, weightingSummary,
       </div>
     </div>
     <div class="rank-grid">${cards}</div>
+    ${comparisonHTML}
     ${schoolRestrictedHTML}
     ${actionHTML}
   `;
