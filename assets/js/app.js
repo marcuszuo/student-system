@@ -1260,6 +1260,121 @@ function getMajorCoreDims(major, topN = 4) {
     .map((item) => item.dim);
 }
 
+const DIRECTION_GROUP_RULES = [
+  {
+    key: "cs",
+    label: "计算机与信息技术方向",
+    patterns: [/计算机|软件|数据科学|人工智能|网络工程|信息安全|物联网|数字媒体技术/],
+    summary: "适合关注信息处理、系统构建、逻辑分析与技术应用的学生。",
+    training: "通常更强调编程基础、系统理解、抽象推理与持续迭代能力。"
+  },
+  {
+    key: "ee",
+    label: "电子电气与自动化方向",
+    patterns: [/电子信息|通信|电气|自动化|测控|微电子|集成电路/],
+    summary: "适合兼顾数理基础、工程理解和设备系统思维的学生。",
+    training: "通常更强调电路基础、控制逻辑、系统调试与工程执行能力。"
+  },
+  {
+    key: "me",
+    label: "机械制造与装备工程方向",
+    patterns: [/机械|车辆|制造|工业工程|飞行器|材料成型/],
+    summary: "适合偏好结构、制造、设备运行与工程落地的学生。",
+    training: "通常更强调空间理解、实作倾向、流程意识与工程稳定性。"
+  },
+  {
+    key: "built",
+    label: "土木建筑与环境工程方向",
+    patterns: [/土木|建筑|环境工程|风景园林|给排水|城乡规划|工程造价/],
+    summary: "适合对空间、项目实施、环境治理与工程协同较有适配性的学生。",
+    training: "通常更强调项目协同、空间判断、执行稳定性与责任意识。"
+  },
+  {
+    key: "biz",
+    label: "经管与金融运营方向",
+    patterns: [/金融|会计|财务|经济|工商管理|市场营销|人力资源|电子商务|国际经济与贸易/],
+    summary: "适合兼顾结果意识、组织协同、数据判断与经营理解的学生。",
+    training: "通常更强调数据判断、沟通协同、经营意识与持续执行能力。"
+  },
+  {
+    key: "media",
+    label: "传播设计与内容表达方向",
+    patterns: [/新闻|传播|广告|设计|动画|戏剧影视|视觉传达|网络与新媒体|工业设计/],
+    summary: "适合在内容表达、创意呈现、用户理解与传播转化上更具优势的学生。",
+    training: "通常更强调表达能力、创意生成、用户洞察与作品产出能力。"
+  },
+  {
+    key: "social",
+    label: "社会服务与公共治理方向",
+    patterns: [/心理学|教育|公共管理|社会工作|法学|护理|行政管理/],
+    summary: "适合在人际理解、责任意识、情境判断与服务取向方面更具稳定性的学生。",
+    training: "通常更强调沟通能力、责任意识、情境理解与长期投入感。"
+  },
+  {
+    key: "science",
+    label: "基础研究与生命科学方向",
+    patterns: [/数学|物理|化学|生物|统计学|地理科学|大气科学|海洋科学/],
+    summary: "适合在研究兴趣、理论理解、抽象分析与持续钻研方面更突出的学生。",
+    training: "通常更强调研究耐心、理论基础、分析能力与持续学习投入。"
+  }
+];
+
+function getDirectionGroupForMajor(major) {
+  const text = `${major.name} ${major.category} ${major.courses}`.toLowerCase();
+  const matched = DIRECTION_GROUP_RULES.find((rule) => rule.patterns.some((pattern) => pattern.test(text)));
+  return matched || {
+    key: "general",
+    label: "综合应用方向",
+    summary: "适合作为综合能力与实际培养方案结合判断的补充方向。",
+    training: "通常需要结合院校培养方案、课程结构和学生投入感进一步判断。"
+  };
+}
+
+function buildDirectionRecommendations(rankedMajors, studentScore) {
+  const buckets = new Map();
+  rankedMajors.slice(0, 8).forEach((major) => {
+    const group = getDirectionGroupForMajor(major);
+    if (!buckets.has(group.key)) {
+      buckets.set(group.key, { group, majors: [] });
+    }
+    buckets.get(group.key).majors.push(major);
+  });
+
+  return Array.from(buckets.values())
+    .map(({ group, majors }) => {
+      const dimCounts = new Map();
+      majors.forEach((major) => {
+        getMajorCoreDims(major, 4).forEach((dim) => {
+          dimCounts.set(dim, (dimCounts.get(dim) || 0) + 1);
+        });
+      });
+      const supportDims = Array.from(dimCounts.entries())
+        .sort((a, b) => {
+          if (b[1] !== a[1]) return b[1] - a[1];
+          return (studentScore[b[0]] || 0) - (studentScore[a[0]] || 0);
+        })
+        .slice(0, 3)
+        .map(([dim]) => ({
+          key: dim,
+          label: dimensionNameMap[dim] || dim,
+          score: Math.round((studentScore[dim] || 0) * 100)
+        }));
+      return {
+        ...group,
+        leadMajor: majors[0],
+        representativeMajors: majors.slice(0, 3).map((major) => major.name),
+        supportDims,
+        topScore: majors[0]?.matchIndex || 0,
+        meanScore: Math.round(average(majors.map((major) => major.matchIndex || 0))),
+        majors
+      };
+    })
+    .sort((a, b) => {
+      if (b.topScore !== a.topScore) return b.topScore - a.topScore;
+      return b.meanScore - a.meanScore;
+    });
+}
+
 function buildEvidence(major, studentScore) {
   const core = getMajorCoreDims(major);
   const positives = core
@@ -1598,6 +1713,9 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
   const radarProfile = buildRadarProfile(studentVector.score);
   const hollandCode = getHollandCode(studentVector.score);
   const top3 = rankedMajors.slice(0, 3);
+  const directionRecommendations = buildDirectionRecommendations(rankedMajors, studentVector.score);
+  const primaryDirection = directionRecommendations[0];
+  const secondaryDirection = directionRecommendations[1];
   const choiceComparison = buildChoiceComparison(top3, studentVector.score);
   const reverseAdvice = buildReverseAdvice(rankedMajors, studentVector.score);
   const tieTop = (top3[0].matchIndex - top3[1].matchIndex) <= 3;
@@ -1643,11 +1761,11 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
     .join("");
 
   const summaryTitle = tieTop
-    ? `建议重点比较：${top3[0].name} 与 ${top3[1].name}`
-    : `建议优先关注：${top3[0].name}`;
+    ? `建议重点比较：${primaryDirection?.label || top3[0].name} 与 ${secondaryDirection?.label || top3[1].name}`
+    : `建议优先关注：${primaryDirection?.label || top3[0].name}`;
   const summaryText = tieTop
-    ? "两条方向当前都具备较强匹配性，建议结合学科基础、培养方案与未来发展路径做最终判断。"
-    : `${top3[0].name} 与当前学生画像的整体匹配度最高，可作为优先评估方向；其余方向适合作为补充比较对象。`;
+    ? "两类方向当前都具备较强匹配性，建议结合学科基础、培养方案、课程强度与未来发展路径做进一步比较判断。"
+    : `${primaryDirection?.label || top3[0].name}与当前学生画像的整体匹配度最高，可作为优先评估方向；具体专业建议应在此方向内进一步筛选。`;
   const comparisonHTML = choiceComparison
     ? `
     <section class="advice">
@@ -1672,6 +1790,21 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
     </section>
   `
     : "";
+  const directionHTML = directionRecommendations.slice(0, 2).map((direction, index) => `
+    <article class="direction-card">
+      <div class="rank-card-top">
+        <div>
+          <p class="rank-label">${index === 0 ? "优先方向组" : "次优方向组"}</p>
+          <h3>${direction.label}</h3>
+        </div>
+        <p class="score">${direction.topScore} / 100</p>
+      </div>
+      <p class="rank-summary">${direction.summary}</p>
+      <p class="evidence"><strong>方向判断：</strong>该方向与学生当前画像具有较高一致性，尤其体现在${direction.supportDims.map((dim) => `${dim.label}${dim.score}分`).join("、")}等维度。</p>
+      <p class="evidence"><strong>培养特征：</strong>${direction.training}</p>
+      <p class="evidence"><strong>代表专业：</strong>${direction.representativeMajors.join("、")}</p>
+    </article>
+  `).join("");
   const studentSummaryCards = `
     <div class="student-summary-grid">
       <article class="student-summary-card">
@@ -1761,6 +1894,10 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
         ${radarProfile.map((x) => `<span>${x.label} ${x.value}</span>`).join("")}
       </div>
     </div>
+    <section class="direction-section">
+      <h3>方向组判断</h3>
+      <div class="rank-grid">${directionHTML}</div>
+    </section>
     <div class="rank-grid">${cards}</div>
     ${calibrationHTML}
     ${comparisonHTML}
