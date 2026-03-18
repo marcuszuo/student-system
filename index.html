@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MajorNavi 学生专业测评系统</title>
-  <meta name="description" content="MajorNavi 面向初高中学生的专业测评与升学规划系统，基于官方评分矩阵输出首选、次选与保底专业建议。">
+  <title>MajorNavi 学生专业发展评估系统</title>
+  <meta name="description" content="MajorNavi 面向初高中学生的专业发展评估与升学规划系统，基于多维画像与专业匹配模型输出专业方向建议。">
   <script>
     if (location.protocol === "http:") {
       location.replace("https://" + location.host + location.pathname + location.search + location.hash);
@@ -16,9 +16,9 @@
   <main class="page">
     <section class="hero">
       <p class="tag">MajorNavi · 初高中升学规划</p>
-      <h1>学生专业测评系统</h1>
+      <h1>学生专业发展评估系统</h1>
       <p class="subtitle">
-        基于官方计分矩阵，结合兴趣、认知、能力与价值观，为学生和家长提供清晰的大学专业方向建议。
+        基于多维画像模型，结合兴趣、认知、能力与价值偏好，为学生和家长提供更具参考价值的大学专业方向评估。
       </p>
       <p class="subtitle brand-subtitle">品牌域名：<strong>www.majornavi.cn</strong></p>
     </section>
@@ -26,9 +26,9 @@
     <section class="card" id="quiz-card">
       <section id="auth-gate" class="auth-gate">
         <div class="auth-card">
-          <p class="auth-kicker">账号登录</p>
-          <h2>登录后开始测评</h2>
-          <p class="auth-copy">请输入用户名和密码，登录后即可进入测评流程。</p>
+          <p class="auth-kicker">账号验证</p>
+          <h2>登录后进入评估流程</h2>
+          <p class="auth-copy">请输入账号信息，完成验证后即可进入专业发展评估流程。</p>
           <div class="auth-form">
             <label class="single-field">
               <span>用户名</span>
@@ -39,7 +39,7 @@
               <input id="auth-password" type="password" autocomplete="current-password" placeholder="请输入密码">
             </label>
             <div class="auth-actions">
-              <button type="button" id="login-btn" class="btn btn-primary">登录并进入</button>
+              <button type="button" id="login-btn" class="btn btn-primary">登录并进入评估</button>
             </div>
             <p id="auth-status" class="auth-status">请输入用户名和密码</p>
           </div>
@@ -74,12 +74,12 @@
               <input id="student-grade" type="text" autocomplete="off" placeholder="如 高一、11年级、G10">
             </label>
             <div class="wizard-actions">
-              <button type="button" id="intro-next-1" class="btn btn-primary">下一步</button>
+              <button type="button" id="intro-next-1" class="btn btn-primary">继续</button>
             </div>
           </section>
 
           <section class="intro-panel hidden" data-intro-step="2">
-            <h3>填写成绩信息</h3>
+            <h3>补充学业信息</h3>
             <div id="public-score-panel" class="score-panel">
               <div class="subject-inputs">
                 <p class="subject-title">公立学校成绩（建议尽量填写，0-100 分）</p>
@@ -104,23 +104,23 @@
             </div>
 
             <div class="school-major-box">
-              <label class="subject-title">学校专业清单约束（可选）</label>
+              <label class="subject-title">目标学校专业范围（可选）</label>
               <div class="upload-row">
                 <label class="btn btn-ghost upload-btn" for="school-major-file">上传 Excel/CSV/TXT</label>
                 <input id="school-major-file" type="file" accept=".xlsx,.xls,.csv,.txt" hidden>
                 <label class="btn btn-ghost upload-btn" for="school-major-image">上传图片识别</label>
                 <input id="school-major-image" type="file" accept="image/*" hidden>
-                <span id="school-major-file-status" class="upload-status">未上传文件</span>
+                <span id="school-major-file-status" class="upload-status">暂未上传文件</span>
               </div>
             </div>
             <div class="wizard-actions">
               <button type="button" id="intro-prev-2" class="btn btn-ghost">上一步</button>
-              <button type="button" id="intro-next-2" class="btn btn-primary">下一步</button>
+              <button type="button" id="intro-next-2" class="btn btn-primary">继续</button>
             </div>
           </section>
 
           <section class="intro-panel hidden" data-intro-step="3">
-            <h3>选择测评版本</h3>
+            <h3>选择评估版本</h3>
             <div class="mode-picker">
               <label class="mode-item">
                 <input type="radio" name="assessment-mode" value="standard" checked>
@@ -133,7 +133,7 @@
             </div>
             <div class="wizard-actions">
               <button type="button" id="intro-prev-3" class="btn btn-ghost">上一步</button>
-              <button id="start-btn" type="button" class="btn btn-primary">开始答题</button>
+              <button id="start-btn" type="button" class="btn btn-primary">开始评估</button>
             </div>
           </section>
         </div>
@@ -141,23 +141,23 @@
         <form id="quiz-form" class="hidden">
           <div class="progress-wrap">
             <div class="progress-label">
-              <span>答题进度</span>
+              <span>评估进度</span>
               <span id="progress-text">0 / 24</span>
             </div>
             <div class="progress-bar">
               <div id="progress-fill"></div>
             </div>
-            <p id="save-status" class="save-status">草稿未保存</p>
+            <p id="save-status" class="save-status">当前未保存草稿</p>
           </div>
           <div class="pager-meta">
             <span id="page-text">第 1 / 1 页</span>
-            <button type="button" id="clear-btn" class="btn btn-ghost">清空作答</button>
+            <button type="button" id="clear-btn" class="btn btn-ghost">清空当前记录</button>
           </div>
           <div id="question-list"></div>
           <div class="actions">
             <button type="button" id="prev-btn" class="btn btn-ghost">上一页</button>
             <button type="button" id="next-btn" class="btn btn-primary">下一页</button>
-            <button type="submit" id="submit-btn" class="btn btn-primary hidden">生成推荐结果</button>
+            <button type="submit" id="submit-btn" class="btn btn-primary hidden">生成评估报告</button>
           </div>
         </form>
 

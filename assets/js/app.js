@@ -274,7 +274,7 @@ function saveDraft() {
     savedAt: new Date().toISOString()
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  setSaveStatus(`草稿已保存 ${formatTime(new Date())}`);
+  setSaveStatus(`评估草稿已保存 ${formatTime(new Date())}`);
 }
 
 function buildQuestionOrder(mode, savedOrder = []) {
@@ -375,8 +375,8 @@ function loadDraft() {
     scoreBioInput.value = publicSubjectScores.bio ?? "";
     internationalCurriculumNameInput.value = internationalProfile.curriculumName || "";
     internationalScoreTextInput.value = internationalProfile.scoreText || "";
-    setSchoolFileStatus(schoolMajorText ? `已恢复学校专业清单（${parseSchoolMajorText(schoolMajorText).length} 个专业）` : "未上传文件");
-    setSaveStatus("已恢复上次作答草稿");
+    setSchoolFileStatus(schoolMajorText ? `已恢复目标学校专业范围（${parseSchoolMajorText(schoolMajorText).length} 个专业）` : "暂未上传文件");
+    setSaveStatus("已恢复上次评估草稿");
     showIntroStep(introStep);
   } catch {
     answers = {};
@@ -406,7 +406,7 @@ function clearDraft() {
   internationalScoreTextInput.value = "";
   schoolMajorFileInput.value = "";
   schoolMajorImageInput.value = "";
-  setSchoolFileStatus("未上传文件");
+  setSchoolFileStatus("暂未上传文件");
   currentPage = 1;
   selectedMode = "standard";
   const standardModeInput = document.querySelector('input[name="assessment-mode"][value="standard"]');
@@ -414,7 +414,7 @@ function clearDraft() {
   applyMode("standard");
   questionOrder = [];
   localStorage.removeItem(STORAGE_KEY);
-  setSaveStatus("已清空草稿");
+  setSaveStatus("已清空当前记录");
   showIntroStep(1);
   renderCurrentPage();
   updateProgress();
@@ -711,7 +711,7 @@ function parseInternationalScores(curriculumName, scoreText) {
 
 function applyPublicSubjectWeight(baseScore, scores) {
   const valid = Object.entries(scores).filter(([, v]) => typeof v === "number");
-  if (!valid.length) return { score: baseScore, used: false, summary: "未输入公立学校成绩，采用纯测评结果。" };
+  if (!valid.length) return { score: baseScore, used: false, summary: "未录入公立学校成绩，结果基于测评画像生成。" };
 
   const avg = average(valid.map(([, v]) => v));
   const normalized = {
@@ -761,7 +761,7 @@ function applyPublicSubjectWeight(baseScore, scores) {
 function applyInternationalSubjectWeight(baseScore, profile) {
   const entries = parseInternationalScores(profile.curriculumName, profile.scoreText);
   if (!entries.length) {
-    return { score: baseScore, used: false, summary: "未识别到国际课程成绩，采用纯测评结果。" };
+    return { score: baseScore, used: false, summary: "未识别到有效国际课程成绩，结果基于测评画像生成。" };
   }
 
   const avg = average(entries.map((entry) => entry.score));
@@ -824,12 +824,12 @@ function getStudentTypeLabel(type) {
 
 function getCurriculumSummary() {
   if (studentProfile.type === "international") {
-    return internationalProfile.curriculumName || "国际课程未填写";
+    return internationalProfile.curriculumName || "国际课程信息未填写";
   }
   const filled = Object.entries(publicSubjectScores)
     .filter(([, value]) => typeof value === "number")
     .map(([key, value]) => `${({ cn: "语文", math: "数学", en: "英语", phy: "物理", chem: "化学", bio: "生物" }[key])}${Math.round(value)}`);
-  return filled.length ? `公立成绩已填 ${filled.slice(0, 3).join(" / ")}` : "公立成绩未填写";
+  return filled.length ? `已录入公立成绩 ${filled.slice(0, 3).join(" / ")}` : "公立成绩信息未填写";
 }
 
 function calculateStudentVector(answerMap) {
@@ -1078,7 +1078,7 @@ function buildMajorNarrative(major, studentScore) {
 
   return {
     fit: `${major.name} 更匹配你当前的 ${topText}，这和它要求的 ${major.courses} 比较贴合。`,
-    edge: topMeta[0] || `${major.name} 更适合作为当前优先验证方向。`,
+    edge: topMeta[0] || `${major.name} 可作为当前优先评估方向。`,
     caution: weakText
       ? `继续往这个方向走时，要特别留意 ${weakText}。${weakMeta[0] || ""}`.trim()
       : "当前没有明显的核心短板，后续重点观察真实投入感和持续性。"
@@ -1138,9 +1138,9 @@ function buildReverseAdvice(rankedMajors, studentScore) {
 }
 
 function getFitTone(score) {
-  if (score >= 75) return { tone: "high", label: "校内优先" };
+  if (score >= 75) return { tone: "high", label: "校内优先建议" };
   if (score >= 58) return { tone: "medium", label: "校内重点比较" };
-  return { tone: "low", label: "校内谨慎评估" };
+  return { tone: "low", label: "校内审慎评估" };
 }
 
 function buildRadarProfile(studentScore) {
@@ -1366,7 +1366,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
       const headline =
         index === 0 && tieTop
           ? `${major.name} 与另一方向匹配度接近，建议结合学科成绩与实践经历做进一步判断。`
-          : `${major.name} 当前与学生画像匹配度较高，可列为优先评估方向。`;
+          : `${major.name} 当前与学生画像匹配度较高，可列为优先考虑方向。`;
       return `
       <article class="rank-card">
         <div class="rank-card-top">
@@ -1384,7 +1384,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
         </div>
         <p class="evidence"><strong>核心判断：</strong>${narrative.fit}</p>
         <p class="evidence"><strong>匹配亮点：</strong>${narrative.edge}</p>
-        <p class="evidence"><strong>推荐证据：</strong>${ev.positives.join("、") || "综合匹配度较高"}</p>
+        <p class="evidence"><strong>匹配依据：</strong>${ev.positives.join("、") || "综合匹配度较高"}</p>
         <details class="rank-details">
           <summary>查看详细解释</summary>
           <p class="risk"><strong>继续验证时重点看：</strong>${narrative.caution}</p>
@@ -1404,7 +1404,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
   const comparisonHTML = choiceComparison
     ? `
     <section class="advice">
-      <h3>首选与次选的关键差异</h3>
+      <h3>优先方向之间的关键差异</h3>
       <p>${choiceComparison}</p>
     </section>
   `
@@ -1412,7 +1412,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
   const reverseAdviceHTML = reverseAdvice
     ? `
     <section class="advice">
-      <h3>当前不建议优先填报的方向</h3>
+      <h3>当前不建议优先考虑的方向</h3>
       <p>${reverseAdvice}</p>
     </section>
   `
@@ -1428,11 +1428,11 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
         <strong>${studentProfile.grade || "未填写"}</strong>
       </article>
       <article class="student-summary-card">
-        <span class="student-summary-label">课程体系</span>
+        <span class="student-summary-label">课程背景</span>
         <strong>${getCurriculumSummary()}</strong>
       </article>
       <article class="student-summary-card">
-        <span class="student-summary-label">测评版本</span>
+        <span class="student-summary-label">评估版本</span>
         <strong>${MODE_CONFIG[selectedMode].label}</strong>
       </article>
     </div>
@@ -1441,9 +1441,9 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
   const schoolRestrictedHTML = schoolRecommendation?.ranked?.length
     ? `
     <section class="restricted-section">
-      <h3>该校可报范围内的替代推荐</h3>
+      <h3>目标学校范围内的替代建议</h3>
       <p class="restricted-note">理想专业用于判断学生的总体适配方向；以下结果用于回答“如果仅在目标学校现有专业中选择，哪些方向与学生画像更接近”。</p>
-      <p class="restricted-source">已识别学校专业 ${schoolRecommendation.matchedCount} 个${schoolRecommendation.unmatchedCount ? `，另有 ${schoolRecommendation.unmatchedCount} 个名称未完成匹配` : ""}。</p>
+      <p class="restricted-source">已识别目标学校专业 ${schoolRecommendation.matchedCount} 个${schoolRecommendation.unmatchedCount ? `，另有 ${schoolRecommendation.unmatchedCount} 个名称暂未完成匹配` : ""}。</p>
       <div class="rank-grid">
         ${schoolRecommendation.ranked.slice(0, 3).map((major, index) => {
           const fit = getFitTone(major.matchIndex);
@@ -1452,7 +1452,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
             <article class="rank-card">
               <div class="rank-card-top">
                 <div>
-                  <p class="rank-label">${index === 0 ? "校内首选" : index === 1 ? "校内次选" : "校内备选"}</p>
+                  <p class="rank-label">${index === 0 ? "校内优先建议" : index === 1 ? "校内次优建议" : "校内补充参考"}</p>
                   <h3>${major.name}</h3>
                 </div>
                 <div>
@@ -1466,27 +1466,27 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
                 <span>课程关键词：${major.courses}</span>
                 <span>典型去向：${major.careers}</span>
               </div>
-              <p class="evidence"><strong>替代理由：</strong>${ev.positives.join("、") || "与学生画像的相对距离较近"}</p>
+              <p class="evidence"><strong>替代依据：</strong>${ev.positives.join("、") || "与学生画像的相对距离较近"}</p>
               <p class="mapping-note"><strong>匹配参照：</strong>${major.sourceRef || "关键词映射"}</p>
             </article>
           `;
         }).join("")}
       </div>
-      <p class="mapping-note"><strong>使用建议：</strong>如果理想专业与校内可报方向差异较大，建议优先考虑“偏管理、偏服务、偏应用协同”的专业；不建议仅为进入学校而优先选择与学生画像明显不一致的高强度技术研发方向。</p>
+      <p class="mapping-note"><strong>使用建议：</strong>如果理想方向与校内可报专业差异较大，建议优先考虑“偏管理、偏服务、偏应用协同”的专业；不建议仅为进入学校而优先选择与学生画像明显不一致的高强度技术研发方向。</p>
     </section>
   `
     : schoolMajorText
       ? `
       <section class="restricted-section">
-        <h3>该校可报范围内的替代推荐</h3>
-        <p class="restricted-note">已检测到你输入了学校专业清单，但当前还没有足够多的专业名称被系统识别。建议把专业名单按“一行一个专业名”再粘贴一次，例如：工程造价、建筑工程技术、电气自动化技术。</p>
+        <h3>目标学校范围内的替代建议</h3>
+        <p class="restricted-note">系统已检测到目标学校专业名单，但当前完成识别的专业名称仍然较少。建议按“一行一个专业名称”的方式重新粘贴，例如：工程造价、建筑工程技术、电气自动化技术。</p>
       </section>
     `
       : "";
 
   resultBox.innerHTML = `
     <div class="result-header">
-      <p class="result-kicker">报告结论</p>
+      <p class="result-kicker">评估结论</p>
       <h2>${summaryTitle}</h2>
       <p class="result-summary">${summaryText}</p>
       ${studentSummaryCards}
