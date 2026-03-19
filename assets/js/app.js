@@ -664,6 +664,7 @@ function renderCurrentPage() {
     }
   }
   prevBtn.disabled = currentPage === 1;
+  prevBtn.classList.toggle("hidden", currentPage === 1);
   nextBtn.classList.toggle("hidden", currentPage === totalPages);
   submitBtn.classList.toggle("hidden", currentPage !== totalPages);
   if (!submitBtn.classList.contains("hidden")) {
