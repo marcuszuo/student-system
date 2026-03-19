@@ -663,8 +663,8 @@ function renderCurrentPage() {
       phaseHint.textContent = "";
     }
   }
-  prevBtn.disabled = currentPage === 1;
-  prevBtn.classList.toggle("hidden", currentPage === 1);
+  prevBtn.disabled = false;
+  prevBtn.classList.remove("hidden");
   nextBtn.classList.toggle("hidden", currentPage === totalPages);
   submitBtn.classList.toggle("hidden", currentPage !== totalPages);
   if (!submitBtn.classList.contains("hidden")) {
@@ -2092,7 +2092,14 @@ prevBtn.addEventListener("click", () => {
     saveDraft();
     renderCurrentPage();
     window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
   }
+
+  quizForm.classList.add("hidden");
+  intro.classList.remove("hidden");
+  showIntroStep(2);
+  saveDraft();
+  window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
 nextBtn.addEventListener("click", () => {
