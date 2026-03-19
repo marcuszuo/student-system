@@ -872,6 +872,23 @@ function parseInternationalScoreValue(line, curriculumName) {
   const upper = rawLine.toUpperCase();
   const curriculum = String(curriculumName || "").toUpperCase();
   const context = `${curriculum} ${upper}`;
+  const genericLetterMatch = upper.match(/\bA\+|\bA-|\bA\b|\bB\+|\bB-|\bB\b|\bC\+|\bC-|\bC\b|\bD\+|\bD-|\bD\b|\bE\b|\bF\b/);
+  const genericLetterScoreMap = {
+    "A+": 98,
+    "A": 94,
+    "A-": 90,
+    "B+": 86,
+    "B": 82,
+    "B-": 78,
+    "C+": 74,
+    "C": 70,
+    "C-": 66,
+    "D+": 62,
+    "D": 58,
+    "D-": 54,
+    "E": 50,
+    "F": 45
+  };
 
   const dseMatch = upper.match(/5\*\*|5\*|[1-5]/);
   if (/DSE/.test(context) && dseMatch) {
@@ -890,6 +907,12 @@ function parseInternationalScoreValue(line, curriculumName) {
   }
   if (/(AP)/.test(context) && typeof lastNumber === "number") {
     return { 5: 95, 4: 88, 3: 78, 2: 65, 1: 50 }[Math.round(lastNumber)] ?? null;
+  }
+  if (/(AP|OSSD|INTERNATIONAL|国际课程)/.test(context) && genericLetterMatch) {
+    return genericLetterScoreMap[genericLetterMatch[0]] ?? null;
+  }
+  if (genericLetterMatch) {
+    return genericLetterScoreMap[genericLetterMatch[0]] ?? null;
   }
   if (typeof lastNumber === "number") {
     if (lastNumber <= 7) return { 7: 97, 6: 90, 5: 82, 4: 74, 3: 66, 2: 58, 1: 50 }[Math.round(lastNumber)] ?? lastNumber * 14;
