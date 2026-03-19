@@ -112,8 +112,6 @@ const intro = document.getElementById("intro");
 const introPanels = Array.from(document.querySelectorAll("[data-intro-step]"));
 const introNext1Btn = document.getElementById("intro-next-1");
 const introPrev2Btn = document.getElementById("intro-prev-2");
-const introNext2Btn = document.getElementById("intro-next-2");
-const introPrev3Btn = document.getElementById("intro-prev-3");
 const authGate = document.getElementById("auth-gate");
 const assessmentShell = document.getElementById("assessment-shell");
 const authUsernameInput = document.getElementById("auth-username");
@@ -257,7 +255,7 @@ function updateStudentTypeUI() {
 }
 
 function showIntroStep(step) {
-  introStep = clamp(step, 1, 3);
+  introStep = clamp(step, 1, 2);
   introPanels.forEach((panel) => {
     panel.classList.toggle("hidden", Number(panel.dataset.introStep) !== introStep);
   });
@@ -1991,17 +1989,6 @@ introNext1Btn.addEventListener("click", () => {
 
 introPrev2Btn.addEventListener("click", () => {
   showIntroStep(1);
-  saveDraft();
-});
-
-introNext2Btn.addEventListener("click", () => {
-  if (!validateIntroStep(2)) return;
-  showIntroStep(3);
-  saveDraft();
-});
-
-introPrev3Btn.addEventListener("click", () => {
-  showIntroStep(2);
   saveDraft();
 });
 
