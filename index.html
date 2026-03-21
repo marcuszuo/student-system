@@ -158,6 +158,16 @@
   <script src="assets/js/majors_v2.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script>
+    window.ADMIN_DASHBOARD_PATH = "./pages/admin.html";
+    window.AUTH_USERS = [
+      { username: "student", password: "333333", role: "student" },
+      { username: "admin", password: "333333", role: "admin", redirectTo: "./pages/admin.html" }
+    ];
+    // 部署报告后台后再取消注释并替换成真实值
+    // window.REPORT_API_BASE_URL = "https://your-report-api.workers.dev";
+    // window.REPORT_INGEST_KEY = "replace-with-ingest-key";
+  </script>
   <script src="assets/js/analytics.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
