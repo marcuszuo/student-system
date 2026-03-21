@@ -15,7 +15,10 @@
 ```js
 const AUTH_USERS = Array.isArray(window.AUTH_USERS) && window.AUTH_USERS.length
   ? window.AUTH_USERS
-  : [{ username: "admin", password: "333333", role: "student" }];
+  : [
+    { username: "student", password: "333333", role: "student" },
+    { username: "admin", password: "333333", role: "admin", redirectTo: "./pages/admin.html" }
+  ];
 ```
 
 你可以直接修改默认账号密码，或者在页面里通过 `window.AUTH_USERS` 覆盖。
@@ -48,8 +51,8 @@ const AUTH_USERS = Array.isArray(window.AUTH_USERS) && window.AUTH_USERS.length
 
 当前默认兼容：
 
-- 用户名：`admin`
-- 密码：`333333`
+- 学生账号：`student / 333333`
+- 管理员账号：`admin / 333333`
 
 ## 重要说明
 

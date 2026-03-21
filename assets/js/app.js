@@ -80,7 +80,10 @@ const AUTH_STORAGE_KEY = "student-major-auth-v1";
 const ADMIN_STORAGE_KEY = "majornavi-report-admin-config";
 const AUTH_USERS = Array.isArray(window.AUTH_USERS) && window.AUTH_USERS.length
   ? window.AUTH_USERS
-  : [{ username: "admin", password: "333333", role: "student" }];
+  : [
+    { username: "student", password: "333333", role: "student" },
+    { username: "admin", password: "333333", role: "admin", redirectTo: "./pages/admin.html" }
+  ];
 const AUTH_ENABLED = AUTH_USERS.length > 0;
 const REPORT_API_BASE_URL = String(window.REPORT_API_BASE_URL || "").trim().replace(/\/+$/, "");
 const REPORT_INGEST_KEY = String(window.REPORT_INGEST_KEY || "").trim();
