@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>报告后台</title>
+  <script>
+    if (location.protocol === "http:") {
+      location.replace("https://" + location.host + location.pathname + location.search + location.hash);
+    }
+  </script>
+  <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <p class="tag">MajorNavi · 管理后台</p>
+      <h1>测评报告后台</h1>
+      <p class="subtitle">查看学生提交后的报告列表、基础画像和完整推荐结论。</p>
+    </section>
+
+    <section class="card admin-shell">
+      <section class="admin-toolbar">
+        <label class="single-field">
+          <span>后台接口地址</span>
+          <input id="admin-api-base" type="text" placeholder="如 https://report-api.xxx.workers.dev">
+        </label>
+        <label class="single-field">
+          <span>后台访问令牌</span>
+          <input id="admin-token" type="password" placeholder="请输入后台管理员令牌">
+        </label>
+        <div class="admin-actions">
+          <button id="admin-load-btn" type="button" class="btn btn-primary">加载报告</button>
+          <button id="admin-clear-btn" type="button" class="btn btn-ghost">清空本地凭据</button>
+        </div>
+        <p id="admin-status" class="auth-status">请输入后台地址和令牌后加载报告。</p>
+      </section>
+
+      <section class="admin-content">
+        <aside class="admin-list-wrap">
+          <div class="admin-list-head">
+            <h2>报告列表</h2>
+            <span id="admin-count">0</span>
+          </div>
+          <div id="admin-report-list" class="admin-report-list"></div>
+        </aside>
+
+        <section id="admin-detail" class="admin-detail">
+          <div class="empty-state">
+            <h2>等待加载</h2>
+            <p>加载报告后，点击左侧列表可查看完整报告摘要。</p>
+          </div>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <script src="../assets/js/admin.js"></script>
+</body>
+</html>

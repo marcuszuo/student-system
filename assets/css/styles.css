@@ -473,6 +473,93 @@ body {
   justify-content: flex-end;
 }
 
+.admin-shell {
+  display: grid;
+  gap: 18px;
+}
+
+.admin-toolbar {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-content {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.admin-list-wrap,
+.admin-detail {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #fafcfb 100%);
+  padding: 16px;
+}
+
+.admin-list-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.admin-list-head h2,
+.admin-detail-header h2 {
+  margin: 0;
+}
+
+.admin-report-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-report-item {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 14px;
+  padding: 12px;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.admin-report-item.active {
+  border-color: #89ad9b;
+  box-shadow: 0 12px 24px rgba(76, 112, 97, 0.08);
+  background: #f6fbf8;
+}
+
+.admin-report-item p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.admin-report-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.empty-state {
+  padding: 20px 8px;
+  color: var(--muted);
+}
+
+.empty-state.compact {
+  padding: 8px 0;
+}
+
 .radar-wrap {
   margin: 10px 0 16px;
   display: flex;
@@ -853,6 +940,10 @@ body {
 
   .student-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-content {
+    grid-template-columns: 1fr;
   }
 
   .option-list {

@@ -1,0 +1,15 @@
+name = "majornavi-report-api"
+main = "worker.js"
+compatibility_date = "2026-03-21"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "majornavi-reports"
+database_id = "replace-with-your-d1-database-id"
+
+[vars]
+ALLOWED_ORIGINS = "https://www.majornavi.cn,http://127.0.0.1:4173"
+# 可选：如果设置了 INGEST_KEY，前端需同步配置 window.REPORT_INGEST_KEY
+INGEST_KEY = "replace-with-ingest-key"
+# 管理后台查看报告时使用
+ADMIN_TOKEN = "replace-with-admin-token"

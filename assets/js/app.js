@@ -81,6 +81,8 @@ const AUTH_USERS = Array.isArray(window.AUTH_USERS) && window.AUTH_USERS.length
   ? window.AUTH_USERS
   : [{ username: "admin", password: "333333" }];
 const AUTH_ENABLED = AUTH_USERS.length > 0;
+const REPORT_API_BASE_URL = String(window.REPORT_API_BASE_URL || "").trim().replace(/\/+$/, "");
+const REPORT_INGEST_KEY = String(window.REPORT_INGEST_KEY || "").trim();
 const DEFAULT_MODE = "full";
 const STANDARD_CORE_LIMITS = { A: 12, B: 12, C: 12, D: 10, E: 8 };
 const STANDARD_CALIBRATION_COUNT = 12;
@@ -169,6 +171,13 @@ let authSession = null;
 
 function formatTime(date) {
   return date.toLocaleTimeString("zh-CN", { hour12: false });
+}
+
+function createRecordId(prefix = "report") {
+  if (window.crypto && typeof window.crypto.randomUUID === "function") {
+    return `${prefix}_${window.crypto.randomUUID()}`;
+  }
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
 function setSaveStatus(text) {
@@ -1397,6 +1406,113 @@ function buildDirectionRecommendations(rankedMajors, studentScore) {
     });
 }
 
+function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoolRecommendation) {
+  const top3 = rankedMajors.slice(0, 3);
+  const directionRecommendations = buildDirectionRecommendations(rankedMajors, studentVector.score);
+  const topTraits = getTopDimensions(studentVector.score, 5);
+  const primaryDirection = directionRecommendations[0];
+  const secondaryDirection = directionRecommendations[1];
+
+  return {
+    id: createRecordId(),
+    submittedAt: new Date().toISOString(),
+    siteVersion: "2026-03-report-admin-v1",
+    studentProfile: {
+      type: studentProfile.type,
+      typeLabel: getStudentTypeLabel(studentProfile.type),
+      grade: studentProfile.grade || "",
+      curriculumSummary: getCurriculumSummary(),
+      mode: selectedMode,
+      modeLabel: MODE_CONFIG[selectedMode]?.label || selectedMode
+    },
+    scoring: {
+      weightingSummary,
+      hollandCode: getHollandCode(studentVector.score),
+      topTraits: topTraits.map((item) => ({
+        dimension: item.dim,
+        label: item.label,
+        score: item.score
+      })),
+      studentScore: Object.fromEntries(
+        Object.entries(studentVector.score).map(([dim, value]) => [dim, Math.round((value || 0) * 100)])
+      )
+    },
+    directions: directionRecommendations.slice(0, 2).map((direction, index) => ({
+      rank: index + 1,
+      key: direction.key,
+      label: direction.label,
+      summary: direction.summary,
+      training: direction.training,
+      representativeMajors: direction.representativeMajors,
+      supportDims: direction.supportDims
+    })),
+    recommendations: top3.map((major, index) => {
+      const evidence = buildEvidence(major, studentVector.score);
+      const narrative = buildMajorNarrative(major, studentVector.score);
+      return {
+        rank: index + 1,
+        label: index === 0 ? "优先方向一" : index === 1 ? "优先方向二" : "补充参考方向",
+        name: major.name,
+        matchIndex: major.matchIndex,
+        category: major.category,
+        courses: major.courses,
+        careers: major.careers,
+        fit: narrative.fit,
+        edge: narrative.edge,
+        caution: narrative.caution,
+        evidence: evidence.positives,
+        risks: evidence.risks
+      };
+    }),
+    comparisons: {
+      primaryVsSecondary: buildChoiceComparison(top3, studentVector.score),
+      reverseAdvice: buildReverseAdvice(rankedMajors, studentVector.score),
+      directionSummary: primaryDirection
+        ? `优先考虑${primaryDirection.label}${secondaryDirection ? `；其次关注${secondaryDirection.label}` : ""}`
+        : ""
+    },
+    adaptiveFlow: {
+      calibrationAdded,
+      followUpAdded,
+      calibrationContext
+    },
+    schoolRestricted: schoolRecommendation?.ranked?.length
+      ? {
+        matchedCount: schoolRecommendation.matchedCount,
+        unmatchedCount: schoolRecommendation.unmatchedCount,
+        recommendations: schoolRecommendation.ranked.slice(0, 3).map((major, index) => ({
+          rank: index + 1,
+          name: major.name,
+          matchIndex: major.matchIndex,
+          category: major.category,
+          courses: major.courses,
+          careers: major.careers,
+          sourceRef: major.sourceRef || ""
+        }))
+      }
+      : null
+  };
+}
+
+async function syncReportRecord(payload) {
+  if (!REPORT_API_BASE_URL) return { skipped: true };
+  const headers = {
+    "Content-Type": "application/json"
+  };
+  if (REPORT_INGEST_KEY) {
+    headers["x-report-ingest-key"] = REPORT_INGEST_KEY;
+  }
+  const response = await fetch(`${REPORT_API_BASE_URL}/api/reports`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) {
+    throw new Error(`后台同步失败（${response.status}）`);
+  }
+  return response.json().catch(() => ({ ok: true }));
+}
+
 function buildEvidence(major, studentScore) {
   const core = getMajorCoreDims(major);
   const positives = core
@@ -2170,10 +2286,21 @@ quizForm.addEventListener("submit", (event) => {
   }
   const schoolRecommendation = rankSchoolMajors(weighted.score, schoolMajorText);
   renderResult({ ...studentVector, score: weighted.score }, rankedMajors, weighted.summary, schoolRecommendation);
+  const reportPayload = buildReportPayload({ ...studentVector, score: weighted.score }, rankedMajors, weighted.summary, schoolRecommendation);
   localStorage.removeItem(STORAGE_KEY);
-  setSaveStatus("已提交并清除本地草稿");
+  setSaveStatus(REPORT_API_BASE_URL ? "评估报告已生成，正在同步至后台。" : "已提交并清除本地草稿");
   resultBox.classList.remove("hidden");
   resultBox.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (REPORT_API_BASE_URL) {
+    void syncReportRecord(reportPayload)
+      .then(() => {
+        setSaveStatus("评估报告已同步至后台。");
+      })
+      .catch((error) => {
+        console.error(error);
+        setSaveStatus("评估报告已生成，但后台同步失败。");
+      });
+  }
   emitEvent("complete_assessment", {
     mode: selectedMode,
     student_type: studentProfile.type,
