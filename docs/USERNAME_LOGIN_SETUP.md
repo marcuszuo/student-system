@@ -15,10 +15,36 @@
 ```js
 const AUTH_USERS = Array.isArray(window.AUTH_USERS) && window.AUTH_USERS.length
   ? window.AUTH_USERS
-  : [{ username: "admin", password: "333333" }];
+  : [{ username: "admin", password: "333333", role: "student" }];
 ```
 
 你可以直接修改默认账号密码，或者在页面里通过 `window.AUTH_USERS` 覆盖。
+
+如果希望管理员在首页输入账号密码后直接进入后台页，可以这样配置：
+
+```html
+<script>
+  window.AUTH_USERS = [
+    { username: "student", password: "333333", role: "student" },
+    {
+      username: "manager",
+      password: "your-admin-password",
+      role: "admin",
+      redirectTo: "./pages/admin.html",
+      adminApiBase: "https://your-report-api.workers.dev",
+      adminToken: "your-admin-token"
+    }
+  ];
+</script>
+```
+
+其中：
+
+- `role: "student"`：进入测评流程
+- `role: "admin"`：登录后直接跳转后台页
+- `redirectTo`：后台页地址
+- `adminApiBase`：后台接口地址，会自动写入后台页
+- `adminToken`：后台访问令牌，会自动写入后台页
 
 当前默认兼容：
 

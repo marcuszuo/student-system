@@ -77,12 +77,14 @@ const majors = mergeMajors(baseMajors, extraMajors);
 const ITEMS_PER_PAGE = 8;
 const STORAGE_KEY = "student-major-assessment-v2";
 const AUTH_STORAGE_KEY = "student-major-auth-v1";
+const ADMIN_STORAGE_KEY = "majornavi-report-admin-config";
 const AUTH_USERS = Array.isArray(window.AUTH_USERS) && window.AUTH_USERS.length
   ? window.AUTH_USERS
-  : [{ username: "admin", password: "333333" }];
+  : [{ username: "admin", password: "333333", role: "student" }];
 const AUTH_ENABLED = AUTH_USERS.length > 0;
 const REPORT_API_BASE_URL = String(window.REPORT_API_BASE_URL || "").trim().replace(/\/+$/, "");
 const REPORT_INGEST_KEY = String(window.REPORT_INGEST_KEY || "").trim();
+const ADMIN_DASHBOARD_PATH = String(window.ADMIN_DASHBOARD_PATH || "./pages/admin.html").trim() || "./pages/admin.html";
 const DEFAULT_MODE = "full";
 const STANDARD_CORE_LIMITS = { A: 12, B: 12, C: 12, D: 10, E: 8 };
 const STANDARD_CALIBRATION_COUNT = 12;
@@ -197,13 +199,35 @@ function normalizeUsername(username) {
   return String(username || "").trim().toLowerCase();
 }
 
+function normalizeAuthUser(user) {
+  return {
+    ...user,
+    role: user?.role === "admin" ? "admin" : "student",
+    redirectTo: String(user?.redirectTo || "").trim(),
+    adminApiBase: String(user?.adminApiBase || "").trim(),
+    adminToken: String(user?.adminToken || "").trim()
+  };
+}
+
 function findAuthUser(username, password) {
   const normalizedPassword = String(password || "").trim();
-  return AUTH_USERS.find((user) => {
+  const matched = AUTH_USERS.find((user) => {
     const expectedUsername = String(user.username || "").trim().toLowerCase();
     const expectedPasswords = Array.isArray(user.password) ? user.password : [user.password];
     return expectedUsername === username && expectedPasswords.map((item) => String(item || "").trim()).includes(normalizedPassword);
-  }) || null;
+  });
+  return matched ? normalizeAuthUser(matched) : null;
+}
+
+function openAdminDashboard(user) {
+  if (user.adminApiBase || user.adminToken) {
+    localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify({
+      apiBase: user.adminApiBase || "",
+      token: user.adminToken || ""
+    }));
+  }
+  const target = user.redirectTo || ADMIN_DASHBOARD_PATH;
+  window.location.href = target;
 }
 
 function saveAuthSession(session) {
@@ -2079,6 +2103,13 @@ loginBtn.addEventListener("click", () => {
   const matchedUser = findAuthUser(username, password);
   if (!matchedUser) {
     setAuthStatus("用户名或密码错误", "error");
+    return;
+  }
+
+  if (matchedUser.role === "admin") {
+    authPasswordInput.value = "";
+    setAuthStatus("正在进入管理后台…", "success");
+    openAdminDashboard(matchedUser);
     return;
   }
 
