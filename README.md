@@ -12,6 +12,7 @@
 - 样式：`assets/css/`
 - 用户名密码登录说明：`docs/USERNAME_LOGIN_SETUP.md`
 - 报告后台接入说明：`docs/REPORT_ADMIN_SETUP.md`
+- 报告后台 ECS 部署说明：`docs/REPORT_ADMIN_ECS_SETUP.md`
 - 域名配置说明：`docs/DOMAIN_SETUP.md`
 
 ## 本地预览
@@ -42,7 +43,10 @@ http://127.0.0.1:4173/
 
 当前版本使用轻量级用户名密码登录门禁，适合内部试用和小范围受限访问。由于项目仍是纯静态站点，账号校验在前端完成，不适合作为高安全级别的正式账号系统。
 
-如需在后台查看学生提交后的测评报告，可额外部署 `Cloudflare Worker + D1` 作为轻量报告后台，前端已预留自动上报与管理后台页面能力。
+如需在后台查看学生提交后的测评报告，可额外部署报告后台。仓库当前同时提供：
+
+- `Cloudflare Worker + D1` 轻量版本
+- `ECS + Node.js` 服务器版本
 
 当前首页已内置默认账号配置与后台配置模板：
 
