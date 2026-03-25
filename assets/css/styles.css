@@ -483,6 +483,12 @@ body {
   gap: 12px;
 }
 
+.admin-overview {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .admin-actions {
   display: flex;
   gap: 10px;
@@ -502,6 +508,12 @@ body {
   border-radius: 18px;
   background: linear-gradient(180deg, #ffffff 0%, #fafcfb 100%);
   padding: 16px;
+}
+
+.admin-filters {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
 }
 
 .admin-list-head {
@@ -942,6 +954,10 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .admin-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .admin-content {
     grid-template-columns: 1fr;
   }
@@ -1032,6 +1048,10 @@ body {
   }
 
   .student-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-overview {
     grid-template-columns: 1fr;
   }
 

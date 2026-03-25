@@ -32,8 +32,28 @@
         <div class="admin-actions">
           <button id="admin-load-btn" type="button" class="btn btn-primary">加载报告</button>
           <button id="admin-clear-btn" type="button" class="btn btn-ghost">清空本地凭据</button>
+          <button id="admin-export-btn" type="button" class="btn btn-ghost">导出 CSV</button>
         </div>
         <p id="admin-status" class="auth-status">请输入后台地址和令牌后加载报告。</p>
+      </section>
+
+      <section class="admin-overview">
+        <article class="student-summary-card">
+          <span class="student-summary-label">报告总数</span>
+          <strong id="admin-total-count">0</strong>
+        </article>
+        <article class="student-summary-card">
+          <span class="student-summary-label">今日新增</span>
+          <strong id="admin-today-count">0</strong>
+        </article>
+        <article class="student-summary-card">
+          <span class="student-summary-label">公立学校学生</span>
+          <strong id="admin-public-count">0</strong>
+        </article>
+        <article class="student-summary-card">
+          <span class="student-summary-label">国际学生</span>
+          <strong id="admin-international-count">0</strong>
+        </article>
       </section>
 
       <section class="admin-content">
@@ -41,6 +61,24 @@
           <div class="admin-list-head">
             <h2>报告列表</h2>
             <span id="admin-count">0</span>
+          </div>
+          <div class="admin-filters">
+            <label class="single-field">
+              <span>学生类型</span>
+              <select id="admin-type-filter">
+                <option value="">全部</option>
+                <option value="public">公立学校学生</option>
+                <option value="international">国际学生</option>
+              </select>
+            </label>
+            <label class="single-field">
+              <span>年级关键词</span>
+              <input id="admin-grade-filter" type="text" placeholder="如 高一 / G10">
+            </label>
+            <label class="single-field">
+              <span>专业或方向搜索</span>
+              <input id="admin-search-filter" type="text" placeholder="如 计算机 / 医学 / 商科">
+            </label>
           </div>
           <div id="admin-report-list" class="admin-report-list"></div>
         </aside>

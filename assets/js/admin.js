@@ -4,12 +4,21 @@ const apiBaseInput = document.getElementById("admin-api-base");
 const tokenInput = document.getElementById("admin-token");
 const loadBtn = document.getElementById("admin-load-btn");
 const clearBtn = document.getElementById("admin-clear-btn");
+const exportBtn = document.getElementById("admin-export-btn");
 const statusEl = document.getElementById("admin-status");
 const countEl = document.getElementById("admin-count");
+const totalCountEl = document.getElementById("admin-total-count");
+const todayCountEl = document.getElementById("admin-today-count");
+const publicCountEl = document.getElementById("admin-public-count");
+const internationalCountEl = document.getElementById("admin-international-count");
 const listEl = document.getElementById("admin-report-list");
 const detailEl = document.getElementById("admin-detail");
+const typeFilterEl = document.getElementById("admin-type-filter");
+const gradeFilterEl = document.getElementById("admin-grade-filter");
+const searchFilterEl = document.getElementById("admin-search-filter");
 
 let reports = [];
+let filteredReports = [];
 let selectedReportId = "";
 
 function escapeHtml(text) {
@@ -71,18 +80,63 @@ function summarizeProfile(report) {
   return [profile.typeLabel, profile.grade, profile.curriculumSummary].filter(Boolean).join(" / ");
 }
 
+function getReportType(report) {
+  const profile = report.studentProfile || {};
+  return String(profile.type || "").trim() || (
+    String(profile.typeLabel || "").includes("国际") ? "international" : "public"
+  );
+}
+
+function reportMatchesFilters(report) {
+  const typeFilter = String(typeFilterEl.value || "").trim();
+  const gradeFilter = String(gradeFilterEl.value || "").trim().toLowerCase();
+  const searchFilter = String(searchFilterEl.value || "").trim().toLowerCase();
+  const profile = report.studentProfile || {};
+  const topDirection = report.directions?.[0]?.label || "";
+  const topMajor = report.recommendations?.[0]?.name || "";
+  const secondMajor = report.recommendations?.[1]?.name || "";
+  const haystack = [topDirection, topMajor, secondMajor, profile.curriculumSummary]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  if (typeFilter && getReportType(report) !== typeFilter) return false;
+  if (gradeFilter && !String(profile.grade || "").toLowerCase().includes(gradeFilter)) return false;
+  if (searchFilter && !haystack.includes(searchFilter)) return false;
+  return true;
+}
+
+function applyFilters() {
+  filteredReports = reports.filter(reportMatchesFilters);
+  if (!filteredReports.find((item) => item.id === selectedReportId)) {
+    selectedReportId = filteredReports[0]?.id || "";
+  }
+}
+
+function renderOverview() {
+  const today = new Date().toISOString().slice(0, 10);
+  const todayCount = reports.filter((report) => String(report.submittedAt || "").startsWith(today)).length;
+  const publicCount = reports.filter((report) => getReportType(report) === "public").length;
+  const internationalCount = reports.filter((report) => getReportType(report) === "international").length;
+
+  totalCountEl.textContent = String(reports.length);
+  todayCountEl.textContent = String(todayCount);
+  publicCountEl.textContent = String(publicCount);
+  internationalCountEl.textContent = String(internationalCount);
+}
+
 function renderReportList() {
-  countEl.textContent = `${reports.length} 份`;
-  if (!reports.length) {
+  countEl.textContent = `${filteredReports.length} 份`;
+  if (!filteredReports.length) {
     listEl.innerHTML = `
       <div class="empty-state compact">
-        <p>暂无报告数据</p>
+        <p>当前筛选条件下暂无报告数据</p>
       </div>
     `;
     return;
   }
 
-  listEl.innerHTML = reports.map((report) => `
+  listEl.innerHTML = filteredReports.map((report) => `
     <button type="button" class="admin-report-item${report.id === selectedReportId ? " active" : ""}" data-report-id="${escapeHtml(report.id)}">
       <div class="admin-report-title">
         <strong>${escapeHtml(report.recommendations?.[0]?.name || report.directions?.[0]?.label || "未命名报告")}</strong>
@@ -213,9 +267,10 @@ async function fetchReports() {
   }
   const data = await response.json();
   reports = Array.isArray(data.items) ? data.items : [];
-  selectedReportId = reports[0]?.id || "";
+  applyFilters();
+  renderOverview();
   renderReportList();
-  renderReportDetail(reports[0] || null);
+  renderReportDetail(filteredReports.find((report) => report.id === selectedReportId) || null);
   setStatus(`已加载 ${reports.length} 份报告。`, "success");
 }
 
@@ -226,7 +281,16 @@ listEl.addEventListener("click", (event) => {
   if (!(item instanceof HTMLElement)) return;
   selectedReportId = item.dataset.reportId || "";
   renderReportList();
-  renderReportDetail(reports.find((report) => report.id === selectedReportId) || null);
+  renderReportDetail(filteredReports.find((report) => report.id === selectedReportId) || null);
+});
+
+[typeFilterEl, gradeFilterEl, searchFilterEl].forEach((input) => {
+  input.addEventListener("input", () => {
+    applyFilters();
+    renderReportList();
+    renderReportDetail(filteredReports.find((report) => report.id === selectedReportId) || null);
+    setStatus(`当前筛选结果 ${filteredReports.length} 份。`);
+  });
 });
 
 loadBtn.addEventListener("click", async () => {
@@ -241,11 +305,58 @@ loadBtn.addEventListener("click", async () => {
 clearBtn.addEventListener("click", () => {
   clearConfig();
   reports = [];
+  filteredReports = [];
   selectedReportId = "";
+  renderOverview();
   renderReportList();
   renderReportDetail(null);
   setStatus("已清空本地后台凭据。");
 });
 
+function toCsvValue(value) {
+  const text = String(value == null ? "" : value);
+  if (/[",\n]/.test(text)) {
+    return `"${text.replace(/"/g, "\"\"")}"`;
+  }
+  return text;
+}
+
+function exportReports() {
+  if (!filteredReports.length) {
+    setStatus("当前没有可导出的报告。", "error");
+    return;
+  }
+
+  const rows = [
+    ["提交时间", "学生类型", "年级", "课程背景", "优先方向", "首选专业", "匹配度"],
+    ...filteredReports.map((report) => {
+      const profile = report.studentProfile || {};
+      return [
+        formatDateTime(report.submittedAt),
+        profile.typeLabel || "",
+        profile.grade || "",
+        profile.curriculumSummary || "",
+        report.directions?.[0]?.label || "",
+        report.recommendations?.[0]?.name || "",
+        report.recommendations?.[0]?.matchIndex || ""
+      ];
+    })
+  ];
+
+  const csv = "\uFEFF" + rows.map((row) => row.map(toCsvValue).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `majornavi-reports-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
+  setStatus(`已导出 ${filteredReports.length} 份报告。`, "success");
+}
+
+exportBtn.addEventListener("click", exportReports);
+
 loadConfig();
+renderOverview();
 renderReportList();
