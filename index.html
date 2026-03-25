@@ -162,11 +162,16 @@
     window.ADMIN_DASHBOARD_PATH = "./pages/admin.html";
     window.AUTH_USERS = [
       { username: "student", password: "333333", role: "student" },
-      { username: "admin", password: "333333", role: "admin", redirectTo: "./pages/admin.html" }
+      {
+        username: "admin",
+        password: "333333",
+        role: "admin",
+        redirectTo: "./pages/admin.html",
+        adminApiBase: "https://api.majornavi.cn"
+      }
     ];
-    // 部署报告后台后再取消注释并替换成真实值
-    // window.REPORT_API_BASE_URL = "https://your-report-api.workers.dev";
-    // window.REPORT_INGEST_KEY = "replace-with-ingest-key";
+    window.REPORT_API_BASE_URL = "https://api.majornavi.cn";
+    window.REPORT_INGEST_KEY = "3ee938df43c042796300cd54cc40cd19";
   </script>
   <script src="assets/js/analytics.js"></script>
   <script src="assets/js/app.js"></script>

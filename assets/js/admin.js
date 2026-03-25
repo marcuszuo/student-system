@@ -27,14 +27,22 @@ function setStatus(text, tone = "neutral") {
 }
 
 function loadConfig() {
+  const defaultApiBase = String(window.ADMIN_DEFAULT_API_BASE || "").trim();
+  const defaultToken = String(window.ADMIN_DEFAULT_TOKEN || "").trim();
   try {
     const raw = localStorage.getItem(ADMIN_STORAGE_KEY);
-    if (!raw) return;
+    if (!raw) {
+      if (defaultApiBase) apiBaseInput.value = defaultApiBase;
+      if (defaultToken) tokenInput.value = defaultToken;
+      return;
+    }
     const parsed = JSON.parse(raw);
-    apiBaseInput.value = parsed.apiBase || "";
-    tokenInput.value = parsed.token || "";
+    apiBaseInput.value = parsed.apiBase || defaultApiBase;
+    tokenInput.value = parsed.token || defaultToken;
   } catch {
     localStorage.removeItem(ADMIN_STORAGE_KEY);
+    if (defaultApiBase) apiBaseInput.value = defaultApiBase;
+    if (defaultToken) tokenInput.value = defaultToken;
   }
 }
 
