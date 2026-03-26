@@ -14,6 +14,7 @@ const publicCountEl = document.getElementById("admin-public-count");
 const internationalCountEl = document.getElementById("admin-international-count");
 const listEl = document.getElementById("admin-report-list");
 const detailEl = document.getElementById("admin-detail");
+const sortFilterEl = document.getElementById("admin-sort-filter");
 const typeFilterEl = document.getElementById("admin-type-filter");
 const gradeFilterEl = document.getElementById("admin-grade-filter");
 const dateFromEl = document.getElementById("admin-date-from");
@@ -113,8 +114,30 @@ function reportMatchesFilters(report) {
   return true;
 }
 
+function compareReports(a, b) {
+  const mode = String(sortFilterEl?.value || "submitted_desc");
+  const aSubmitted = String(a.submittedAt || "");
+  const bSubmitted = String(b.submittedAt || "");
+  const aMatch = Number(a.recommendations?.[0]?.matchIndex || 0);
+  const bMatch = Number(b.recommendations?.[0]?.matchIndex || 0);
+  const aMajor = String(a.recommendations?.[0]?.name || "");
+  const bMajor = String(b.recommendations?.[0]?.name || "");
+
+  switch (mode) {
+    case "submitted_asc":
+      return aSubmitted.localeCompare(bSubmitted);
+    case "match_desc":
+      return bMatch - aMatch || bSubmitted.localeCompare(aSubmitted);
+    case "major_asc":
+      return aMajor.localeCompare(bMajor, "zh-CN") || bSubmitted.localeCompare(aSubmitted);
+    case "submitted_desc":
+    default:
+      return bSubmitted.localeCompare(aSubmitted);
+  }
+}
+
 function applyFilters() {
-  filteredReports = reports.filter(reportMatchesFilters);
+  filteredReports = reports.filter(reportMatchesFilters).sort(compareReports);
   if (!filteredReports.find((item) => item.id === selectedReportId)) {
     selectedReportId = filteredReports[0]?.id || "";
   }
@@ -151,6 +174,7 @@ function renderReportList() {
       </div>
       <p>${escapeHtml(summarizeProfile(report))}</p>
       <p>${escapeHtml(formatDateTime(report.submittedAt))}</p>
+      ${report.adminMeta?.note ? `<p class="admin-report-note-flag">已备注</p>` : ""}
     </button>
   `).join("");
 }
@@ -200,6 +224,14 @@ function renderReportDetail(report) {
         <strong>${escapeHtml(profile.curriculumSummary || "")}</strong>
       </article>
     </div>
+    <section class="advice note-editor">
+      <div class="note-editor-head">
+        <h3>后台备注</h3>
+        <button id="admin-save-note-btn" type="button" class="btn btn-ghost">保存备注</button>
+      </div>
+      <textarea id="admin-note-input" rows="5" placeholder="可记录已沟通、待跟进、高意向、家长关注点等后台备注。">${escapeHtml(report.adminMeta?.note || "")}</textarea>
+      <p class="note-meta">${escapeHtml(report.adminMeta?.updatedAt ? `最近更新：${formatDateTime(report.adminMeta.updatedAt)}` : "尚未填写后台备注。")}</p>
+    </section>
     <section class="advice">
       <h3>画像摘要</h3>
       <p>${escapeHtml((topTraits || []).map((item) => `${item.label}${item.score}分`).join("、") || "暂无")}</p>
@@ -254,11 +286,15 @@ function renderReportDetail(report) {
 
   const exportDetailBtn = document.getElementById("admin-export-detail-btn");
   const deleteReportBtn = document.getElementById("admin-delete-report-btn");
+  const saveNoteBtn = document.getElementById("admin-save-note-btn");
   if (exportDetailBtn) {
     exportDetailBtn.addEventListener("click", () => exportReportDetail(report));
   }
   if (deleteReportBtn) {
     deleteReportBtn.addEventListener("click", () => deleteReport(report.id));
+  }
+  if (saveNoteBtn) {
+    saveNoteBtn.addEventListener("click", () => saveReportNote(report.id));
   }
 }
 
@@ -351,6 +387,36 @@ async function clearSmokeReports() {
   setStatus(`已清理 ${data.deletedCount || 0} 份测试报告。`, "success");
 }
 
+async function saveReportNote(id) {
+  const apiBase = String(apiBaseInput.value || "").trim().replace(/\/+$/, "");
+  const token = String(tokenInput.value || "").trim();
+  const noteInput = document.getElementById("admin-note-input");
+  if (!apiBase || !token || !id || !(noteInput instanceof HTMLTextAreaElement)) {
+    setStatus("缺少保存备注所需的后台配置。", "error");
+    return;
+  }
+
+  const note = noteInput.value.trim();
+  const response = await fetch(`${apiBase}/api/reports/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      "x-admin-token": token
+    },
+    body: JSON.stringify({ adminNote: note })
+  });
+  if (!response.ok) {
+    throw new Error(`备注保存失败（${response.status}）`);
+  }
+
+  const data = await response.json();
+  reports = reports.map((report) => report.id === id ? data.item : report);
+  applyFilters();
+  renderReportList();
+  renderReportDetail(filteredReports.find((report) => report.id === selectedReportId) || null);
+  setStatus("后台备注已保存。", "success");
+}
+
 listEl.addEventListener("click", (event) => {
   const target = event.target;
   if (!(target instanceof HTMLElement)) return;
@@ -361,7 +427,7 @@ listEl.addEventListener("click", (event) => {
   renderReportDetail(filteredReports.find((report) => report.id === selectedReportId) || null);
 });
 
-[typeFilterEl, gradeFilterEl, dateFromEl, dateToEl, searchFilterEl].forEach((input) => {
+[sortFilterEl, typeFilterEl, gradeFilterEl, dateFromEl, dateToEl, searchFilterEl].forEach((input) => {
   input.addEventListener("input", () => {
     applyFilters();
     renderReportList();

@@ -46,6 +46,9 @@ const server = http.createServer(async (req, res) => {
     if (reportMatch && req.method === "DELETE") {
       return handleDeleteReport(req, res, reportMatch[1]);
     }
+    if (reportMatch && req.method === "PATCH") {
+      return handleUpdateReport(req, res, reportMatch[1]);
+    }
 
     return respondJson(res, 404, { error: "Not found" }, corsHeaders(req));
   } catch (error) {
@@ -66,7 +69,7 @@ function corsHeaders(req) {
 
   return {
     "Access-Control-Allow-Origin": allowOrigin,
-    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type,x-admin-token,x-report-ingest-key",
     "Content-Type": "application/json; charset=utf-8"
   };
@@ -220,6 +223,33 @@ function handleDeleteReport(req, res, id) {
   }
   writeReports(next);
   return respondJson(res, 200, { ok: true, id }, corsHeaders(req));
+}
+
+async function handleUpdateReport(req, res, id) {
+  if (!requireAdmin(req)) {
+    return respondJson(res, 403, { error: "Forbidden" }, corsHeaders(req));
+  }
+
+  const payload = await readBody(req);
+  const adminNote = String(payload.adminNote || "").trim();
+  const reports = readReports();
+  const index = reports.findIndex((report) => report.id === id);
+  if (index === -1) {
+    return respondJson(res, 404, { error: "Not found" }, corsHeaders(req));
+  }
+
+  const current = reports[index];
+  const nextItem = {
+    ...current,
+    adminMeta: {
+      ...(current.adminMeta || {}),
+      note: adminNote,
+      updatedAt: new Date().toISOString()
+    }
+  };
+  reports[index] = nextItem;
+  writeReports(reports);
+  return respondJson(res, 200, { ok: true, item: nextItem }, corsHeaders(req));
 }
 
 function handleBulkDelete(req, res, url) {

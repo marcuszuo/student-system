@@ -499,6 +499,41 @@ body {
   margin-bottom: 14px;
 }
 
+.note-editor {
+  display: grid;
+  gap: 10px;
+}
+
+.note-editor-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.note-editor-head h3 {
+  margin: 0;
+}
+
+.note-editor textarea {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  padding: 12px 14px;
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+  resize: vertical;
+  min-height: 120px;
+}
+
+.note-meta,
+.admin-report-note-flag {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
 .admin-content {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
