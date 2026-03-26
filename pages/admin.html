@@ -33,6 +33,7 @@
           <button id="admin-load-btn" type="button" class="btn btn-primary">加载报告</button>
           <button id="admin-clear-btn" type="button" class="btn btn-ghost">清空本地凭据</button>
           <button id="admin-export-btn" type="button" class="btn btn-ghost">导出 CSV</button>
+          <button id="admin-clear-smoke-btn" type="button" class="btn btn-ghost">清理测试报告</button>
         </div>
         <p id="admin-status" class="auth-status">请输入后台地址和令牌后加载报告。</p>
       </section>
@@ -74,6 +75,14 @@
             <label class="single-field">
               <span>年级关键词</span>
               <input id="admin-grade-filter" type="text" placeholder="如 高一 / G10">
+            </label>
+            <label class="single-field">
+              <span>开始日期</span>
+              <input id="admin-date-from" type="date">
+            </label>
+            <label class="single-field">
+              <span>结束日期</span>
+              <input id="admin-date-to" type="date">
             </label>
             <label class="single-field">
               <span>专业或方向搜索</span>

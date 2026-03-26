@@ -5,6 +5,7 @@ const tokenInput = document.getElementById("admin-token");
 const loadBtn = document.getElementById("admin-load-btn");
 const clearBtn = document.getElementById("admin-clear-btn");
 const exportBtn = document.getElementById("admin-export-btn");
+const clearSmokeBtn = document.getElementById("admin-clear-smoke-btn");
 const statusEl = document.getElementById("admin-status");
 const countEl = document.getElementById("admin-count");
 const totalCountEl = document.getElementById("admin-total-count");
@@ -15,6 +16,8 @@ const listEl = document.getElementById("admin-report-list");
 const detailEl = document.getElementById("admin-detail");
 const typeFilterEl = document.getElementById("admin-type-filter");
 const gradeFilterEl = document.getElementById("admin-grade-filter");
+const dateFromEl = document.getElementById("admin-date-from");
+const dateToEl = document.getElementById("admin-date-to");
 const searchFilterEl = document.getElementById("admin-search-filter");
 
 let reports = [];
@@ -90,6 +93,8 @@ function getReportType(report) {
 function reportMatchesFilters(report) {
   const typeFilter = String(typeFilterEl.value || "").trim();
   const gradeFilter = String(gradeFilterEl.value || "").trim().toLowerCase();
+  const dateFrom = String(dateFromEl.value || "").trim();
+  const dateTo = String(dateToEl.value || "").trim();
   const searchFilter = String(searchFilterEl.value || "").trim().toLowerCase();
   const profile = report.studentProfile || {};
   const topDirection = report.directions?.[0]?.label || "";
@@ -102,6 +107,8 @@ function reportMatchesFilters(report) {
 
   if (typeFilter && getReportType(report) !== typeFilter) return false;
   if (gradeFilter && !String(profile.grade || "").toLowerCase().includes(gradeFilter)) return false;
+  if (dateFrom && String(report.submittedAt || "").slice(0, 10) < dateFrom) return false;
+  if (dateTo && String(report.submittedAt || "").slice(0, 10) > dateTo) return false;
   if (searchFilter && !haystack.includes(searchFilter)) return false;
   return true;
 }
@@ -170,6 +177,10 @@ function renderReportDetail(report) {
       <p class="result-kicker">报告详情</p>
       <h2>${escapeHtml(recommendations[0]?.name || directions[0]?.label || "报告")}</h2>
       <p class="result-summary">${escapeHtml(report.comparisons?.directionSummary || "")}</p>
+    </div>
+    <div class="admin-actions detail-actions">
+      <button id="admin-export-detail-btn" type="button" class="btn btn-ghost">导出当前报告</button>
+      <button id="admin-delete-report-btn" type="button" class="btn btn-ghost">删除当前报告</button>
     </div>
     <div class="student-summary-grid">
       <article class="student-summary-card">
@@ -240,6 +251,15 @@ function renderReportDetail(report) {
       </section>
     ` : ""}
   `;
+
+  const exportDetailBtn = document.getElementById("admin-export-detail-btn");
+  const deleteReportBtn = document.getElementById("admin-delete-report-btn");
+  if (exportDetailBtn) {
+    exportDetailBtn.addEventListener("click", () => exportReportDetail(report));
+  }
+  if (deleteReportBtn) {
+    deleteReportBtn.addEventListener("click", () => deleteReport(report.id));
+  }
 }
 
 async function fetchReports() {
@@ -257,7 +277,13 @@ async function fetchReports() {
   saveConfig();
   setStatus("正在加载报告…");
 
-  const response = await fetch(`${apiBase}/api/reports?limit=100`, {
+  const params = new URLSearchParams({ limit: "100" });
+  const dateFrom = String(dateFromEl.value || "").trim();
+  const dateTo = String(dateToEl.value || "").trim();
+  if (dateFrom) params.set("date_from", dateFrom);
+  if (dateTo) params.set("date_to", dateTo);
+
+  const response = await fetch(`${apiBase}/api/reports?${params.toString()}`, {
     headers: {
       "x-admin-token": token
     }
@@ -274,6 +300,57 @@ async function fetchReports() {
   setStatus(`已加载 ${reports.length} 份报告。`, "success");
 }
 
+async function deleteReport(id) {
+  const apiBase = String(apiBaseInput.value || "").trim().replace(/\/+$/, "");
+  const token = String(tokenInput.value || "").trim();
+  if (!apiBase || !token || !id) {
+    setStatus("缺少删除报告所需的后台配置。", "error");
+    return;
+  }
+  if (!window.confirm("确认删除这份报告吗？此操作不可撤销。")) {
+    return;
+  }
+  const response = await fetch(`${apiBase}/api/reports/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    headers: {
+      "x-admin-token": token
+    }
+  });
+  if (!response.ok) {
+    throw new Error(`删除失败（${response.status}）`);
+  }
+  reports = reports.filter((report) => report.id !== id);
+  applyFilters();
+  renderOverview();
+  renderReportList();
+  renderReportDetail(filteredReports.find((report) => report.id === selectedReportId) || null);
+  setStatus("报告已删除。", "success");
+}
+
+async function clearSmokeReports() {
+  const apiBase = String(apiBaseInput.value || "").trim().replace(/\/+$/, "");
+  const token = String(tokenInput.value || "").trim();
+  if (!apiBase || !token) {
+    setStatus("缺少清理测试数据所需的后台配置。", "error");
+    return;
+  }
+  if (!window.confirm("确认清理所有 smoke test / 测试报告吗？")) {
+    return;
+  }
+  const response = await fetch(`${apiBase}/api/reports?scope=smoke_test`, {
+    method: "DELETE",
+    headers: {
+      "x-admin-token": token
+    }
+  });
+  if (!response.ok) {
+    throw new Error(`清理失败（${response.status}）`);
+  }
+  const data = await response.json();
+  await fetchReports();
+  setStatus(`已清理 ${data.deletedCount || 0} 份测试报告。`, "success");
+}
+
 listEl.addEventListener("click", (event) => {
   const target = event.target;
   if (!(target instanceof HTMLElement)) return;
@@ -284,7 +361,7 @@ listEl.addEventListener("click", (event) => {
   renderReportDetail(filteredReports.find((report) => report.id === selectedReportId) || null);
 });
 
-[typeFilterEl, gradeFilterEl, searchFilterEl].forEach((input) => {
+[typeFilterEl, gradeFilterEl, dateFromEl, dateToEl, searchFilterEl].forEach((input) => {
   input.addEventListener("input", () => {
     applyFilters();
     renderReportList();
@@ -355,7 +432,27 @@ function exportReports() {
   setStatus(`已导出 ${filteredReports.length} 份报告。`, "success");
 }
 
+function exportReportDetail(report) {
+  const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json;charset=utf-8;" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `majornavi-report-${report.id || "detail"}.json`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
+  setStatus("当前报告已导出。", "success");
+}
+
 exportBtn.addEventListener("click", exportReports);
+clearSmokeBtn.addEventListener("click", async () => {
+  try {
+    await clearSmokeReports();
+  } catch (error) {
+    console.error(error);
+    setStatus(error.message || "测试报告清理失败。", "error");
+  }
+});
 
 loadConfig();
 renderOverview();

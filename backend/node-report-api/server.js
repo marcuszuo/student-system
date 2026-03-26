@@ -35,9 +35,16 @@ const server = http.createServer(async (req, res) => {
       return handleListReports(req, res, url);
     }
 
+    if (url.pathname === "/api/reports" && req.method === "DELETE") {
+      return handleBulkDelete(req, res, url);
+    }
+
     const reportMatch = url.pathname.match(/^\/api\/reports\/([^/]+)$/);
     if (reportMatch && req.method === "GET") {
       return handleGetReport(req, res, reportMatch[1]);
+    }
+    if (reportMatch && req.method === "DELETE") {
+      return handleDeleteReport(req, res, reportMatch[1]);
     }
 
     return respondJson(res, 404, { error: "Not found" }, corsHeaders(req));
@@ -126,6 +133,25 @@ function requireIngest(req) {
   return String(req.headers["x-report-ingest-key"] || "").trim() === INGEST_KEY;
 }
 
+function normalizeDateValue(value, boundary = "start") {
+  const text = String(value || "").trim();
+  if (!text) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    const suffix = boundary === "end" ? "T23:59:59.999Z" : "T00:00:00.000Z";
+    return new Date(`${text}${suffix}`).toISOString();
+  }
+  const date = new Date(text);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString();
+}
+
+function isSmokeTestReport(report) {
+  const id = String(report.id || "").toLowerCase();
+  const topMajor = String(report.recommendations?.[0]?.name || "").toLowerCase();
+  const topDirection = String(report.directions?.[0]?.label || "").toLowerCase();
+  return id.includes("smoke") || topMajor.includes("smoke") || topDirection.includes("smoke");
+}
+
 async function handleCreateReport(req, res) {
   if (!requireIngest(req)) {
     return respondJson(res, 403, { error: "Forbidden" }, corsHeaders(req));
@@ -153,7 +179,16 @@ function handleListReports(req, res, url) {
   }
 
   const limit = Math.min(Number(url.searchParams.get("limit") || 50), 200);
+  const dateFrom = normalizeDateValue(url.searchParams.get("date_from"), "start");
+  const dateTo = normalizeDateValue(url.searchParams.get("date_to"), "end");
   const items = readReports()
+    .filter((report) => {
+      const submittedAt = normalizeDateValue(report.submittedAt);
+      if (!submittedAt) return true;
+      if (dateFrom && submittedAt < dateFrom) return false;
+      if (dateTo && submittedAt > dateTo) return false;
+      return true;
+    })
     .sort((a, b) => String(b.submittedAt || "").localeCompare(String(a.submittedAt || "")))
     .slice(0, limit);
 
@@ -171,4 +206,35 @@ function handleGetReport(req, res, id) {
   }
 
   return respondJson(res, 200, { item }, corsHeaders(req));
+}
+
+function handleDeleteReport(req, res, id) {
+  if (!requireAdmin(req)) {
+    return respondJson(res, 403, { error: "Forbidden" }, corsHeaders(req));
+  }
+
+  const reports = readReports();
+  const next = reports.filter((report) => report.id !== id);
+  if (next.length === reports.length) {
+    return respondJson(res, 404, { error: "Not found" }, corsHeaders(req));
+  }
+  writeReports(next);
+  return respondJson(res, 200, { ok: true, id }, corsHeaders(req));
+}
+
+function handleBulkDelete(req, res, url) {
+  if (!requireAdmin(req)) {
+    return respondJson(res, 403, { error: "Forbidden" }, corsHeaders(req));
+  }
+
+  const scope = String(url.searchParams.get("scope") || "").trim();
+  if (scope !== "smoke_test") {
+    return respondJson(res, 400, { error: "Unsupported delete scope" }, corsHeaders(req));
+  }
+
+  const reports = readReports();
+  const kept = reports.filter((report) => !isSmokeTestReport(report));
+  const deletedCount = reports.length - kept.length;
+  writeReports(kept);
+  return respondJson(res, 200, { ok: true, deletedCount }, corsHeaders(req));
 }
