@@ -126,6 +126,13 @@ const BOUNDARY_TAG_RULES = [
   }
 ];
 
+const BOUNDARY_GROUP_COPY = {
+  "boundary-tech": "这一组更核心的分流点，不是“都偏理工”，而是更偏底层计算逻辑、系统交付协同，还是软硬结合的工程实现。",
+  "boundary-engineering": "这一组更核心的分流点，在于更偏控制与流程联动、现场执行推进，还是结构空间与机械实现。",
+  "boundary-business": "这一组更核心的分流点，在于更偏经营测算与风险判断、市场增长与外部影响，还是稳定的职能与资源配置。",
+  "boundary-people-media": "这一组更核心的分流点，在于更偏内容表达与传播策划、助人与支持，还是组织治理与公共事务判断。"
+};
+
 const dimensionNameMap = Object.fromEntries(
   dimensions.map((d) => [d.key, d.name || d.key])
 );
@@ -1619,6 +1626,8 @@ function buildMajorNarrative(major, studentScore) {
 function buildChoiceComparison(topMajors, studentScore) {
   if (!topMajors[1]) return "";
   const [first, second] = topMajors;
+  const boundaryTags = getBoundaryTags(first, second);
+  const boundaryDims = getBoundaryDims(first, second, 4);
   const firstCore = getMajorCoreDims(first);
   const secondCore = getMajorCoreDims(second);
   const firstOnly = firstCore.filter((dim) => !secondCore.includes(dim));
@@ -1628,15 +1637,23 @@ function buildChoiceComparison(topMajors, studentScore) {
     .sort((a, b) => b.value - a.value)[0];
   const firstLead = pickBest(firstOnly);
   const secondLead = pickBest(secondOnly);
+  const boundaryIntro = boundaryTags.length
+    ? BOUNDARY_GROUP_COPY[boundaryTags[0]] || ""
+    : "";
+  const boundaryText = boundaryDims
+    .slice(0, 2)
+    .map((dim) => formatDimensionScore(dim, studentScore))
+    .join("、");
+
   if (!firstLead && !secondLead) {
-    return `${first.name} 与 ${second.name} 的整体方向接近，建议重点比较培养方案、课程结构与未来岗位场景。`;
+    return `${first.name} 与 ${second.name} 的整体方向接近，需要重点比较培养方案、课程结构与未来岗位场景。${boundaryIntro}${boundaryText ? ` 当前更值得重点复核的边界维度是 ${boundaryText}。` : ""}`;
   }
   if (firstLead && secondLead) {
-    return `${first.name} 更看重 ${dimensionNameMap[firstLead.dim] || firstLead.dim}，而 ${second.name} 更看重 ${dimensionNameMap[secondLead.dim] || secondLead.dim}。按你当前画像，前者略占优势。`;
+    return `${first.name} 与 ${second.name} 的差异，主要体现在 ${dimensionNameMap[firstLead.dim] || firstLead.dim} 和 ${dimensionNameMap[secondLead.dim] || secondLead.dim} 两类要求上。${boundaryIntro}${first.name} 更强调 ${formatDimensionScore(firstLead.dim, studentScore)} 所代表的匹配特征，而 ${second.name} 更强调 ${formatDimensionScore(secondLead.dim, studentScore)} 所对应的发展要求；按当前画像，前者更适合作为优先考虑方向。`;
   }
   const lead = firstLead || secondLead;
   const leadMajor = firstLead ? first.name : second.name;
-  return `${leadMajor} 在 ${dimensionNameMap[lead.dim] || lead.dim} 这一要求上更鲜明，这也是它与相近方向拉开差异的地方。`;
+  return `${leadMajor} 在 ${dimensionNameMap[lead.dim] || lead.dim} 这一要求上特征更鲜明。${boundaryIntro}${boundaryText ? ` 当前画像在 ${boundaryText} 上的信息量更高，因此系统会优先将其作为分流依据。` : ""}`;
 }
 
 function buildReverseAdvice(rankedMajors, studentScore) {
