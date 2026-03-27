@@ -133,6 +133,89 @@ const BOUNDARY_GROUP_COPY = {
   "boundary-people-media": "这一组更核心的分流点，在于更偏内容表达与传播策划、助人与支持，还是组织治理与公共事务判断。"
 };
 
+const CAREER_STYLE_ARCHETYPES = [
+  {
+    id: "research_strategist",
+    label: "研究研判型",
+    test: (score) => (score["cognition.abstract"] || 0) >= 0.7 && (score["interest.i"] || 0) >= 0.65,
+    summary: "更适合在需要独立思考、深度分析和长期积累的工作中发挥价值。",
+    strengths: [
+      "面对复杂问题时，通常能够先建立逻辑框架，再进入判断与求解。",
+      "对高门槛知识、抽象概念和长期积累型任务的耐受度相对较高。"
+    ],
+    blindspots: [
+      "如果外部协同要求较高，可能不愿意花足够精力在沟通与推进上。",
+      "当任务需要快速试错和即时反馈时，容易因为过度求稳或过度分析而放慢节奏。"
+    ],
+    environment: "更适合研究分析、技术研判、策略规划、模型与方法论要求较高的环境。",
+    advice: "后续发展中，需要有意识补强表达输出和跨团队协作，避免只停留在“想得很清楚”，却难以推动外部落地。"
+  },
+  {
+    id: "execution_operator",
+    label: "执行推进型",
+    test: (score) => (score["ability.focus"] || 0) >= 0.72 && (score["cognition.system"] || 0) >= 0.68,
+    summary: "更适合在要求明确、节奏稳定、需要持续推进的岗位环境中形成稳定产出。",
+    strengths: [
+      "对规则、流程、节点和执行标准的接受度较高，能把复杂任务拆成可推进的动作。",
+      "面对长期任务时，通常能依靠节奏感和执行惯性保持投入。"
+    ],
+    blindspots: [
+      "如果环境变化过快、边界不清，容易因为缺少明确路径而产生不确定感。",
+      "在需要强创意或开放探索的任务里，可能不如在流程清晰场景中表现稳定。"
+    ],
+    environment: "更适合运营、项目管理、工程实施、流程协同、交付推进等要求持续执行的环境。",
+    advice: "后续可以继续提升对模糊任务的容忍度和自发判断能力，让自己不只擅长执行，也能更早进入统筹层。"
+  },
+  {
+    id: "influence_expression",
+    label: "表达影响型",
+    test: (score) => (score["ability.comm"] || 0) >= 0.72 && ((score["ability.writing"] || 0) >= 0.68 || (score["value.influence"] || 0) >= 0.68),
+    summary: "更适合在需要表达、沟通、说服与外部影响力的职业场景中建立优势。",
+    strengths: [
+      "更容易在与人沟通、观点表达、内容呈现和外部协调中形成存在感。",
+      "对受众感受、传播效果或合作反馈通常更敏感，适合承担连接型角色。"
+    ],
+    blindspots: [
+      "如果长期处在缺少互动、反馈很慢的环境中，投入感和成就感可能下降得更快。",
+      "当任务需要大量独立、枯燥的深度打磨时，可能会感到持续性不足。"
+    ],
+    environment: "更适合传播、品牌、市场、咨询、内容、协调类，以及需要内外部沟通的岗位环境。",
+    advice: "建议同时补强结构化思维和数据判断能力，让表达优势能转化为更稳定的职业竞争力。"
+  },
+  {
+    id: "service_support",
+    label: "支持服务型",
+    test: (score) => (score["interest.s"] || 0) >= 0.72 && (score["cognition.contextual"] || 0) >= 0.68,
+    summary: "更适合在需要理解人、支持人、协调关系与判断情境的职业环境中发挥价值。",
+    strengths: [
+      "对个体差异、关系状态和现实情境的感知通常更细，适合处理人相关的问题。",
+      "在服务支持、组织协同、公共事务或助人导向的任务中，更容易保持价值认同。"
+    ],
+    blindspots: [
+      "如果长期处于高压、强结果导向且缺少情境弹性的环境中，可能更容易感到消耗。",
+      "面对高度竞争或过度量化的评价标准时，可能会对内在认同造成冲击。"
+    ],
+    environment: "更适合教育、心理、公共服务、人力支持、组织发展等强调人和情境理解的环境。",
+    advice: "后续可以持续加强边界意识与结果表达，让自己的助人能力不仅有温度，也有更强的专业呈现。"
+  },
+  {
+    id: "stable_planner",
+    label: "稳健规划型",
+    test: (score) => (score["value.security"] || 0) >= 0.68 && (score["risk.stability"] || 0) >= 0.64,
+    summary: "更适合在预期清晰、风险可控、路径明确的环境里长期积累并形成专业优势。",
+    strengths: [
+      "更重视可预期性和稳定节奏，能在规则明确的体系中稳步提升。",
+      "对风险、试错成本和长期可持续性通常更敏感，因此做决定时会更谨慎。"
+    ],
+    blindspots: [
+      "过于追求稳妥时，可能错过部分需要承担合理不确定性的成长机会。",
+      "面对高波动、高试错成本的路径时，容易提前退回到更熟悉的选择。"
+    ],
+    environment: "更适合路径清晰、培养体系成熟、成长节奏可预期的专业和职业环境。",
+    advice: "建议在保持稳健判断的同时，为自己保留小范围试错空间，避免因为过早收缩而限制长期发展上限。"
+  }
+];
+
 const dimensionNameMap = Object.fromEntries(
   dimensions.map((d) => [d.key, d.name || d.key])
 );
@@ -1479,6 +1562,7 @@ function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoo
   const top3 = rankedMajors.slice(0, 3);
   const directionRecommendations = buildDirectionRecommendations(rankedMajors, studentVector.score);
   const topTraits = getTopDimensions(studentVector.score, 5);
+  const careerAnalysis = buildCareerDevelopmentAnalysis(studentVector.score);
   const primaryDirection = directionRecommendations[0];
   const secondaryDirection = directionRecommendations[1];
 
@@ -1505,6 +1589,10 @@ function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoo
       studentScore: Object.fromEntries(
         Object.entries(studentVector.score).map(([dim, value]) => [dim, Math.round((value || 0) * 100)])
       )
+    },
+    careerAnalysis: {
+      ...careerAnalysis,
+      axes: buildCareerStyleAxes(studentVector.score)
     },
     directions: directionRecommendations.slice(0, 2).map((direction, index) => ({
       rank: index + 1,
@@ -1703,6 +1791,91 @@ function buildRadarProfile(studentScore) {
     { key: "logic", label: "数据逻辑", value: val((studentScore["cognition.data"] + studentScore["ability.math"] + studentScore["ability.stat"]) / 3) },
     { key: "resilience", label: "韧性稳定", value: val((studentScore["risk.pressure"] + studentScore["risk.stability"] + studentScore["value.security"]) / 3) }
   ];
+}
+
+function getLowDimensions(studentScore, count = 3) {
+  return dimensionKeys
+    .map((dim) => ({ dim, value: studentScore[dim] || 0 }))
+    .sort((a, b) => a.value - b.value)
+    .slice(0, count);
+}
+
+function getCareerStyleArchetype(studentScore) {
+  return CAREER_STYLE_ARCHETYPES.find((item) => item.test(studentScore)) || CAREER_STYLE_ARCHETYPES[0];
+}
+
+function buildCareerDevelopmentAnalysis(studentScore) {
+  const archetype = getCareerStyleArchetype(studentScore);
+  const topDims = getTopDimensions(studentScore, 4);
+  const lowDims = getLowDimensions(studentScore, 3);
+  const topText = topDims.map((item) => `${item.label}${item.score}分`).join("、");
+  const lowText = lowDims.map((item) => `${dimensionNameMap[item.dim] || item.dim}${Math.round(item.value * 100)}分`).join("、");
+
+  return {
+    label: archetype.label,
+    summary: archetype.summary,
+    strengths: archetype.strengths,
+    blindspots: archetype.blindspots,
+    environment: archetype.environment,
+    advice: archetype.advice,
+    topText,
+    lowText
+  };
+}
+
+function buildCareerStyleAxes(studentScore) {
+  const axisConfigs = [
+    {
+      leftLabel: "独立研判",
+      rightLabel: "外部互动",
+      leftScore: ((studentScore["interest.i"] || 0) + (studentScore["cognition.abstract"] || 0)) / 2,
+      rightScore: ((studentScore["interest.s"] || 0) + (studentScore["ability.comm"] || 0) + (studentScore["value.influence"] || 0)) / 3,
+      leftCopy: "更适合需要独立分析、深度思考和持续沉浸的任务环境。",
+      rightCopy: "更容易在沟通协同、反馈明确和需要影响他人的任务中保持投入。"
+    },
+    {
+      leftLabel: "结构推进",
+      rightLabel: "开放探索",
+      leftScore: ((studentScore["cognition.system"] || 0) + (studentScore["ability.focus"] || 0) + (studentScore["interest.c"] || 0)) / 3,
+      rightScore: ((studentScore["interest.a"] || 0) + (studentScore["cognition.contextual"] || 0) + (studentScore["cognition.verbal"] || 0)) / 3,
+      leftCopy: "通常更适合目标清晰、节奏明确、可以按步骤持续推进的学习和工作方式。",
+      rightCopy: "通常更适合变化较多、允许试错、需要生成新思路或多方案比较的任务环境。"
+    },
+    {
+      leftLabel: "理性分析",
+      rightLabel: "情境理解",
+      leftScore: ((studentScore["cognition.data"] || 0) + (studentScore["ability.math"] || 0) + (studentScore["ability.stat"] || 0)) / 3,
+      rightScore: ((studentScore["cognition.contextual"] || 0) + (studentScore["interest.s"] || 0) + (studentScore["value.responsibility"] || 0)) / 3,
+      leftCopy: "做判断时更重视数据、逻辑链条和可验证依据。",
+      rightCopy: "做判断时更重视具体情境、人的反应和现实可执行性。"
+    },
+    {
+      leftLabel: "稳健积累",
+      rightLabel: "影响成长",
+      leftScore: ((studentScore["value.security"] || 0) + (studentScore["risk.stability"] || 0)) / 2,
+      rightScore: ((studentScore["value.influence"] || 0) + (studentScore["value.wealth"] || 0) + (studentScore["risk.pressure"] || 0)) / 3,
+      leftCopy: "职业选择中更重视路径稳定、风险可控和长期可持续发展。",
+      rightCopy: "职业选择中更愿意为了成长空间、结果影响和更高上限承担一定不确定性。"
+    }
+  ];
+
+  return axisConfigs.map((axis) => {
+    const leftValue = Math.round(axis.leftScore * 100);
+    const rightValue = Math.round(axis.rightScore * 100);
+    if (Math.abs(leftValue - rightValue) <= 5) {
+      return {
+        label: `${axis.leftLabel} / ${axis.rightLabel}`,
+        orientation: "均衡型",
+        summary: `在“${axis.leftLabel}”与“${axis.rightLabel}”之间表现相对均衡，说明你既能适应一部分结构化要求，也保留了一定的情境弹性。`
+      };
+    }
+    const preferLeft = leftValue > rightValue;
+    return {
+      label: `${axis.leftLabel} / ${axis.rightLabel}`,
+      orientation: preferLeft ? axis.leftLabel : axis.rightLabel,
+      summary: preferLeft ? axis.leftCopy : axis.rightCopy
+    };
+  });
 }
 
 function buildPersonaPreviewVector(base = {}) {
@@ -1930,6 +2103,8 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
   const traitText = topTraits.map((t) => `${t.label} ${t.score}分`).join("、");
   const radarProfile = buildRadarProfile(studentVector.score);
   const hollandCode = getHollandCode(studentVector.score);
+  const careerAnalysis = buildCareerDevelopmentAnalysis(studentVector.score);
+  const careerAxes = buildCareerStyleAxes(studentVector.score);
   const top3 = rankedMajors.slice(0, 3);
   const directionRecommendations = buildDirectionRecommendations(rankedMajors, studentVector.score);
   const primaryDirection = directionRecommendations[0];
@@ -2032,6 +2207,53 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
     </div>
   `;
 
+  const careerAnalysisHTML = `
+    <section class="career-analysis-section">
+      <div class="career-analysis-header">
+        <div>
+          <p class="career-analysis-kicker">职业性格与发展分析</p>
+          <h3>${careerAnalysis.label}</h3>
+        </div>
+        <p class="career-analysis-holland">Holland 辅助代码：${hollandCode}</p>
+      </div>
+      <p class="career-analysis-summary">${careerAnalysis.summary}</p>
+      <div class="career-analysis-grid">
+        <article class="career-analysis-card">
+          <h4>未来工作中的核心优势</h4>
+          <ul>
+            ${careerAnalysis.strengths.map((item) => `<li>${item}</li>`).join("")}
+          </ul>
+          <p class="career-analysis-note"><strong>当前优势维度：</strong>${careerAnalysis.topText}</p>
+        </article>
+        <article class="career-analysis-card">
+          <h4>可能出现的职业盲点</h4>
+          <ul>
+            ${careerAnalysis.blindspots.map((item) => `<li>${item}</li>`).join("")}
+          </ul>
+          <p class="career-analysis-note"><strong>当前相对薄弱维度：</strong>${careerAnalysis.lowText}</p>
+        </article>
+        <article class="career-analysis-card">
+          <h4>更适合的发展环境</h4>
+          <p>${careerAnalysis.environment}</p>
+        </article>
+        <article class="career-analysis-card">
+          <h4>发展建议</h4>
+          <p>${careerAnalysis.advice}</p>
+        </article>
+      </div>
+      <div class="career-axis-list">
+        ${careerAxes.map((axis) => `
+          <article class="career-axis-item">
+            <p class="career-axis-label">${axis.label}</p>
+            <strong>${axis.orientation}</strong>
+            <p>${axis.summary}</p>
+          </article>
+        `).join("")}
+      </div>
+      <p class="career-analysis-disclaimer">说明：本部分借鉴职业性格测评的阅读方式，结合 Holland 兴趣类型与本系统的学习方式、认知风格、能力特征、韧性稳定性与价值偏好生成，主要用于帮助理解学生未来在学习、工作与发展选择中的优势特征、潜在盲点与适配环境，不等同于单独的 MBTI 或 Holland 标准量表结论。</p>
+    </section>
+  `;
+
   const schoolRestrictedHTML = schoolRecommendation?.ranked?.length
     ? `
     <section class="restricted-section">
@@ -2101,6 +2323,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
         ${radarProfile.map((x) => `<span>${x.label} ${x.value}</span>`).join("")}
       </div>
     </div>
+    ${careerAnalysisHTML}
     <div class="rank-grid">${cards}</div>
     ${calibrationHTML}
     ${comparisonHTML}

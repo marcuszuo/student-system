@@ -778,6 +778,118 @@ body {
   gap: 12px;
 }
 
+.career-analysis-section {
+  margin: 18px 0;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid #d7e4da;
+  background: linear-gradient(180deg, #f7fbf8 0%, #fffdf9 100%);
+}
+
+.career-analysis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.career-analysis-kicker {
+  margin: 0 0 6px;
+  color: #4d7f6d;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.career-analysis-header h3 {
+  margin: 0;
+  color: var(--ink);
+}
+
+.career-analysis-holland {
+  margin: 0;
+  color: #4d7f6d;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.career-analysis-summary {
+  margin: 0 0 14px;
+  color: var(--ink);
+  line-height: 1.7;
+}
+
+.career-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.career-analysis-card {
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: #fffdf8;
+}
+
+.career-analysis-card h4 {
+  margin: 0 0 10px;
+}
+
+.career-analysis-card p,
+.career-analysis-card li {
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.career-analysis-card ul {
+  margin: 0 0 10px 18px;
+  padding: 0;
+}
+
+.career-analysis-note {
+  margin: 0;
+}
+
+.career-axis-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.career-axis-item {
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: #f2f8f4;
+}
+
+.career-axis-label {
+  margin: 0 0 6px;
+  color: #4d7f6d;
+  font-size: 0.85rem;
+}
+
+.career-axis-item strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #244b3d;
+}
+
+.career-axis-item p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.career-analysis-disclaimer {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
 .rank-card {
   border: 1px solid var(--line);
   border-radius: 18px;
@@ -976,6 +1088,15 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .career-analysis-header {
+    display: grid;
+  }
+
+  .career-analysis-grid,
+  .career-axis-list {
+    grid-template-columns: 1fr;
+  }
+
   .student-type-grid {
     grid-template-columns: 1fr;
   }
@@ -1103,5 +1224,9 @@ body {
   .result-meta,
   .advice {
     font-size: 0.94rem;
+  }
+
+  .career-analysis-section {
+    padding: 14px;
   }
 }
