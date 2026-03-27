@@ -353,7 +353,7 @@ const OFFICIAL_DATA = {
     {
       "id": "A13",
       "module": "A",
-      "text": "遇到一门不喜欢的课，你更可能：",
+      "text": "当一门课程暂时提不起兴趣，但又必须学下去时，你更常见的做法是：",
       "options": [
         {
           "key": "A",
@@ -407,26 +407,26 @@ const OFFICIAL_DATA = {
     {
       "id": "A15",
       "module": "A",
-      "text": "你在完成项目或作业时更接近：",
+      "text": "接到一个需要一周内完成的综合作业时，你通常会先做什么：",
       "options": [
         {
           "key": "A",
-          "text": "先定模型/思路",
+          "text": "先想清楚核心模型和判断框架",
           "dim": "cognition.abstract"
         },
         {
           "key": "B",
-          "text": "先列任务分工",
+          "text": "先拆解任务、排出执行顺序",
           "dim": "cognition.system"
         },
         {
           "key": "C",
-          "text": "先想创意呈现",
+          "text": "先想怎样呈现会更有吸引力",
           "dim": "cognition.spatial"
         },
         {
           "key": "D",
-          "text": "先沟通协调",
+          "text": "先和相关同学或老师确认要求",
           "dim": "ability.comm"
         }
       ]
@@ -434,7 +434,7 @@ const OFFICIAL_DATA = {
     {
       "id": "A16",
       "module": "A",
-      "text": "面对多学科任务，你更可能：",
+      "text": "面对一个同时涉及多门学科的任务时，你更可能：",
       "options": [
         {
           "key": "A",
@@ -947,26 +947,26 @@ const OFFICIAL_DATA = {
     {
       "id": "B10",
       "module": "B",
-      "text": "当兴趣变成“任务”时：",
+      "text": "当原本喜欢的方向被要求按周持续交付时，你的状态更接近：",
       "options": [
         {
           "key": "A",
-          "text": "仍愿意投入",
+          "text": "只要值得研究，仍愿意持续投入",
           "dim": "interest.i"
         },
         {
           "key": "B",
-          "text": "为了结果继续",
+          "text": "只要目标明确，会为了结果继续",
           "dim": "interest.e"
         },
         {
           "key": "C",
-          "text": "明显降温",
+          "text": "一旦变成固定任务，投入感会明显下降",
           "dim": "interest.a"
         },
         {
           "key": "D",
-          "text": "很快放弃",
+          "text": "如果长时间看不到变化，容易中途退出",
           "dim": "risk.stability"
         }
       ]
@@ -1001,7 +1001,7 @@ const OFFICIAL_DATA = {
     {
       "id": "B12",
       "module": "B",
-      "text": "你更能接受的进步节奏：",
+      "text": "如果一个方向需要半年以上才能看出成果，你更能接受的推进节奏是：",
       "options": [
         {
           "key": "A",
@@ -1055,7 +1055,7 @@ const OFFICIAL_DATA = {
     {
       "id": "B14",
       "module": "B",
-      "text": "你对“竞争”更接近：",
+      "text": "面对竞争明显的环境时，你更真实的反应是：",
       "options": [
         {
           "key": "A",
@@ -1109,7 +1109,7 @@ const OFFICIAL_DATA = {
     {
       "id": "B16",
       "module": "B",
-      "text": "当兴趣和成绩冲突时：",
+      "text": "如果喜欢的方向短期内不一定带来更好成绩，你通常会：",
       "options": [
         {
           "key": "A",
@@ -1163,7 +1163,7 @@ const OFFICIAL_DATA = {
     {
       "id": "B18",
       "module": "B",
-      "text": "你喜欢的学习/工作节奏：",
+      "text": "你最容易长期投入的学习或工作节奏是：",
       "options": [
         {
           "key": "A",
@@ -1217,7 +1217,7 @@ const OFFICIAL_DATA = {
     {
       "id": "B20",
       "module": "B",
-      "text": "你更容易被哪种目标驱动：",
+      "text": "如果必须连续投入三个月，你更容易被哪类目标持续驱动：",
       "options": [
         {
           "key": "A",
@@ -1298,7 +1298,7 @@ const OFFICIAL_DATA = {
     {
       "id": "B23",
       "module": "B",
-      "text": "你对“重复训练”的接受度：",
+      "text": "对于需要持续重复训练的任务，你的接受度更接近：",
       "options": [
         {
           "key": "A",
@@ -1325,7 +1325,7 @@ const OFFICIAL_DATA = {
     {
       "id": "B24",
       "module": "B",
-      "text": "你更喜欢的成果形态：",
+      "text": "如果做完一项长期投入的任务，你最希望看到的成果形态是：",
       "options": [
         {
           "key": "A",
@@ -1377,9 +1377,65 @@ const OFFICIAL_DATA = {
       ]
     },
     {
+      "id": "B26",
+      "module": "B",
+      "text": "如果一项课题要连续打磨整个学期，你更容易因为什么持续投入：",
+      "tags": ["scenario", "boundary-generic"],
+      "options": [
+        {
+          "key": "A",
+          "text": "可以把核心原理研究得更透",
+          "dim": "interest.i"
+        },
+        {
+          "key": "B",
+          "text": "最终能做出明确可交付成果",
+          "dim": "interest.e"
+        },
+        {
+          "key": "C",
+          "text": "它确实能帮助具体的人或组织",
+          "dim": "interest.s"
+        },
+        {
+          "key": "D",
+          "text": "每个阶段都能尝试新的玩法或表达",
+          "dim": "interest.a"
+        }
+      ]
+    },
+    {
+      "id": "B27",
+      "module": "B",
+      "text": "面对一份周期较长的任务清单，你更自然的投入方式是：",
+      "tags": ["scenario", "boundary-generic"],
+      "options": [
+        {
+          "key": "A",
+          "text": "先抓最值得深入研究的问题",
+          "dim": "interest.i"
+        },
+        {
+          "key": "B",
+          "text": "先锁定节点、结果和交付标准",
+          "dim": "interest.e"
+        },
+        {
+          "key": "C",
+          "text": "先确认服务对象和实际价值",
+          "dim": "interest.s"
+        },
+        {
+          "key": "D",
+          "text": "先给自己保留探索和变化空间",
+          "dim": "interest.a"
+        }
+      ]
+    },
+    {
       "id": "C01",
       "module": "C",
-      "text": "复杂问题第一反应：",
+      "text": "接到一个没有现成答案的综合任务时，你的第一反应更接近：",
       "options": [
         {
           "key": "A",
@@ -1433,7 +1489,7 @@ const OFFICIAL_DATA = {
     {
       "id": "C03",
       "module": "C",
-      "text": "没有标准答案的问题：",
+      "text": "面对没有标准答案的问题时，你更常用的判断方式是：",
       "options": [
         {
           "key": "A",
@@ -1541,7 +1597,7 @@ const OFFICIAL_DATA = {
     {
       "id": "C07",
       "module": "C",
-      "text": "你更擅长把信息变成：",
+      "text": "把一堆分散信息整理成可用成果时，你更擅长把它变成：",
       "options": [
         {
           "key": "A",
@@ -1649,7 +1705,7 @@ const OFFICIAL_DATA = {
     {
       "id": "C11",
       "module": "C",
-      "text": "你更喜欢的题目：",
+      "text": "如果同一门课可以从不同形式完成考核，你更愿意选择：",
       "options": [
         {
           "key": "A",
@@ -1730,7 +1786,7 @@ const OFFICIAL_DATA = {
     {
       "id": "C14",
       "module": "C",
-      "text": "你面对冲突信息时更接近：",
+      "text": "面对相互冲突的信息时，你更倾向于：",
       "options": [
         {
           "key": "A",
@@ -1919,7 +1975,7 @@ const OFFICIAL_DATA = {
     {
       "id": "C21",
       "module": "C",
-      "text": "你更喜欢的工作方式：",
+      "text": "在一个需要持续协作的项目中，你更喜欢的工作方式是：",
       "options": [
         {
           "key": "A",
@@ -1946,7 +2002,7 @@ const OFFICIAL_DATA = {
     {
       "id": "C22",
       "module": "C",
-      "text": "你对“理论课”的态度：",
+      "text": "对于理论性较强、短期不一定立刻见效的课程，你通常：",
       "options": [
         {
           "key": "A",
@@ -2000,7 +2056,7 @@ const OFFICIAL_DATA = {
     {
       "id": "C24",
       "module": "C",
-      "text": "你更容易犯的错是：",
+      "text": "在处理复杂任务时，你更容易出现的偏差是：",
       "options": [
         {
           "key": "A",
@@ -2048,6 +2104,118 @@ const OFFICIAL_DATA = {
           "key": "D",
           "text": "发散创意",
           "dim": "cognition.data"
+        }
+      ]
+    },
+    {
+      "id": "C26",
+      "module": "C",
+      "text": "学校准备做一个跨学科项目，你更愿意承担哪一类核心工作：",
+      "tags": ["scenario", "boundary-tech"],
+      "options": [
+        {
+          "key": "A",
+          "text": "设计算法、模型或核心逻辑框架",
+          "dim": "cognition.abstract"
+        },
+        {
+          "key": "B",
+          "text": "拆解流程、排期并保证版本交付",
+          "dim": "cognition.system"
+        },
+        {
+          "key": "C",
+          "text": "搭建装置、调试硬件或空间结构原型",
+          "dim": "cognition.spatial"
+        },
+        {
+          "key": "D",
+          "text": "负责用户访谈、内容说明与最终呈现",
+          "dim": "cognition.contextual"
+        }
+      ]
+    },
+    {
+      "id": "C27",
+      "module": "C",
+      "text": "如果参与一个智能设备项目，你最想先解决的问题是：",
+      "tags": ["scenario", "boundary-tech"],
+      "options": [
+        {
+          "key": "A",
+          "text": "核心计算逻辑是否足够稳健",
+          "dim": "cognition.abstract"
+        },
+        {
+          "key": "B",
+          "text": "系统联调与版本迭代是否顺畅",
+          "dim": "cognition.system"
+        },
+        {
+          "key": "C",
+          "text": "传感器、电路或硬件响应是否可靠",
+          "dim": "cognition.spatial"
+        },
+        {
+          "key": "D",
+          "text": "最终用户是否容易理解并使用",
+          "dim": "cognition.contextual"
+        }
+      ]
+    },
+    {
+      "id": "C28",
+      "module": "C",
+      "text": "在工程实践课里，你更愿意负责哪一类任务：",
+      "tags": ["scenario", "boundary-engineering"],
+      "options": [
+        {
+          "key": "A",
+          "text": "分析原理并优化关键参数",
+          "dim": "cognition.abstract"
+        },
+        {
+          "key": "B",
+          "text": "设定控制逻辑、流程联动和运行规则",
+          "dim": "cognition.system"
+        },
+        {
+          "key": "C",
+          "text": "处理结构设计、装配空间和机械布局",
+          "dim": "cognition.spatial"
+        },
+        {
+          "key": "D",
+          "text": "盯住执行过程、测试节奏和现场调试",
+          "dim": "ability.focus"
+        }
+      ]
+    },
+    {
+      "id": "C29",
+      "module": "C",
+      "text": "围绕一项校园公共议题做实践项目时，你更想承担：",
+      "tags": ["scenario", "boundary-people-media"],
+      "options": [
+        {
+          "key": "A",
+          "text": "采访、写作，把事实和观点讲清楚",
+          "dim": "ability.writing"
+        },
+        {
+          "key": "B",
+          "text": "传播策划与活动协同，让更多人参与",
+          "dim": "ability.comm"
+        },
+        {
+          "key": "C",
+          "text": "访谈需求并设计支持方案，直接帮助对象",
+          "dim": "value.responsibility"
+        },
+        {
+          "key": "D",
+          "text": "梳理规则、流程和协同机制，让事情长期运转",
+          "dim": "risk.stability"
         }
       ]
     },
@@ -2297,7 +2465,7 @@ const OFFICIAL_DATA = {
     {
       "id": "D10",
       "module": "D",
-      "text": "你恢复状态更靠：",
+      "text": "经历一段高压之后，你通常更依靠什么方式恢复状态：",
       "options": [
         {
           "key": "A",
@@ -2351,7 +2519,7 @@ const OFFICIAL_DATA = {
     {
       "id": "D12",
       "module": "D",
-      "text": "长期看不到回报时：",
+      "text": "如果一项长期投入迟迟看不到回报，你更可能：",
       "options": [
         {
           "key": "A",
@@ -2405,7 +2573,7 @@ const OFFICIAL_DATA = {
     {
       "id": "D14",
       "module": "D",
-      "text": "在团队中，你更接近：",
+      "text": "在一个节奏很快、要求明确的团队里，你更自然会承担：",
       "options": [
         {
           "key": "A",
@@ -2459,7 +2627,7 @@ const OFFICIAL_DATA = {
     {
       "id": "D16",
       "module": "D",
-      "text": "出现失误时，你更接近：",
+      "text": "当项目里出现明显失误时，你的第一反应更接近：",
       "options": [
         {
           "key": "A",
@@ -2540,7 +2708,7 @@ const OFFICIAL_DATA = {
     {
       "id": "D19",
       "module": "D",
-      "text": "你更常用的减压方式：",
+      "text": "你最常用、也最有效的减压方式更接近：",
       "options": [
         {
           "key": "A",
@@ -2592,6 +2760,34 @@ const OFFICIAL_DATA = {
       ]
     },
     {
+      "id": "D21",
+      "module": "D",
+      "text": "如果连续几周都处在高要求节奏里，你更常见的表现是：",
+      "tags": ["scenario", "boundary-business", "boundary-engineering"],
+      "options": [
+        {
+          "key": "A",
+          "text": "压力越大，越会主动抓关键问题推进",
+          "dim": "risk.pressure"
+        },
+        {
+          "key": "B",
+          "text": "依靠固定节奏和清单把事情稳住",
+          "dim": "ability.focus"
+        },
+        {
+          "key": "C",
+          "text": "会明显担心失误或结果不达预期",
+          "dim": "value.security"
+        },
+        {
+          "key": "D",
+          "text": "需要频繁沟通与外部支持才能保持状态",
+          "dim": "ability.comm"
+        }
+      ]
+    },
+    {
       "id": "E01",
       "module": "E",
       "text": "家庭对你学习/选择的支持：",
@@ -2621,7 +2817,7 @@ const OFFICIAL_DATA = {
     {
       "id": "E02",
       "module": "E",
-      "text": "如果专业周期很长（5-8年），你更能接受：",
+      "text": "如果一个专业培养周期较长（例如 5 到 8 年），你更能接受的是：",
       "options": [
         {
           "key": "A",
@@ -2675,7 +2871,7 @@ const OFFICIAL_DATA = {
     {
       "id": "E04",
       "module": "E",
-      "text": "你能接受的试错成本：",
+      "text": "面对升学和职业方向选择时，你能接受的试错成本更接近：",
       "options": [
         {
           "key": "A",
@@ -2756,7 +2952,7 @@ const OFFICIAL_DATA = {
     {
       "id": "E07",
       "module": "E",
-      "text": "你更能接受的职业路径：",
+      "text": "你更能接受的职业发展路径是：",
       "options": [
         {
           "key": "A",
@@ -2810,7 +3006,7 @@ const OFFICIAL_DATA = {
     {
       "id": "E09",
       "module": "E",
-      "text": "你更愿意选择：",
+      "text": "如果学校和专业只能二选一，你更可能优先考虑：",
       "options": [
         {
           "key": "A",
@@ -2837,7 +3033,7 @@ const OFFICIAL_DATA = {
     {
       "id": "E10",
       "module": "E",
-      "text": "你对“家庭期望”的处理方式：",
+      "text": "面对家庭对升学方向的期待时，你更常见的处理方式是：",
       "options": [
         {
           "key": "A",
@@ -2918,7 +3114,7 @@ const OFFICIAL_DATA = {
     {
       "id": "E13",
       "module": "E",
-      "text": "你对“城市/平台资源”的看法：",
+      "text": "在选择学校城市和平台资源时，你更看重：",
       "options": [
         {
           "key": "A",
@@ -2945,7 +3141,7 @@ const OFFICIAL_DATA = {
     {
       "id": "E14",
       "module": "E",
-      "text": "你希望未来工作更接近：",
+      "text": "你希望未来长期投入的工作更接近：",
       "options": [
         {
           "key": "A",
@@ -2993,6 +3189,62 @@ const OFFICIAL_DATA = {
           "key": "D",
           "text": "体验灵活型",
           "dim": "value.influence"
+        }
+      ]
+    },
+    {
+      "id": "E16",
+      "module": "E",
+      "text": "如果你只能从三类实习机会里优先选一个，你更倾向：",
+      "tags": ["scenario", "boundary-business"],
+      "options": [
+        {
+          "key": "A",
+          "text": "财务分析、经营测算或风险判断类岗位",
+          "dim": "value.wealth"
+        },
+        {
+          "key": "B",
+          "text": "增长运营、品牌传播或市场拓展类岗位",
+          "dim": "value.influence"
+        },
+        {
+          "key": "C",
+          "text": "人才发展、组织支持或公共服务类岗位",
+          "dim": "value.responsibility"
+        },
+        {
+          "key": "D",
+          "text": "流程清晰、节奏稳定的综合职能岗位",
+          "dim": "value.security"
+        }
+      ]
+    },
+    {
+      "id": "E17",
+      "module": "E",
+      "text": "如果未来三年的主要目标只能选一个，你更倾向优先追求：",
+      "tags": ["scenario", "boundary-business", "boundary-people-media"],
+      "options": [
+        {
+          "key": "A",
+          "text": "建立高门槛能力，争取更强的发展上限",
+          "dim": "value.wealth"
+        },
+        {
+          "key": "B",
+          "text": "进入更有影响力的平台或更能带来外部机会的路径",
+          "dim": "value.influence"
+        },
+        {
+          "key": "C",
+          "text": "进入更有社会价值、也更符合内心认同的方向",
+          "dim": "value.responsibility"
+        },
+        {
+          "key": "D",
+          "text": "保持节奏可控、风险较低、可预期的成长路径",
+          "dim": "value.security"
         }
       ]
     }

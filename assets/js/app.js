@@ -15,7 +15,7 @@ function normalizeQuestion(question) {
     moduleOrder: meta.order,
     moduleLabel: meta.label,
     intent: meta.intent,
-    tags: [...meta.tags],
+    tags: [...new Set([...(meta.tags || []), ...((question.tags || []))])],
     dimensionSet: [...new Set(question.options.map((option) => option.dim))]
   };
 }
@@ -105,6 +105,25 @@ const CONSISTENCY_PAIRS = [
   ["A01", "A10"], ["A02", "A19"], ["A04", "A17"], ["A07", "A18"],
   ["B02", "B13"], ["B03", "B10"], ["C01", "C16"], ["C05", "C18"],
   ["D02", "D16"], ["D06", "D15"], ["E03", "E14"], ["E07", "E15"]
+];
+
+const BOUNDARY_TAG_RULES = [
+  {
+    tags: ["boundary-tech"],
+    names: ["计算机科学与技术", "软件工程", "电子信息工程"]
+  },
+  {
+    tags: ["boundary-engineering"],
+    names: ["电气工程及其自动化", "自动化", "机械设计制造及其自动化"]
+  },
+  {
+    tags: ["boundary-business"],
+    names: ["财务管理", "金融学", "市场营销"]
+  },
+  {
+    tags: ["boundary-people-media"],
+    names: ["新闻学", "传播学", "心理学", "人力资源管理", "公共管理"]
+  }
 ];
 
 const dimensionNameMap = Object.fromEntries(
@@ -404,6 +423,13 @@ function getBoundaryDims(firstMajor, secondMajor, topN = 4) {
     .map((item) => item.dim);
 }
 
+function getBoundaryTags(firstMajor, secondMajor) {
+  const names = [firstMajor?.name, secondMajor?.name].filter(Boolean);
+  return BOUNDARY_TAG_RULES
+    .filter((rule) => names.every((name) => rule.names.includes(name)))
+    .flatMap((rule) => rule.tags);
+}
+
 function buildPriorityDims(studentScore, rankedMajors) {
   const topMajor = rankedMajors[0];
   const compareMajor = rankedMajors[1];
@@ -415,10 +441,12 @@ function buildPriorityDims(studentScore, rankedMajors) {
   const topCore = topMajor ? getMajorCoreDims(topMajor, 5) : [];
   const compareCore = compareMajor ? getMajorCoreDims(compareMajor, 5) : [];
   const boundaryDims = getBoundaryDims(topMajor, compareMajor, 4);
+  const boundaryTags = getBoundaryTags(topMajor, compareMajor);
   const priorityDims = [...new Set([...boundaryDims, ...topCore, ...compareCore, ...lowDims])];
   return {
     priorityDims,
     boundaryDims,
+    boundaryTags,
     lowDims,
     topCore,
     compareCore
@@ -429,6 +457,7 @@ function selectCalibrationQuestions(pool, calibrationPlan, count) {
   if (!pool.length || count <= 0) return [];
   const priorityDims = calibrationPlan.priorityDims || [];
   const boundaryDims = calibrationPlan.boundaryDims || [];
+  const boundaryTags = calibrationPlan.boundaryTags || [];
   const lowDims = calibrationPlan.lowDims || [];
   const remaining = pool.slice();
   const selected = [];
@@ -443,11 +472,15 @@ function selectCalibrationQuestions(pool, calibrationPlan, count) {
       const priorityGain = question.dimensionSet.filter((dim) => priorityDims.includes(dim) && !coveredPriority.has(dim)).length;
       const priorityHits = question.dimensionSet.filter((dim) => priorityDims.includes(dim)).length;
       const boundaryHits = question.dimensionSet.filter((dim) => boundaryDims.includes(dim)).length;
+      const boundaryTagHits = (question.tags || []).filter((tag) => boundaryTags.includes(tag)).length;
+      const scenarioHits = (question.tags || []).includes("scenario") ? 1 : 0;
       const supportHits = question.dimensionSet.filter((dim) => lowDims.includes(dim)).length;
       const modulePenalty = moduleCount.get(question.module) || 0;
       const score = priorityGain * 100
         + boundaryHits * 40
+        + boundaryTagHits * 45
         + priorityHits * 20
+        + scenarioHits * 8
         + supportHits * 14
         + question.dimensionSet.length * 5
         - modulePenalty * 8;
@@ -479,7 +512,9 @@ function selectFollowUpQuestions(pool, boundaryDims, count) {
     .map((question) => {
       const boundaryHits = question.dimensionSet.filter((dim) => boundaryDims.includes(dim)).length;
       const exactCoreHits = question.dimensionSet.filter((dim) => boundaryDims.slice(0, 2).includes(dim)).length;
-      return { question, score: exactCoreHits * 100 + boundaryHits * 40 + question.dimensionSet.length * 5 };
+      const boundaryTagHits = (question.tags || []).filter((tag) => (calibrationContext?.boundaryTags || []).includes(tag)).length;
+      const scenarioHits = (question.tags || []).includes("scenario") ? 1 : 0;
+      return { question, score: exactCoreHits * 100 + boundaryHits * 40 + boundaryTagHits * 50 + scenarioHits * 10 + question.dimensionSet.length * 5 };
     })
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score)
@@ -1744,6 +1779,7 @@ function appendCalibrationQuestions() {
     topMajor: rankedMajors[0]?.name || "",
     compareMajor: rankedMajors[1]?.name || "",
     boundaryDims: calibrationPlan.boundaryDims || [],
+    boundaryTags: calibrationPlan.boundaryTags || [],
     lowDims: calibrationPlan.lowDims || []
   };
   followUpAdded = false;
@@ -1954,7 +1990,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
     ? `
     <section class="advice">
       <h3>完整评估自适应校准说明</h3>
-      <p>本次正式完整评估在核心评估完成后，围绕 ${calibrationContext.topMajor || "当前优先方向"}${calibrationContext.compareMajor ? ` 与 ${calibrationContext.compareMajor}` : ""} 的关键分流维度，追加了针对性校准题。重点校准维度包括：${calibrationContext.boundaryDims.map((dim) => dimensionNameMap[dim] || dim).join("、")}；同时补充关注了当前相对薄弱的维度：${(calibrationContext.lowDims || []).map((dim) => dimensionNameMap[dim] || dim).join("、")}。${followUpAdded ? "由于校准后优先方向仍然接近，系统已进一步追加分流追问题，以增强排序判别力。" : ""}</p>
+      <p>本次正式完整评估在核心评估完成后，围绕 ${calibrationContext.topMajor || "当前优先方向"}${calibrationContext.compareMajor ? ` 与 ${calibrationContext.compareMajor}` : ""} 的关键分流维度，追加了针对性校准题。重点校准维度包括：${calibrationContext.boundaryDims.map((dim) => dimensionNameMap[dim] || dim).join("、")}；同时补充关注了当前相对薄弱的维度：${(calibrationContext.lowDims || []).map((dim) => dimensionNameMap[dim] || dim).join("、")}。系统会优先抽取更贴近真实学习、项目与选择场景的问题，以提高相近方向之间的判别力。${followUpAdded ? "由于校准后优先方向仍然接近，系统已进一步追加分流追问题，以增强排序判别力。" : ""}</p>
     </section>
   `
     : "";
@@ -2302,6 +2338,7 @@ quizForm.addEventListener("submit", (event) => {
       topMajor: rankedMajors[0]?.name || calibrationContext?.topMajor || "",
       compareMajor: rankedMajors[1]?.name || calibrationContext?.compareMajor || "",
       boundaryDims: getBoundaryDims(rankedMajors[0], rankedMajors[1], 4),
+      boundaryTags: getBoundaryTags(rankedMajors[0], rankedMajors[1]),
       lowDims: (calibrationContext?.lowDims || [])
     };
     const appended = appendBoundaryFollowUpQuestions();
