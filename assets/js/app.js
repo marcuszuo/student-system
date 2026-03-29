@@ -1502,6 +1502,45 @@ const DIRECTION_GROUP_RULES = [
   }
 ];
 
+const CAREER_DIRECTION_GUIDANCE = {
+  cs: {
+    focus: "后续更建议优先通过编程项目、系统搭建、算法练习或产品技术协作，验证自己对持续迭代和技术深度的真实投入感。",
+    blindspot: "如果只停留在兴趣层，而没有进入长期编码、调试和版本迭代，很容易高估与该方向的稳定适配度。 "
+  },
+  ee: {
+    focus: "后续更建议通过电路、控制、硬件调试、机器人或工程实践项目，验证自己对工程细节、系统联动和现场执行的持续适应度。",
+    blindspot: "如果只认可理工标签，而没有接触真实工程调试与执行场景，容易低估该方向对耐心、细节和工程规范的要求。"
+  },
+  me: {
+    focus: "后续更建议接触结构设计、制造流程、设备理解和空间建模任务，确认自己是否真的喜欢从设计到落地的完整工程过程。",
+    blindspot: "如果仅凭“动手能力不错”就判断适合，可能会低估该方向对空间理解、工程稳定性和长期执行的要求。"
+  },
+  built: {
+    focus: "后续更建议通过项目案例、识图训练、空间设计或工程协同任务，确认自己对项目周期、现场协同和责任链条的适应度。",
+    blindspot: "如果只关注行业名称或外部印象，容易忽视这一方向对现场推进、责任意识与长期协同能力的要求。"
+  },
+  biz: {
+    focus: "后续更建议通过经营分析、数据判断、商业策划或客户场景练习，确认自己是否既能理解结果目标，也能接受长期运营与协同压力。",
+    blindspot: "如果只把经管方向理解为‘泛管理’，可能会忽略其中对数据判断、结果压力和组织推进能力的要求。"
+  },
+  media: {
+    focus: "后续更建议通过内容策划、作品输出、用户洞察或传播项目，检验自己是否能把表达兴趣转化成持续产出与专业判断。",
+    blindspot: "如果只喜欢表达本身，而没有进入真实内容打磨、反馈修正和用户理解过程，容易高估与该方向的匹配度。"
+  },
+  social: {
+    focus: "后续更建议通过助人服务、组织支持、公共议题或观察记录任务，确认自己是否能够在长期关系和现实情境中保持投入。",
+    blindspot: "如果只凭价值认同感做判断，可能会低估该方向对边界意识、专业表达和长期情绪稳定性的要求。"
+  },
+  science: {
+    focus: "后续更建议通过研究阅读、实验训练、学科探究和长期专题积累，确认自己是否真正适应理论理解与持续钻研的路径。",
+    blindspot: "如果只因为学科成绩较好就判断适合，可能会低估该方向对耐心、抽象理解和长期研究投入的要求。"
+  },
+  general: {
+    focus: "后续更建议结合课程体验、项目参与和阶段性成果复盘，进一步判断自己更适合偏研究、偏执行、偏表达还是偏服务的路径。",
+    blindspot: "如果过早依赖单次结果下结论，可能会忽略真实环境体验对方向判断的重要性。"
+  }
+};
+
 function getDirectionGroupForMajor(major) {
   const text = `${major.name} ${major.category} ${major.courses}`.toLowerCase();
   const matched = DIRECTION_GROUP_RULES.find((rule) => rule.patterns.some((pattern) => pattern.test(text)));
@@ -1558,11 +1597,16 @@ function buildDirectionRecommendations(rankedMajors, studentScore) {
     });
 }
 
+function getCareerDirectionGuidance(rankedMajors, studentScore) {
+  const direction = buildDirectionRecommendations(rankedMajors, studentScore)[0];
+  return CAREER_DIRECTION_GUIDANCE[direction?.key || "general"] || CAREER_DIRECTION_GUIDANCE.general;
+}
+
 function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoolRecommendation) {
   const top3 = rankedMajors.slice(0, 3);
   const directionRecommendations = buildDirectionRecommendations(rankedMajors, studentVector.score);
   const topTraits = getTopDimensions(studentVector.score, 5);
-  const careerAnalysis = buildCareerDevelopmentAnalysis(studentVector.score);
+  const careerAnalysis = buildCareerDevelopmentAnalysis(studentVector.score, rankedMajors);
   const primaryDirection = directionRecommendations[0];
   const secondaryDirection = directionRecommendations[1];
 
@@ -1804,10 +1848,11 @@ function getCareerStyleArchetype(studentScore) {
   return CAREER_STYLE_ARCHETYPES.find((item) => item.test(studentScore)) || CAREER_STYLE_ARCHETYPES[0];
 }
 
-function buildCareerDevelopmentAnalysis(studentScore) {
+function buildCareerDevelopmentAnalysis(studentScore, rankedMajors = []) {
   const archetype = getCareerStyleArchetype(studentScore);
   const topDims = getTopDimensions(studentScore, 4);
   const lowDims = getLowDimensions(studentScore, 3);
+  const directionGuidance = getCareerDirectionGuidance(rankedMajors, studentScore);
   const topText = topDims.map((item) => `${item.label}${item.score}分`).join("、");
   const lowText = lowDims.map((item) => `${dimensionNameMap[item.dim] || item.dim}${Math.round(item.value * 100)}分`).join("、");
 
@@ -1817,7 +1862,8 @@ function buildCareerDevelopmentAnalysis(studentScore) {
     strengths: archetype.strengths,
     blindspots: archetype.blindspots,
     environment: archetype.environment,
-    advice: archetype.advice,
+    advice: `${archetype.advice}${directionGuidance.focus ? ` ${directionGuidance.focus}` : ""}`.trim(),
+    directionBlindspot: directionGuidance.blindspot || "",
     topText,
     lowText
   };
@@ -2103,7 +2149,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
   const traitText = topTraits.map((t) => `${t.label} ${t.score}分`).join("、");
   const radarProfile = buildRadarProfile(studentVector.score);
   const hollandCode = getHollandCode(studentVector.score);
-  const careerAnalysis = buildCareerDevelopmentAnalysis(studentVector.score);
+  const careerAnalysis = buildCareerDevelopmentAnalysis(studentVector.score, rankedMajors);
   const careerAxes = buildCareerStyleAxes(studentVector.score);
   const top3 = rankedMajors.slice(0, 3);
   const directionRecommendations = buildDirectionRecommendations(rankedMajors, studentVector.score);
@@ -2231,6 +2277,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
             ${careerAnalysis.blindspots.map((item) => `<li>${item}</li>`).join("")}
           </ul>
           <p class="career-analysis-note"><strong>当前相对薄弱维度：</strong>${careerAnalysis.lowText}</p>
+          ${careerAnalysis.directionBlindspot ? `<p class="career-analysis-note"><strong>方向判断提醒：</strong>${careerAnalysis.directionBlindspot}</p>` : ""}
         </article>
         <article class="career-analysis-card">
           <h4>更适合的发展环境</h4>

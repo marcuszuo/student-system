@@ -195,6 +195,7 @@ function renderReportDetail(report) {
   const directions = report.directions || [];
   const recommendations = report.recommendations || [];
   const schoolRestricted = report.schoolRestricted?.recommendations || [];
+  const careerAnalysis = report.careerAnalysis || null;
 
   detailEl.innerHTML = `
     <div class="admin-detail-header">
@@ -241,6 +242,54 @@ function renderReportDetail(report) {
       <h3>方向结论</h3>
       <p>${escapeHtml(directions.map((item, index) => `${index === 0 ? "优先" : "次优"}：${item.label}`).join("；") || "暂无")}</p>
     </section>
+    ${careerAnalysis ? `
+      <section class="career-analysis-section">
+        <div class="career-analysis-header">
+          <div>
+            <p class="career-analysis-kicker">职业性格与发展分析</p>
+            <h3>${escapeHtml(careerAnalysis.label || "")}</h3>
+          </div>
+          <p class="career-analysis-holland">Holland 辅助代码：${escapeHtml(report.scoring?.hollandCode || "")}</p>
+        </div>
+        <p class="career-analysis-summary">${escapeHtml(careerAnalysis.summary || "")}</p>
+        <div class="career-analysis-grid">
+          <article class="career-analysis-card">
+            <h4>未来工作中的核心优势</h4>
+            <ul>
+              ${(careerAnalysis.strengths || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+            </ul>
+            <p class="career-analysis-note"><strong>当前优势维度：</strong>${escapeHtml(careerAnalysis.topText || "")}</p>
+          </article>
+          <article class="career-analysis-card">
+            <h4>可能出现的职业盲点</h4>
+            <ul>
+              ${(careerAnalysis.blindspots || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+            </ul>
+            <p class="career-analysis-note"><strong>当前相对薄弱维度：</strong>${escapeHtml(careerAnalysis.lowText || "")}</p>
+            ${careerAnalysis.directionBlindspot ? `<p class="career-analysis-note"><strong>方向判断提醒：</strong>${escapeHtml(careerAnalysis.directionBlindspot)}</p>` : ""}
+          </article>
+          <article class="career-analysis-card">
+            <h4>更适合的发展环境</h4>
+            <p>${escapeHtml(careerAnalysis.environment || "")}</p>
+          </article>
+          <article class="career-analysis-card">
+            <h4>发展建议</h4>
+            <p>${escapeHtml(careerAnalysis.advice || "")}</p>
+          </article>
+        </div>
+        ${(careerAnalysis.axes || []).length ? `
+          <div class="career-axis-list">
+            ${(careerAnalysis.axes || []).map((axis) => `
+              <article class="career-axis-item">
+                <p class="career-axis-label">${escapeHtml(axis.label || "")}</p>
+                <strong>${escapeHtml(axis.orientation || "")}</strong>
+                <p>${escapeHtml(axis.summary || "")}</p>
+              </article>
+            `).join("")}
+          </div>
+        ` : ""}
+      </section>
+    ` : ""}
     <div class="rank-grid">
       ${recommendations.map((item) => `
         <article class="rank-card">
