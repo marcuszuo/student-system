@@ -16,6 +16,7 @@ const listEl = document.getElementById("admin-report-list");
 const detailEl = document.getElementById("admin-detail");
 const sortFilterEl = document.getElementById("admin-sort-filter");
 const typeFilterEl = document.getElementById("admin-type-filter");
+const followupFilterEl = document.getElementById("admin-followup-filter");
 const gradeFilterEl = document.getElementById("admin-grade-filter");
 const dateFromEl = document.getElementById("admin-date-from");
 const dateToEl = document.getElementById("admin-date-to");
@@ -91,8 +92,19 @@ function getReportType(report) {
   );
 }
 
+function getFollowupStatusLabel(status) {
+  const map = {
+    new: "新报告",
+    pending: "待跟进",
+    contacted: "已沟通",
+    high_intent: "高意向"
+  };
+  return map[String(status || "").trim()] || "新报告";
+}
+
 function reportMatchesFilters(report) {
   const typeFilter = String(typeFilterEl.value || "").trim();
+  const followupFilter = String(followupFilterEl.value || "").trim();
   const gradeFilter = String(gradeFilterEl.value || "").trim().toLowerCase();
   const dateFrom = String(dateFromEl.value || "").trim();
   const dateTo = String(dateToEl.value || "").trim();
@@ -107,6 +119,7 @@ function reportMatchesFilters(report) {
     .toLowerCase();
 
   if (typeFilter && getReportType(report) !== typeFilter) return false;
+  if (followupFilter && String(report.adminMeta?.status || "new") !== followupFilter) return false;
   if (gradeFilter && !String(profile.grade || "").toLowerCase().includes(gradeFilter)) return false;
   if (dateFrom && String(report.submittedAt || "").slice(0, 10) < dateFrom) return false;
   if (dateTo && String(report.submittedAt || "").slice(0, 10) > dateTo) return false;
@@ -174,6 +187,7 @@ function renderReportList() {
       </div>
       <p>${escapeHtml(summarizeProfile(report))}</p>
       <p>${escapeHtml(formatDateTime(report.submittedAt))}</p>
+      <p><span class="admin-status-badge admin-status-${escapeHtml(String(report.adminMeta?.status || "new"))}">${escapeHtml(getFollowupStatusLabel(report.adminMeta?.status))}</span></p>
       ${report.adminMeta?.note ? `<p class="admin-report-note-flag">已备注</p>` : ""}
     </button>
   `).join("");
@@ -228,10 +242,19 @@ function renderReportDetail(report) {
     <section class="advice note-editor">
       <div class="note-editor-head">
         <h3>后台备注</h3>
-        <button id="admin-save-note-btn" type="button" class="btn btn-ghost">保存备注</button>
+        <button id="admin-save-note-btn" type="button" class="btn btn-ghost">保存跟进信息</button>
       </div>
+      <label class="single-field">
+        <span>跟进状态</span>
+        <select id="admin-followup-status">
+          <option value="new" ${String(report.adminMeta?.status || "new") === "new" ? "selected" : ""}>新报告</option>
+          <option value="pending" ${String(report.adminMeta?.status || "") === "pending" ? "selected" : ""}>待跟进</option>
+          <option value="contacted" ${String(report.adminMeta?.status || "") === "contacted" ? "selected" : ""}>已沟通</option>
+          <option value="high_intent" ${String(report.adminMeta?.status || "") === "high_intent" ? "selected" : ""}>高意向</option>
+        </select>
+      </label>
       <textarea id="admin-note-input" rows="5" placeholder="可记录已沟通、待跟进、高意向、家长关注点等后台备注。">${escapeHtml(report.adminMeta?.note || "")}</textarea>
-      <p class="note-meta">${escapeHtml(report.adminMeta?.updatedAt ? `最近更新：${formatDateTime(report.adminMeta.updatedAt)}` : "尚未填写后台备注。")}</p>
+      <p class="note-meta">${escapeHtml(report.adminMeta?.updatedAt ? `最近更新：${formatDateTime(report.adminMeta.updatedAt)}` : "尚未填写后台备注。")} 当前状态：${escapeHtml(getFollowupStatusLabel(report.adminMeta?.status))}</p>
     </section>
     <section class="advice">
       <h3>画像摘要</h3>
@@ -440,19 +463,21 @@ async function saveReportNote(id) {
   const apiBase = String(apiBaseInput.value || "").trim().replace(/\/+$/, "");
   const token = String(tokenInput.value || "").trim();
   const noteInput = document.getElementById("admin-note-input");
-  if (!apiBase || !token || !id || !(noteInput instanceof HTMLTextAreaElement)) {
+  const statusInput = document.getElementById("admin-followup-status");
+  if (!apiBase || !token || !id || !(noteInput instanceof HTMLTextAreaElement) || !(statusInput instanceof HTMLSelectElement)) {
     setStatus("缺少保存备注所需的后台配置。", "error");
     return;
   }
 
   const note = noteInput.value.trim();
+  const followupStatus = String(statusInput.value || "new").trim();
   const response = await fetch(`${apiBase}/api/reports/${encodeURIComponent(id)}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
       "x-admin-token": token
     },
-    body: JSON.stringify({ adminNote: note })
+    body: JSON.stringify({ adminNote: note, adminStatus: followupStatus })
   });
   if (!response.ok) {
     throw new Error(`备注保存失败（${response.status}）`);
@@ -463,7 +488,7 @@ async function saveReportNote(id) {
   applyFilters();
   renderReportList();
   renderReportDetail(filteredReports.find((report) => report.id === selectedReportId) || null);
-  setStatus("后台备注已保存。", "success");
+  setStatus("后台跟进信息已保存。", "success");
 }
 
 listEl.addEventListener("click", (event) => {
@@ -476,7 +501,7 @@ listEl.addEventListener("click", (event) => {
   renderReportDetail(filteredReports.find((report) => report.id === selectedReportId) || null);
 });
 
-[sortFilterEl, typeFilterEl, gradeFilterEl, dateFromEl, dateToEl, searchFilterEl].forEach((input) => {
+[sortFilterEl, typeFilterEl, followupFilterEl, gradeFilterEl, dateFromEl, dateToEl, searchFilterEl].forEach((input) => {
   input.addEventListener("input", () => {
     applyFilters();
     renderReportList();
@@ -520,7 +545,7 @@ function exportReports() {
   }
 
   const rows = [
-    ["提交时间", "学生类型", "年级", "课程背景", "优先方向", "首选专业", "匹配度"],
+    ["提交时间", "学生类型", "年级", "课程背景", "跟进状态", "优先方向", "首选专业", "匹配度", "后台备注"],
     ...filteredReports.map((report) => {
       const profile = report.studentProfile || {};
       return [
@@ -528,9 +553,11 @@ function exportReports() {
         profile.typeLabel || "",
         profile.grade || "",
         profile.curriculumSummary || "",
+        getFollowupStatusLabel(report.adminMeta?.status),
         report.directions?.[0]?.label || "",
         report.recommendations?.[0]?.name || "",
-        report.recommendations?.[0]?.matchIndex || ""
+        report.recommendations?.[0]?.matchIndex || "",
+        report.adminMeta?.note || ""
       ];
     })
   ];

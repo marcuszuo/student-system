@@ -2676,6 +2676,18 @@ resultBox.addEventListener("click", (event) => {
       mode: selectedMode,
       label: "report_export"
     });
+    const detailsNodes = Array.from(resultBox.querySelectorAll(".rank-details"));
+    const previousOpenStates = detailsNodes.map((node) => node instanceof HTMLDetailsElement ? node.open : false);
+    detailsNodes.forEach((node) => {
+      if (node instanceof HTMLDetailsElement) node.open = true;
+    });
+    const restoreDetails = () => {
+      detailsNodes.forEach((node, index) => {
+        if (node instanceof HTMLDetailsElement) node.open = previousOpenStates[index];
+      });
+      window.removeEventListener("afterprint", restoreDetails);
+    };
+    window.addEventListener("afterprint", restoreDetails);
     window.print();
   }
 });

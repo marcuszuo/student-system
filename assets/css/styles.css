@@ -534,6 +534,35 @@ body {
   font-size: 0.88rem;
 }
 
+.admin-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.admin-status-new {
+  background: #edf4ef;
+  color: #4d7f6d;
+}
+
+.admin-status-pending {
+  background: #fff3d6;
+  color: #9a5b00;
+}
+
+.admin-status-contacted {
+  background: #e8f7ef;
+  color: #166534;
+}
+
+.admin-status-high_intent {
+  background: #fde8e2;
+  color: #b3411f;
+}
+
 .admin-content {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
@@ -1050,8 +1079,15 @@ body {
 }
 
 @media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
   body {
     background: #fff;
+    color: #111827;
+    font-size: 11pt;
   }
 
   .hero,
@@ -1070,6 +1106,37 @@ body {
 
   #result {
     display: block !important;
+  }
+
+  .career-analysis-section,
+  .rank-card,
+  .advice,
+  .restricted-section,
+  .student-summary-card,
+  .radar-wrap {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .summary-chips span,
+  .career-axis-item,
+  .career-analysis-card,
+  .rank-card,
+  .student-summary-card {
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+
+  .rank-details {
+    display: block;
+  }
+
+  .rank-details summary {
+    list-style: none;
+  }
+
+  .rank-details summary::-webkit-details-marker {
+    display: none;
   }
 }
 

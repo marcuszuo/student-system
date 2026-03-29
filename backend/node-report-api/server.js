@@ -232,6 +232,9 @@ async function handleUpdateReport(req, res, id) {
 
   const payload = await readBody(req);
   const adminNote = String(payload.adminNote || "").trim();
+  const allowedStatuses = new Set(["new", "pending", "contacted", "high_intent"]);
+  const adminStatusRaw = String(payload.adminStatus || "").trim();
+  const adminStatus = allowedStatuses.has(adminStatusRaw) ? adminStatusRaw : "new";
   const reports = readReports();
   const index = reports.findIndex((report) => report.id === id);
   if (index === -1) {
@@ -244,6 +247,7 @@ async function handleUpdateReport(req, res, id) {
     adminMeta: {
       ...(current.adminMeta || {}),
       note: adminNote,
+      status: adminStatus,
       updatedAt: new Date().toISOString()
     }
   };
