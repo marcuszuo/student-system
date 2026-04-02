@@ -130,7 +130,7 @@ const BOUNDARY_GROUP_COPY = {
   "boundary-tech": "这一组更核心的分流点，不是“都偏理工”，而是更偏底层计算逻辑、系统交付协同，还是软硬结合的工程实现。",
   "boundary-engineering": "这一组更核心的分流点，在于更偏控制与流程联动、现场执行推进，还是结构空间与机械实现。",
   "boundary-business": "这一组更核心的分流点，在于更偏经营测算与风险判断、市场增长与外部影响，还是稳定的职能与资源配置。",
-  "boundary-people-media": "这一组更核心的分流点，在于更偏内容表达与传播策划、助人与支持，还是组织治理与公共事务判断。"
+  "boundary-people-media": "这一组更核心的分流点，在于更偏事实表达与传播转化、个体支持与发展辅导，还是组织治理、制度协同与公共事务判断。"
 };
 
 const CAREER_STYLE_ARCHETYPES = [

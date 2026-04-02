@@ -210,6 +210,7 @@ function renderReportDetail(report) {
   const recommendations = report.recommendations || [];
   const schoolRestricted = report.schoolRestricted?.recommendations || [];
   const careerAnalysis = report.careerAnalysis || null;
+  const developmentInsights = report.developmentInsights || null;
 
   detailEl.innerHTML = `
     <div class="admin-detail-header">
@@ -311,6 +312,34 @@ function renderReportDetail(report) {
             `).join("")}
           </div>
         ` : ""}
+      </section>
+    ` : ""}
+    ${developmentInsights ? `
+      <section class="development-insights-section">
+        <div class="development-insights-header">
+          <div>
+            <p class="career-analysis-kicker">大学学习方式与培养提醒</p>
+            <h3>${escapeHtml(developmentInsights.directionLabel || "")}</h3>
+          </div>
+        </div>
+        <div class="development-insights-grid">
+          <article class="development-insight-card">
+            <h4>更适合的大学学习方式</h4>
+            <p>${escapeHtml(developmentInsights.learningStyle || "")}</p>
+          </article>
+          <article class="development-insight-card">
+            <h4>当前不太适合的培养环境</h4>
+            <p>${escapeHtml(developmentInsights.unsuitableEnvironment || "")}</p>
+          </article>
+          <article class="development-insight-card">
+            <h4>家长沟通建议</h4>
+            <p>${escapeHtml(developmentInsights.parentAdvice || "")}</p>
+          </article>
+          <article class="development-insight-card">
+            <h4>相近方向选择提醒</h4>
+            <p>${escapeHtml(developmentInsights.selectionReminder || "")}</p>
+          </article>
+        </div>
       </section>
     ` : ""}
     <div class="rank-grid">

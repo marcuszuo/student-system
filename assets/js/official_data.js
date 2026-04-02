@@ -1489,6 +1489,34 @@ const OFFICIAL_DATA = {
       ]
     },
     {
+      "id": "B30",
+      "module": "B",
+      "text": "如果老师让你长期承担一类学生支持任务，你更愿意坚持：",
+      "tags": ["scenario", "boundary-people-media"],
+      "options": [
+        {
+          "key": "A",
+          "text": "持续整理真实案例，把问题和经验讲清楚",
+          "dim": "interest.a"
+        },
+        {
+          "key": "B",
+          "text": "持续做访谈、理解个体处境并提供支持",
+          "dim": "interest.s"
+        },
+        {
+          "key": "C",
+          "text": "持续优化协同流程和制度安排，让体系更稳定",
+          "dim": "interest.c"
+        },
+        {
+          "key": "D",
+          "text": "持续推动资源协调和结果落实，让项目更有影响",
+          "dim": "interest.e"
+        }
+      ]
+    },
+    {
       "id": "C01",
       "module": "C",
       "text": "接到一个没有现成答案的综合任务时，你的第一反应更接近：",
@@ -2328,6 +2356,34 @@ const OFFICIAL_DATA = {
           "key": "D",
           "text": "分析问题成因并形成可持续的干预框架",
           "dim": "cognition.abstract"
+        }
+      ]
+    },
+    {
+      "id": "C32",
+      "module": "C",
+      "text": "如果围绕同一类学生问题制定方案，你更想先判断：",
+      "tags": ["scenario", "boundary-people-media"],
+      "options": [
+        {
+          "key": "A",
+          "text": "如何把问题与建议表达得更清楚，让外界理解",
+          "dim": "cognition.verbal"
+        },
+        {
+          "key": "B",
+          "text": "问题背后的心理机制和个体差异是什么",
+          "dim": "cognition.abstract"
+        },
+        {
+          "key": "C",
+          "text": "组织中哪些制度、角色和协同链条需要调整",
+          "dim": "cognition.system"
+        },
+        {
+          "key": "D",
+          "text": "在真实情境里，哪些人最需要优先支持、怎样推进更稳",
+          "dim": "cognition.contextual"
         }
       ]
     },
@@ -3413,6 +3469,34 @@ const OFFICIAL_DATA = {
           "key": "D",
           "text": "让流程、规范和运行质量长期保持稳定",
           "dim": "value.security"
+        }
+      ]
+    },
+    {
+      "id": "E20",
+      "module": "E",
+      "text": "如果未来从事人与组织相关工作，你更看重哪类长期价值：",
+      "tags": ["scenario", "boundary-people-media"],
+      "options": [
+        {
+          "key": "A",
+          "text": "让观点和信息被更多人准确理解并产生影响",
+          "dim": "value.influence"
+        },
+        {
+          "key": "B",
+          "text": "帮助个体获得更稳定的发展和支持",
+          "dim": "value.responsibility"
+        },
+        {
+          "key": "C",
+          "text": "建立更清晰的制度、流程和组织秩序",
+          "dim": "value.security"
+        },
+        {
+          "key": "D",
+          "text": "通过更有效的资源配置提升整体结果与效率",
+          "dim": "value.wealth"
         }
       ]
     }
