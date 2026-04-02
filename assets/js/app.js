@@ -1541,6 +1541,63 @@ const CAREER_DIRECTION_GUIDANCE = {
   }
 };
 
+const REPORT_DIRECTION_INSIGHTS = {
+  cs: {
+    learningStyle: "更适合以项目驱动、版本迭代和问题拆解为主的大学学习方式。进入大学后，如果能在课程作业、编程实践、竞赛或实验室项目中持续把“写出来、跑起来、改下去”当作核心训练，通常更容易建立稳定的专业认同。",
+    unsuitableEnvironment: "不太适合只有兴趣表达、但缺少系统训练和长期调试要求的培养环境。如果学习过程中长期停留在浅层体验，而没有进入代码质量、系统联调和技术复盘，后续容易出现投入感下降。",
+    parentAdvice: "家长沟通时更适合关注学生是否愿意长期投入到重复调试、问题定位和持续迭代，而不仅是“喜欢电脑”或“觉得方向热门”。如果学生能在面对卡顿、报错和版本重构时依然保持投入，这类方向的稳定性会更高。",
+    selectionReminder: "在计算机、软件和电子信息这类相近方向之间做选择时，重点看学生更享受底层逻辑构建、系统交付协同，还是软硬结合的工程实现。"
+  },
+  ee: {
+    learningStyle: "更适合在“原理学习 + 实验调试 + 系统联动”中形成理解的大学学习方式。大学阶段如果能接受实验课、联调、控制逻辑和工程规范反复打磨，通常更容易在这一方向获得成就感。",
+    unsuitableEnvironment: "不太适合只强调理论成绩、却长期缺少实验和工程场景的培养路径。对电子电气与自动化类方向来说，如果不愿意处理细节、规范和联调问题，后续容易觉得学习负担偏重。",
+    parentAdvice: "家长沟通时更适合关注学生是否愿意在真实工程任务里承担细节责任，而不是只因为理工成绩较好就默认适合。真正的稳定适配，往往体现在对实验、调试和流程执行的接受度上。",
+    selectionReminder: "在电子信息、电气和自动化之间做选择时，要重点判断学生更偏底层器件与系统、控制逻辑与流程联动，还是更偏执行现场与工程推进。"
+  },
+  me: {
+    learningStyle: "更适合把“结构理解、设备认知、空间想象和制造流程”结合起来学习。大学阶段如果能从图纸、结构、装配到制造逻辑逐步建立完整认知，这类方向的适配度通常会更稳定。",
+    unsuitableEnvironment: "不太适合只凭“喜欢动手”来判断，而缺少对空间结构、工程稳定性和长期执行的真实体验。如果学生对重复装配、机械原理或制造过程耐受度较低，后续可能出现兴趣回落。",
+    parentAdvice: "家长沟通时更适合观察学生是否对设备运行、结构关系和工程落地过程本身有持续耐心，而不只是短时的实操新鲜感。机械类方向更看重长期的空间理解和工程执行稳定性。",
+    selectionReminder: "在机械、自动化和电气等相近方向中，重点比较学生更适合结构空间与装备实现，还是更适合控制联动与系统运行。"
+  },
+  built: {
+    learningStyle: "更适合在案例、图纸、现场协同和项目推进中建立理解。大学阶段如果学生愿意从课程理论走向项目执行、空间判断和责任链条管理，这一方向更容易形成稳定投入。",
+    unsuitableEnvironment: "不太适合只凭行业印象做选择，而缺少对项目周期、现场协同和长期执行责任的理解。如果学生对复杂协同和持续推进耐受度较低，后续会感到压力较大。",
+    parentAdvice: "家长沟通时更适合关注学生是否能接受阶段长、链条长、责任明确的任务环境。土木、建筑与环境工程类方向往往不是短期反馈型路径，更需要稳定投入和责任意识。",
+    selectionReminder: "在土木、建筑、环境与规划等方向中，重点看学生更适合空间设计、项目落地、环境治理还是工程协同。"
+  },
+  biz: {
+    learningStyle: "更适合在案例分析、数据判断、经营理解与协同推进中学习。大学阶段如果学生愿意围绕结果目标、组织分工和商业逻辑持续训练，这类方向通常更容易形成成熟感。",
+    unsuitableEnvironment: "不太适合只把经管理解成“泛管理”或“看起来好就业”的路径。如果学生对数据判断、结果压力、资源配置和长期执行兴趣不足，后续可能觉得内容偏空或偏杂。",
+    parentAdvice: "家长沟通时更适合区分学生是更偏财务测算与风险判断、市场增长与外部影响，还是偏组织支持与稳定运营。经管类内部差异很大，越早分清越能减少后续转向成本。",
+    selectionReminder: "在财务、金融、市场、人力与公管等相近方向之间选择时，重点看学生更在意收益与判断、影响与增长，还是稳定配置与组织支持。"
+  },
+  media: {
+    learningStyle: "更适合以作品产出、内容打磨、用户洞察和反馈修正为主的学习方式。大学阶段如果学生愿意长期写、长期改、长期表达，并接受真实受众反馈，这类方向更容易建立专业自信。",
+    unsuitableEnvironment: "不太适合只有兴趣表达、却缺少内容生产节奏和外部反馈机制的培养环境。如果学生更喜欢“有灵感时表达”，却不愿意长期打磨作品，后续容易高估适配度。",
+    parentAdvice: "家长沟通时更适合关注学生是否愿意持续产出、接受修改和面对公开反馈，而不是只因为擅长表达就判断完全适合。传播设计与内容方向更看重长期输出能力。",
+    selectionReminder: "在新闻、传播、设计和内容表达类方向中，重点看学生更擅长事实表达、传播策划、用户理解，还是更偏创意呈现与作品打磨。"
+  },
+  social: {
+    learningStyle: "更适合在真实情境、长期观察、关系互动和责任承担中学习。大学阶段如果学生能够在服务、支持、公共议题和组织协作中维持稳定投入，这类方向更容易形成长期认同。",
+    unsuitableEnvironment: "不太适合只凭价值认同或共情感做选择，而缺少对边界意识、制度理解和情绪稳定要求的认识。如果学生在长期关系任务中消耗较大，后续需要更谨慎判断。",
+    parentAdvice: "家长沟通时更适合关注学生是否能在助人、服务、组织支持或公共事务中稳定承担责任，而不是只看是否“有爱心”或“愿意帮助别人”。真正的适配更看重长期稳定性。",
+    selectionReminder: "在心理、教育、公共管理、人力与社会服务方向中，重点看学生更适合个体支持、组织治理，还是公共事务与长期服务。"
+  },
+  science: {
+    learningStyle: "更适合以阅读、实验、推导、专题积累和长期研究训练为主的大学学习方式。大学阶段如果学生能够接受前期反馈较慢、但知识壁垒较高的学习过程，这类方向更容易形成深度优势。",
+    unsuitableEnvironment: "不太适合只凭成绩好就判断完全适合。如果学生对长期理论积累、实验耐心或抽象分析的耐受度不够，后续可能会觉得学习节奏偏慢、成果反馈偏迟。",
+    parentAdvice: "家长沟通时更适合关注学生是否愿意在高门槛学科中长期投入，而不是只用分数判断。基础研究与生命科学类方向更看重持续钻研，而不是短期结果表现。",
+    selectionReminder: "在基础研究、生命科学和理工应用方向之间选择时，重点判断学生更适合长期理论钻研，还是更适合工程应用与结果导向路径。"
+  },
+  general: {
+    learningStyle: "更适合通过课程体验、项目参与和阶段性成果复盘，逐步确认自己更适合偏研究、偏执行、偏表达还是偏服务的学习路径。",
+    unsuitableEnvironment: "不太适合过早把单次结果理解成最终定论。对尚未明显收敛的学生来说，过快锁定单一方向，往往会压缩后续真实探索空间。",
+    parentAdvice: "家长沟通时更适合把当前报告理解为“优先探索顺序”，而不是唯一答案。先帮助学生进入更合适的体验环境，再根据表现继续收敛方向，会更稳。",
+    selectionReminder: "当前更适合先看方向组差异，再通过课程、项目和真实体验逐步收敛到具体专业。"
+  }
+};
+
 function getDirectionGroupForMajor(major) {
   const text = `${major.name} ${major.category} ${major.courses}`.toLowerCase();
   const matched = DIRECTION_GROUP_RULES.find((rule) => rule.patterns.some((pattern) => pattern.test(text)));
@@ -1602,11 +1659,17 @@ function getCareerDirectionGuidance(rankedMajors, studentScore) {
   return CAREER_DIRECTION_GUIDANCE[direction?.key || "general"] || CAREER_DIRECTION_GUIDANCE.general;
 }
 
+function getReportDirectionInsights(rankedMajors, studentScore) {
+  const direction = buildDirectionRecommendations(rankedMajors, studentScore)[0];
+  return REPORT_DIRECTION_INSIGHTS[direction?.key || "general"] || REPORT_DIRECTION_INSIGHTS.general;
+}
+
 function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoolRecommendation) {
   const top3 = rankedMajors.slice(0, 3);
   const directionRecommendations = buildDirectionRecommendations(rankedMajors, studentVector.score);
   const topTraits = getTopDimensions(studentVector.score, 5);
   const careerAnalysis = buildCareerDevelopmentAnalysis(studentVector.score, rankedMajors);
+  const developmentInsights = buildDevelopmentInsights(rankedMajors, studentVector.score);
   const primaryDirection = directionRecommendations[0];
   const secondaryDirection = directionRecommendations[1];
 
@@ -1638,6 +1701,7 @@ function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoo
       ...careerAnalysis,
       axes: buildCareerStyleAxes(studentVector.score)
     },
+    developmentInsights,
     directions: directionRecommendations.slice(0, 2).map((direction, index) => ({
       rank: index + 1,
       key: direction.key,
@@ -1866,6 +1930,18 @@ function buildCareerDevelopmentAnalysis(studentScore, rankedMajors = []) {
     directionBlindspot: directionGuidance.blindspot || "",
     topText,
     lowText
+  };
+}
+
+function buildDevelopmentInsights(rankedMajors, studentScore) {
+  const direction = buildDirectionRecommendations(rankedMajors, studentScore)[0];
+  const insights = getReportDirectionInsights(rankedMajors, studentScore);
+  return {
+    directionLabel: direction?.label || "当前优先方向",
+    learningStyle: insights.learningStyle,
+    unsuitableEnvironment: insights.unsuitableEnvironment,
+    parentAdvice: insights.parentAdvice,
+    selectionReminder: insights.selectionReminder
   };
 }
 
@@ -2151,6 +2227,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
   const hollandCode = getHollandCode(studentVector.score);
   const careerAnalysis = buildCareerDevelopmentAnalysis(studentVector.score, rankedMajors);
   const careerAxes = buildCareerStyleAxes(studentVector.score);
+  const developmentInsights = buildDevelopmentInsights(rankedMajors, studentVector.score);
   const top3 = rankedMajors.slice(0, 3);
   const directionRecommendations = buildDirectionRecommendations(rankedMajors, studentVector.score);
   const primaryDirection = directionRecommendations[0];
@@ -2301,6 +2378,35 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
     </section>
   `;
 
+  const developmentInsightsHTML = `
+    <section class="development-insights-section">
+      <div class="development-insights-header">
+        <div>
+          <p class="career-analysis-kicker">大学学习方式与培养提醒</p>
+          <h3>${developmentInsights.directionLabel}</h3>
+        </div>
+      </div>
+      <div class="development-insights-grid">
+        <article class="development-insight-card">
+          <h4>更适合的大学学习方式</h4>
+          <p>${developmentInsights.learningStyle}</p>
+        </article>
+        <article class="development-insight-card">
+          <h4>当前不太适合的培养环境</h4>
+          <p>${developmentInsights.unsuitableEnvironment}</p>
+        </article>
+        <article class="development-insight-card">
+          <h4>家长沟通建议</h4>
+          <p>${developmentInsights.parentAdvice}</p>
+        </article>
+        <article class="development-insight-card">
+          <h4>相近方向选择提醒</h4>
+          <p>${developmentInsights.selectionReminder}</p>
+        </article>
+      </div>
+    </section>
+  `;
+
   const schoolRestrictedHTML = schoolRecommendation?.ranked?.length
     ? `
     <section class="restricted-section">
@@ -2370,8 +2476,9 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
         ${radarProfile.map((x) => `<span>${x.label} ${x.value}</span>`).join("")}
       </div>
     </div>
-    ${careerAnalysisHTML}
-    <div class="rank-grid">${cards}</div>
+      ${careerAnalysisHTML}
+      ${developmentInsightsHTML}
+      <div class="rank-grid">${cards}</div>
     ${calibrationHTML}
     ${comparisonHTML}
     ${reverseAdviceHTML}

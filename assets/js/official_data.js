@@ -1433,6 +1433,62 @@ const OFFICIAL_DATA = {
       ]
     },
     {
+      "id": "B28",
+      "module": "B",
+      "text": "如果同时拿到三类社团任务，你会更想先接哪一种：",
+      "tags": ["scenario", "boundary-business", "boundary-people-media"],
+      "options": [
+        {
+          "key": "A",
+          "text": "根据历史数据和预算，判断活动方案是否划算",
+          "dim": "interest.c"
+        },
+        {
+          "key": "B",
+          "text": "负责拉新、宣传和活动曝光，让结果更好看",
+          "dim": "interest.e"
+        },
+        {
+          "key": "C",
+          "text": "照顾成员状态、协调分工，让团队运转更顺",
+          "dim": "interest.s"
+        },
+        {
+          "key": "D",
+          "text": "负责文案、内容和视觉表达，让整体更有吸引力",
+          "dim": "interest.a"
+        }
+      ]
+    },
+    {
+      "id": "B29",
+      "module": "B",
+      "text": "如果未来的大学任务里必须长期投入一种工作，你更愿意坚持：",
+      "tags": ["scenario", "boundary-tech", "boundary-engineering"],
+      "options": [
+        {
+          "key": "A",
+          "text": "持续研究模型、逻辑和底层原理",
+          "dim": "interest.i"
+        },
+        {
+          "key": "B",
+          "text": "持续优化交付节奏、推动项目结果达成",
+          "dim": "interest.e"
+        },
+        {
+          "key": "C",
+          "text": "持续改进设备、结构或工程实现细节",
+          "dim": "interest.r"
+        },
+        {
+          "key": "D",
+          "text": "持续输出表达内容，让更多人理解和接受成果",
+          "dim": "interest.a"
+        }
+      ]
+    },
+    {
       "id": "C01",
       "module": "C",
       "text": "接到一个没有现成答案的综合任务时，你的第一反应更接近：",
@@ -2216,6 +2272,62 @@ const OFFICIAL_DATA = {
           "key": "D",
           "text": "梳理规则、流程和协同机制，让事情长期运转",
           "dim": "risk.stability"
+        }
+      ]
+    },
+    {
+      "id": "C30",
+      "module": "C",
+      "text": "如果围绕同一个商业案例做分析，你更想先抓住哪类核心问题：",
+      "tags": ["scenario", "boundary-business"],
+      "options": [
+        {
+          "key": "A",
+          "text": "财务结构、风险点和经营测算是否成立",
+          "dim": "cognition.data"
+        },
+        {
+          "key": "B",
+          "text": "用户增长路径和市场转化是否可行",
+          "dim": "cognition.contextual"
+        },
+        {
+          "key": "C",
+          "text": "组织分工、流程配置和执行机制是否稳定",
+          "dim": "cognition.system"
+        },
+        {
+          "key": "D",
+          "text": "对外表达、品牌故事和内容呈现是否有说服力",
+          "dim": "cognition.verbal"
+        }
+      ]
+    },
+    {
+      "id": "C31",
+      "module": "C",
+      "text": "如果要处理一个学生支持项目，你更想先解决哪类核心问题：",
+      "tags": ["scenario", "boundary-people-media"],
+      "options": [
+        {
+          "key": "A",
+          "text": "把访谈材料整理成清晰文字和事实表达",
+          "dim": "cognition.verbal"
+        },
+        {
+          "key": "B",
+          "text": "设计传播路径，让更多学生真正参与进来",
+          "dim": "cognition.contextual"
+        },
+        {
+          "key": "C",
+          "text": "建立支持流程、记录机制和协同规范",
+          "dim": "cognition.system"
+        },
+        {
+          "key": "D",
+          "text": "分析问题成因并形成可持续的干预框架",
+          "dim": "cognition.abstract"
         }
       ]
     },
@@ -3244,6 +3356,62 @@ const OFFICIAL_DATA = {
         {
           "key": "D",
           "text": "保持节奏可控、风险较低、可预期的成长路径",
+          "dim": "value.security"
+        }
+      ]
+    },
+    {
+      "id": "E18",
+      "module": "E",
+      "text": "如果未来工作的成就感只能来自一种结果，你更看重：",
+      "tags": ["scenario", "boundary-business", "boundary-people-media"],
+      "options": [
+        {
+          "key": "A",
+          "text": "通过判断和决策，为组织创造更清晰的收益与安全边界",
+          "dim": "value.wealth"
+        },
+        {
+          "key": "B",
+          "text": "把项目做大、把影响扩大，让更多人看见并认可",
+          "dim": "value.influence"
+        },
+        {
+          "key": "C",
+          "text": "真正改善某类人的处境，形成长期可持续的支持",
+          "dim": "value.responsibility"
+        },
+        {
+          "key": "D",
+          "text": "建立稳定秩序，让事情长期按预期高质量运转",
+          "dim": "value.security"
+        }
+      ]
+    },
+    {
+      "id": "E19",
+      "module": "E",
+      "text": "如果未来进入理工类方向，你更愿意长期承担哪类核心责任：",
+      "tags": ["scenario", "boundary-tech", "boundary-engineering"],
+      "options": [
+        {
+          "key": "A",
+          "text": "不断优化算法、模型或底层计算逻辑",
+          "dim": "value.wealth"
+        },
+        {
+          "key": "B",
+          "text": "持续推动系统联动、项目交付和工程结果落地",
+          "dim": "value.influence"
+        },
+        {
+          "key": "C",
+          "text": "在设备、结构或硬件实现上把细节做扎实",
+          "dim": "value.responsibility"
+        },
+        {
+          "key": "D",
+          "text": "让流程、规范和运行质量长期保持稳定",
           "dim": "value.security"
         }
       ]

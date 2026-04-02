@@ -919,6 +919,49 @@ body {
   line-height: 1.6;
 }
 
+.development-insights-section {
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid #d8e5dc;
+  background: linear-gradient(180deg, #f7fbf8 0%, #fffdfa 100%);
+}
+
+.development-insights-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.development-insights-header h3 {
+  margin: 0;
+}
+
+.development-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.development-insight-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px;
+  background: #fff;
+}
+
+.development-insight-card h4 {
+  margin: 0 0 8px;
+}
+
+.development-insight-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
 .rank-card {
   border: 1px solid var(--line);
   border-radius: 18px;
@@ -1109,6 +1152,7 @@ body {
   }
 
   .career-analysis-section,
+  .development-insights-section,
   .rank-card,
   .advice,
   .restricted-section,
@@ -1160,7 +1204,8 @@ body {
   }
 
   .career-analysis-grid,
-  .career-axis-list {
+  .career-axis-list,
+  .development-insights-grid {
     grid-template-columns: 1fr;
   }
 
