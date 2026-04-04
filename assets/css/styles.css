@@ -774,6 +774,29 @@ body {
   font-size: 0.88rem;
 }
 
+.advisor-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.advisor-tags span {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #fff8ef;
+  border: 1px solid #ead8c4;
+  color: #7c4a26;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.advisor-tags-admin {
+  margin-bottom: 0;
+}
+
 .school-major-box {
   margin-top: 18px;
 }

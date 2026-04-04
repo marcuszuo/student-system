@@ -118,6 +118,7 @@ function reportMatchesFilters(report) {
     topMajor,
     secondMajor,
     profile.curriculumSummary,
+    ...(report.advisorTags || []),
     report.comparisons?.advisorConclusion,
     report.developmentInsights?.directionLabel,
     report.developmentInsights?.parentAdvice,
@@ -220,6 +221,7 @@ function renderReportDetail(report) {
   const schoolRestricted = report.schoolRestricted?.recommendations || [];
   const careerAnalysis = report.careerAnalysis || null;
   const developmentInsights = report.developmentInsights || null;
+  const advisorTags = report.advisorTags || [];
 
   detailEl.innerHTML = `
     <div class="admin-detail-header">
@@ -271,6 +273,14 @@ function renderReportDetail(report) {
       <p>${escapeHtml((topTraits || []).map((item) => `${item.label}${item.score}分`).join("、") || "暂无")}</p>
       <p>${escapeHtml(report.scoring?.weightingSummary || "")}</p>
     </section>
+    ${advisorTags.length ? `
+      <section class="advice">
+        <h3>顾问标签</h3>
+        <div class="advisor-tags advisor-tags-admin">
+          ${advisorTags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}
+        </div>
+      </section>
+    ` : ""}
     <section class="advice">
       <h3>方向结论</h3>
       <p>${escapeHtml(directions.map((item, index) => `${index === 0 ? "优先" : "次优"}：${item.label}`).join("；") || "暂无")}</p>

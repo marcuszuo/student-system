@@ -138,6 +138,14 @@ const BOUNDARY_GROUP_COPY = {
   "boundary-psych-org-public": "对于心理、人力与公共管理这组方向，更关键的不是“都跟人有关”，而是更偏个体理解与支持、更偏组织与人才配置，还是更偏制度协同与公共治理。"
 };
 
+const BOUNDARY_PRIORITY_HINTS = {
+  "boundary-tech": ["cognition.abstract", "cognition.system", "cognition.spatial", "interest.r"],
+  "boundary-engineering": ["cognition.system", "cognition.spatial", "ability.focus", "interest.r"],
+  "boundary-business": ["interest.c", "ability.stat", "value.wealth", "value.influence"],
+  "boundary-people-media": ["ability.writing", "ability.comm", "cognition.contextual", "value.responsibility"],
+  "boundary-psych-org-public": ["interest.i", "risk.stability", "value.responsibility", "cognition.system"]
+};
+
 const CAREER_STYLE_ARCHETYPES = [
   {
     id: "research_strategist",
@@ -537,11 +545,13 @@ function buildPriorityDims(studentScore, rankedMajors) {
   const compareCore = compareMajor ? getMajorCoreDims(compareMajor, 5) : [];
   const boundaryDims = getBoundaryDims(topMajor, compareMajor, 4);
   const boundaryTags = getBoundaryTags(topMajor, compareMajor);
-  const priorityDims = [...new Set([...boundaryDims, ...topCore, ...compareCore, ...lowDims])];
+  const hintDims = boundaryTags.flatMap((tag) => BOUNDARY_PRIORITY_HINTS[tag] || []);
+  const priorityDims = [...new Set([...boundaryDims, ...hintDims, ...topCore, ...compareCore, ...lowDims])];
   return {
     priorityDims,
     boundaryDims,
     boundaryTags,
+    hintDims,
     lowDims,
     topCore,
     compareCore
@@ -1675,6 +1685,7 @@ function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoo
   const topTraits = getTopDimensions(studentVector.score, 5);
   const careerAnalysis = buildCareerDevelopmentAnalysis(studentVector.score, rankedMajors);
   const developmentInsights = buildDevelopmentInsights(rankedMajors, studentVector.score);
+  const advisorTags = buildAdvisorTags(studentVector.score, rankedMajors);
   const primaryDirection = directionRecommendations[0];
   const secondaryDirection = directionRecommendations[1];
 
@@ -1706,6 +1717,7 @@ function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoo
       ...careerAnalysis,
       axes: buildCareerStyleAxes(studentVector.score)
     },
+    advisorTags,
     developmentInsights,
     directions: directionRecommendations.slice(0, 2).map((direction, index) => ({
       rank: index + 1,
@@ -1973,6 +1985,44 @@ function buildDevelopmentInsights(rankedMajors, studentScore) {
     parentAdvice: insights.parentAdvice,
     selectionReminder: insights.selectionReminder
   };
+}
+
+function buildAdvisorTags(studentScore, rankedMajors) {
+  const direction = buildDirectionRecommendations(rankedMajors, studentScore)[0];
+  const tags = [];
+  const topDims = getTopDimensions(studentScore, 4).map((item) => item.dim);
+
+  if ((studentScore["interest.i"] || 0) >= 0.7 && (studentScore["cognition.abstract"] || 0) >= 0.7) {
+    tags.push("偏研究分析");
+  }
+  if ((studentScore["cognition.system"] || 0) >= 0.7 || (studentScore["ability.focus"] || 0) >= 0.72) {
+    tags.push("偏结构推进");
+  }
+  if ((studentScore["ability.writing"] || 0) >= 0.72 && (studentScore["cognition.verbal"] || 0) >= 0.72) {
+    tags.push("偏事实表达");
+  }
+  if ((studentScore["ability.comm"] || 0) >= 0.75 && (studentScore["value.influence"] || 0) >= 0.72) {
+    tags.push("偏传播转化");
+  }
+  if ((studentScore["interest.s"] || 0) >= 0.78 && (studentScore["value.responsibility"] || 0) >= 0.78) {
+    tags.push("偏个体支持");
+  }
+  if ((studentScore["risk.stability"] || 0) >= 0.72 && (studentScore["cognition.system"] || 0) >= 0.62) {
+    tags.push("偏组织治理");
+  }
+  if ((studentScore["interest.c"] || 0) >= 0.72 && (studentScore["ability.stat"] || 0) >= 0.68) {
+    tags.push("偏经营测算");
+  }
+
+  if (direction?.label) {
+    tags.unshift(direction.label);
+  }
+
+  if (!tags.length) {
+    tags.push("综合发展型");
+  }
+
+  return [...new Set(tags)].slice(0, 4);
 }
 
 function buildCareerStyleAxes(studentScore) {
@@ -2258,6 +2308,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
   const careerAnalysis = buildCareerDevelopmentAnalysis(studentVector.score, rankedMajors);
   const careerAxes = buildCareerStyleAxes(studentVector.score);
   const developmentInsights = buildDevelopmentInsights(rankedMajors, studentVector.score);
+  const advisorTags = buildAdvisorTags(studentVector.score, rankedMajors);
   const top3 = rankedMajors.slice(0, 3);
   const directionRecommendations = buildDirectionRecommendations(rankedMajors, studentVector.score);
   const primaryDirection = directionRecommendations[0];
@@ -2368,6 +2419,13 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
       </article>
     </div>
   `;
+  const advisorTagsHTML = advisorTags.length
+    ? `
+      <div class="advisor-tags">
+        ${advisorTags.map((tag) => `<span>${tag}</span>`).join("")}
+      </div>
+    `
+    : "";
 
   const careerAnalysisHTML = `
     <section class="career-analysis-section">
@@ -2503,6 +2561,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
         <span>${weightingSummary}</span>
         <span>Holland：${hollandCode}</span>
       </div>
+      ${advisorTagsHTML}
       ${directionSummary ? `<p class="result-meta">${directionSummary}</p>` : ""}
       <p class="result-meta">综合画像采用 8 维模型：6维兴趣（Holland）+ 2维能力韧性（选专业更实用）。</p>
     </div>
