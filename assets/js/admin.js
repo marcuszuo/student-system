@@ -113,7 +113,16 @@ function reportMatchesFilters(report) {
   const topDirection = report.directions?.[0]?.label || "";
   const topMajor = report.recommendations?.[0]?.name || "";
   const secondMajor = report.recommendations?.[1]?.name || "";
-  const haystack = [topDirection, topMajor, secondMajor, profile.curriculumSummary]
+  const haystack = [
+    topDirection,
+    topMajor,
+    secondMajor,
+    profile.curriculumSummary,
+    report.comparisons?.advisorConclusion,
+    report.developmentInsights?.directionLabel,
+    report.developmentInsights?.parentAdvice,
+    report.developmentInsights?.selectionReminder
+  ]
     .filter(Boolean)
     .join(" ")
     .toLowerCase();

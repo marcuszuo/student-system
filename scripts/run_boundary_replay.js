@@ -134,6 +134,34 @@ function main() {
       majors: ["财务管理", "金融学", "市场营销"]
     },
     {
+      name: "偏经营测算：财务 vs 金融 vs 市场",
+      vector: buildBaseVector({
+        "interest.e": 0.74,
+        "interest.c": 0.82,
+        "cognition.data": 0.76,
+        "ability.stat": 0.78,
+        "ability.comm": 0.58,
+        "value.wealth": 0.82,
+        "risk.pressure": 0.58,
+        "value.security": 0.66
+      }),
+      majors: ["财务管理", "金融学", "市场营销"]
+    },
+    {
+      name: "偏增长传播：财务 vs 金融 vs 市场",
+      vector: buildBaseVector({
+        "interest.e": 0.84,
+        "interest.a": 0.68,
+        "interest.c": 0.58,
+        "cognition.contextual": 0.74,
+        "ability.comm": 0.8,
+        "value.influence": 0.84,
+        "value.wealth": 0.7,
+        "risk.pressure": 0.7
+      }),
+      majors: ["财务管理", "金融学", "市场营销"]
+    },
+    {
       name: "新闻 vs 传播 边界画像",
       vector: buildBaseVector({
         "interest.a": 0.8,
@@ -143,6 +171,30 @@ function main() {
         "ability.writing": 0.84,
         "ability.comm": 0.8,
         "value.influence": 0.72
+      }),
+      majors: ["新闻学", "传播学"]
+    },
+    {
+      name: "偏事实表达：新闻 vs 传播",
+      vector: buildBaseVector({
+        "interest.a": 0.72,
+        "cognition.verbal": 0.86,
+        "ability.writing": 0.88,
+        "ability.comm": 0.72,
+        "cognition.contextual": 0.58,
+        "value.influence": 0.62
+      }),
+      majors: ["新闻学", "传播学"]
+    },
+    {
+      name: "偏传播转化：新闻 vs 传播",
+      vector: buildBaseVector({
+        "interest.a": 0.82,
+        "interest.e": 0.72,
+        "ability.comm": 0.86,
+        "cognition.contextual": 0.78,
+        "ability.writing": 0.62,
+        "value.influence": 0.82
       }),
       majors: ["新闻学", "传播学"]
     },
