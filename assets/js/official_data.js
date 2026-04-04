@@ -1492,7 +1492,7 @@ const OFFICIAL_DATA = {
       "id": "B30",
       "module": "B",
       "text": "如果老师让你长期承担一类学生支持任务，你更愿意坚持：",
-      "tags": ["scenario", "boundary-people-media"],
+      "tags": ["scenario", "boundary-people-media", "boundary-psych-org-public"],
       "options": [
         {
           "key": "A",
@@ -2279,7 +2279,7 @@ const OFFICIAL_DATA = {
       "id": "C29",
       "module": "C",
       "text": "围绕一项校园公共议题做实践项目时，你更想承担：",
-      "tags": ["scenario", "boundary-people-media"],
+      "tags": ["scenario", "boundary-people-media", "boundary-psych-org-public"],
       "options": [
         {
           "key": "A",
@@ -2335,7 +2335,7 @@ const OFFICIAL_DATA = {
       "id": "C31",
       "module": "C",
       "text": "如果要处理一个学生支持项目，你更想先解决哪类核心问题：",
-      "tags": ["scenario", "boundary-people-media"],
+      "tags": ["scenario", "boundary-people-media", "boundary-psych-org-public"],
       "options": [
         {
           "key": "A",

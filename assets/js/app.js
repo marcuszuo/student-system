@@ -123,6 +123,10 @@ const BOUNDARY_TAG_RULES = [
   {
     tags: ["boundary-people-media"],
     names: ["新闻学", "传播学", "心理学", "人力资源管理", "公共管理"]
+  },
+  {
+    tags: ["boundary-psych-org-public"],
+    names: ["心理学", "人力资源管理", "公共管理"]
   }
 ];
 
@@ -130,7 +134,8 @@ const BOUNDARY_GROUP_COPY = {
   "boundary-tech": "这一组更核心的分流点，不是“都偏理工”，而是更偏底层计算逻辑、系统交付协同，还是软硬结合的工程实现。",
   "boundary-engineering": "这一组更核心的分流点，在于更偏控制与流程联动、现场执行推进，还是结构空间与机械实现。",
   "boundary-business": "这一组更核心的分流点，在于更偏经营测算与风险判断、市场增长与外部影响，还是稳定的职能与资源配置。",
-  "boundary-people-media": "这一组更核心的分流点，在于更偏事实表达与传播转化、个体支持与发展辅导，还是组织治理、制度协同与公共事务判断。"
+  "boundary-people-media": "这一组更核心的分流点，在于更偏事实表达与传播转化、个体支持与发展辅导，还是组织治理、制度协同与公共事务判断。",
+  "boundary-psych-org-public": "对于心理、人力与公共管理这组方向，更关键的不是“都跟人有关”，而是更偏个体理解与支持、更偏组织与人才配置，还是更偏制度协同与公共治理。"
 };
 
 const CAREER_STYLE_ARCHETYPES = [
@@ -1881,6 +1886,30 @@ function buildReverseAdvice(rankedMajors, studentScore) {
   return `从当前画像看，不建议将强依赖 ${dimText} 的方向作为第一志愿优先填报，例如 ${majorText}。如后续仍希望考虑此类路径，建议先通过课程体验、项目实践或阶段性训练，进一步评估相关能力是否能够稳定提升。`;
 }
 
+function buildAdvisorConclusion(topMajors, rankedMajors, studentScore) {
+  if (!topMajors.length) return "";
+  const first = topMajors[0];
+  const second = topMajors[1];
+  const primaryDirection = buildDirectionRecommendations(rankedMajors, studentScore)[0];
+  const boundaryTags = second ? getBoundaryTags(first, second) : [];
+  const boundaryIntro = boundaryTags.length ? (BOUNDARY_GROUP_COPY[boundaryTags[0]] || "") : "";
+
+  if (!second) {
+    return `${first.name} 与当前学生画像的适配度最明确，可作为优先进入课程体验与实践验证的方向。现阶段更建议围绕 ${primaryDirection?.label || first.name} 继续收集学科表现、项目投入和真实反馈，再细化到院校与具体专业层。`;
+  }
+
+  const gap = Math.abs((first.matchIndex || 0) - (second.matchIndex || 0));
+  const boundaryDims = getBoundaryDims(first, second, 3)
+    .map((dim) => dimensionNameMap[dim] || dim)
+    .join("、");
+
+  if (gap <= FOLLOW_UP_GAP_THRESHOLD) {
+    return `${first.name} 与 ${second.name} 当前都具备较强匹配性，但更适合作为“先比较、再收敛”的决策关系。${boundaryIntro}${boundaryDims ? ` 现阶段最值得继续观察的分流点是 ${boundaryDims}。` : ""}建议结合课程强度、培养方式、项目体验和长期投入感再做最终判断。`;
+  }
+
+  return `${first.name} 当前可以作为更优先的建议方向，${second.name} 仍可保留为次优比较对象。${boundaryIntro}${boundaryDims ? ` 当前拉开两者差异的关键依据主要落在 ${boundaryDims}。` : ""}如果后续学科表现和真实体验没有明显反转，优先方向可以继续围绕 ${first.name} 深化。`;
+}
+
 function getFitTone(score) {
   if (score >= 75) return { tone: "high", label: "校内优先建议" };
   if (score >= 58) return { tone: "medium", label: "校内重点比较" };
@@ -2234,6 +2263,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
   const secondaryDirection = directionRecommendations[1];
   const choiceComparison = buildChoiceComparison(top3, studentVector.score);
   const reverseAdvice = buildReverseAdvice(rankedMajors, studentVector.score);
+  const advisorConclusion = buildAdvisorConclusion(top3, rankedMajors, studentVector.score);
   const tieTop = (top3[0].matchIndex - top3[1].matchIndex) <= 3;
 
   const rankNames = tieTop
@@ -2298,6 +2328,14 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
     <section class="advice">
       <h3>当前不建议优先考虑的方向</h3>
       <p>${reverseAdvice}</p>
+    </section>
+  `
+    : "";
+  const advisorConclusionHTML = advisorConclusion
+    ? `
+    <section class="advice advisor-conclusion">
+      <h3>顾问判断</h3>
+      <p>${advisorConclusion}</p>
     </section>
   `
     : "";
@@ -2480,6 +2518,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
       ${developmentInsightsHTML}
       <div class="rank-grid">${cards}</div>
     ${calibrationHTML}
+    ${advisorConclusionHTML}
     ${comparisonHTML}
     ${reverseAdviceHTML}
     ${schoolRestrictedHTML}

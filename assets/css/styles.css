@@ -1036,6 +1036,15 @@ body {
   color: var(--ink);
 }
 
+.advisor-conclusion {
+  border-top: 0;
+  padding-top: 0;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid #d8e5dc;
+  background: linear-gradient(180deg, #f7fbf8 0%, #fff 100%);
+}
+
 .action-plan-list {
   display: grid;
   gap: 8px;
@@ -1147,6 +1156,10 @@ body {
     padding: 0;
   }
 
+  .result-header {
+    margin-bottom: 8mm;
+  }
+
   #result {
     display: block !important;
   }
@@ -1165,10 +1178,27 @@ body {
   .summary-chips span,
   .career-axis-item,
   .career-analysis-card,
+  .development-insight-card,
   .rank-card,
   .student-summary-card {
     background: #fff !important;
     box-shadow: none !important;
+  }
+
+  .result-summary,
+  .rank-summary,
+  .career-analysis-summary,
+  .career-analysis-card p,
+  .career-analysis-card li,
+  .development-insight-card p,
+  .advice p {
+    line-height: 1.55;
+  }
+
+  .development-insights-grid,
+  .career-analysis-grid,
+  .rank-grid {
+    gap: 10px;
   }
 
   .rank-details {
