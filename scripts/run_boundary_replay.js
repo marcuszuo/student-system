@@ -158,6 +158,33 @@ function main() {
         "risk.stability": 0.7
       }),
       majors: ["心理学", "人力资源管理", "公共管理"]
+    },
+    {
+      name: "偏个体支持：心理 vs 人资 vs 公管",
+      vector: buildBaseVector({
+        "interest.s": 0.86,
+        "interest.i": 0.76,
+        "cognition.contextual": 0.82,
+        "ability.comm": 0.78,
+        "value.responsibility": 0.86,
+        "risk.stability": 0.56,
+        "value.security": 0.48
+      }),
+      majors: ["心理学", "人力资源管理", "公共管理"]
+    },
+    {
+      name: "偏组织治理：心理 vs 人资 vs 公管",
+      vector: buildBaseVector({
+        "interest.s": 0.72,
+        "interest.c": 0.74,
+        "cognition.contextual": 0.76,
+        "cognition.system": 0.7,
+        "ability.comm": 0.64,
+        "risk.stability": 0.82,
+        "value.responsibility": 0.8,
+        "value.security": 0.74
+      }),
+      majors: ["心理学", "人力资源管理", "公共管理"]
     }
   ];
 

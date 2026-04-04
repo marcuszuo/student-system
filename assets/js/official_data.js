@@ -3499,6 +3499,34 @@ const OFFICIAL_DATA = {
           "dim": "value.wealth"
         }
       ]
+    },
+    {
+      "id": "E21",
+      "module": "E",
+      "text": "如果未来都以“支持他人发展”为目标，你更愿意承担哪类长期角色：",
+      "tags": ["scenario", "boundary-people-media", "boundary-psych-org-public"],
+      "options": [
+        {
+          "key": "A",
+          "text": "长期理解个体差异，做更深入的陪伴、辅导或评估支持",
+          "dim": "value.responsibility"
+        },
+        {
+          "key": "B",
+          "text": "长期优化人才、团队和组织机制，让人与岗位更匹配",
+          "dim": "value.wealth"
+        },
+        {
+          "key": "C",
+          "text": "长期梳理制度、资源和公共事务流程，让系统更稳",
+          "dim": "value.security"
+        },
+        {
+          "key": "D",
+          "text": "长期推动倡导与沟通，让更多人理解并参与改变",
+          "dim": "value.influence"
+        }
+      ]
     }
   ],
   "dimensions": [

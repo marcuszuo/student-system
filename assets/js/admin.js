@@ -366,6 +366,10 @@ function renderReportDetail(report) {
       `).join("")}
     </div>
     <section class="advice">
+      <h3>顾问判断</h3>
+      <p>${escapeHtml(report.comparisons?.advisorConclusion || "暂无")}</p>
+    </section>
+    <section class="advice">
       <h3>比较与提醒</h3>
       <p>${escapeHtml(report.comparisons?.primaryVsSecondary || "暂无")}</p>
       <p>${escapeHtml(report.comparisons?.reverseAdvice || "暂无")}</p>

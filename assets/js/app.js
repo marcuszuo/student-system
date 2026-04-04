@@ -1735,6 +1735,7 @@ function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoo
       };
     }),
     comparisons: {
+      advisorConclusion: buildAdvisorConclusion(top3, rankedMajors, studentVector.score),
       primaryVsSecondary: buildChoiceComparison(top3, studentVector.score),
       reverseAdvice: buildReverseAdvice(rankedMajors, studentVector.score),
       directionSummary: primaryDirection
