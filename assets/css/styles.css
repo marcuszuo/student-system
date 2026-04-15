@@ -485,7 +485,7 @@ body {
 
 .admin-overview {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -795,6 +795,17 @@ body {
 
 .advisor-tags-admin {
   margin-bottom: 0;
+}
+
+.advisor-tags-list {
+  margin: 8px 0 2px;
+}
+
+.advisor-tags-list span {
+  padding: 4px 9px;
+  font-size: 0.8rem;
+  background: #f6f1e8;
+  color: #6f4a2f;
 }
 
 .school-major-box {

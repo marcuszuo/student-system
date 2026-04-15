@@ -5,6 +5,7 @@ const tokenInput = document.getElementById("admin-token");
 const loadBtn = document.getElementById("admin-load-btn");
 const clearBtn = document.getElementById("admin-clear-btn");
 const exportBtn = document.getElementById("admin-export-btn");
+const exportHighIntentBtn = document.getElementById("admin-export-high-intent-btn");
 const clearSmokeBtn = document.getElementById("admin-clear-smoke-btn");
 const statusEl = document.getElementById("admin-status");
 const countEl = document.getElementById("admin-count");
@@ -12,6 +13,7 @@ const totalCountEl = document.getElementById("admin-total-count");
 const todayCountEl = document.getElementById("admin-today-count");
 const publicCountEl = document.getElementById("admin-public-count");
 const internationalCountEl = document.getElementById("admin-international-count");
+const highIntentCountEl = document.getElementById("admin-high-intent-count");
 const listEl = document.getElementById("admin-report-list");
 const detailEl = document.getElementById("admin-detail");
 const sortFilterEl = document.getElementById("admin-sort-filter");
@@ -171,11 +173,13 @@ function renderOverview() {
   const todayCount = reports.filter((report) => String(report.submittedAt || "").startsWith(today)).length;
   const publicCount = reports.filter((report) => getReportType(report) === "public").length;
   const internationalCount = reports.filter((report) => getReportType(report) === "international").length;
+  const highIntentCount = reports.filter((report) => String(report.adminMeta?.status || "") === "high_intent").length;
 
   totalCountEl.textContent = String(reports.length);
   todayCountEl.textContent = String(todayCount);
   publicCountEl.textContent = String(publicCount);
   internationalCountEl.textContent = String(internationalCount);
+  highIntentCountEl.textContent = String(highIntentCount);
 }
 
 function renderReportList() {
@@ -196,6 +200,7 @@ function renderReportList() {
         <span>${escapeHtml(String(report.recommendations?.[0]?.matchIndex || ""))}</span>
       </div>
       <p>${escapeHtml(summarizeProfile(report))}</p>
+      ${(report.advisorTags || []).length ? `<div class="advisor-tags advisor-tags-list">${(report.advisorTags || []).slice(0, 2).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>` : ""}
       <p>${escapeHtml(formatDateTime(report.submittedAt))}</p>
       <p><span class="admin-status-badge admin-status-${escapeHtml(String(report.adminMeta?.status || "new"))}">${escapeHtml(getFollowupStatusLabel(report.adminMeta?.status))}</span></p>
       ${report.adminMeta?.note ? `<p class="admin-report-note-flag">已备注</p>` : ""}
@@ -626,6 +631,43 @@ function exportReports() {
   setStatus(`已导出 ${filteredReports.length} 份报告。`, "success");
 }
 
+function exportHighIntentReports() {
+  const highIntentReports = filteredReports.filter((report) => String(report.adminMeta?.status || "") === "high_intent");
+  if (!highIntentReports.length) {
+    setStatus("当前筛选结果中没有高意向学生。", "error");
+    return;
+  }
+
+  const rows = [
+    ["提交时间", "学生类型", "年级", "课程背景", "顾问标签", "优先方向", "首选专业", "匹配度", "后台备注"],
+    ...highIntentReports.map((report) => {
+      const profile = report.studentProfile || {};
+      return [
+        formatDateTime(report.submittedAt),
+        profile.typeLabel || "",
+        profile.grade || "",
+        profile.curriculumSummary || "",
+        (report.advisorTags || []).join(" / "),
+        report.directions?.[0]?.label || "",
+        report.recommendations?.[0]?.name || "",
+        report.recommendations?.[0]?.matchIndex || "",
+        report.adminMeta?.note || ""
+      ];
+    })
+  ];
+
+  const csv = "\uFEFF" + rows.map((row) => row.map(toCsvValue).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `majornavi-high-intent-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
+  setStatus(`已导出 ${highIntentReports.length} 份高意向学生报告。`, "success");
+}
+
 function exportReportDetail(report) {
   const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json;charset=utf-8;" });
   const link = document.createElement("a");
@@ -639,6 +681,7 @@ function exportReportDetail(report) {
 }
 
 exportBtn.addEventListener("click", exportReports);
+exportHighIntentBtn.addEventListener("click", exportHighIntentReports);
 clearSmokeBtn.addEventListener("click", async () => {
   try {
     await clearSmokeReports();
