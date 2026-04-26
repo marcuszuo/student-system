@@ -2367,38 +2367,45 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
   const directionSummary = directionRecommendations.length
     ? `方向判断：优先考虑${primaryDirection?.label || "当前优先方向"}${secondaryDirection ? `，其次可关注${secondaryDirection.label}` : ""}。`
     : "";
-  const comparisonHTML = choiceComparison
+  const comparisonCardHTML = choiceComparison
     ? `
-    <section class="advice">
-      <h3>优先方向之间的关键差异</h3>
-      <p>${choiceComparison}</p>
-    </section>
-  `
+      <article class="report-note-card">
+        <p class="report-note-kicker">比较说明</p>
+        <h4>优先方向之间的关键差异</h4>
+        <p>${choiceComparison}</p>
+      </article>
+    `
     : "";
-  const reverseAdviceHTML = reverseAdvice
+  const reverseAdviceCardHTML = reverseAdvice
     ? `
-    <section class="advice">
-      <h3>当前不建议优先考虑的方向</h3>
-      <p>${reverseAdvice}</p>
-    </section>
-  `
+      <article class="report-note-card report-note-card-caution">
+        <p class="report-note-kicker">风险提醒</p>
+        <h4>当前不建议优先考虑的方向</h4>
+        <p>${reverseAdvice}</p>
+      </article>
+    `
     : "";
-  const advisorConclusionHTML = advisorConclusion
+  const advisorConclusionCardHTML = advisorConclusion
     ? `
-    <section class="advice advisor-conclusion">
-      <h3>顾问判断</h3>
-      <p>${advisorConclusion}</p>
-    </section>
-  `
+      <article class="report-note-card report-note-card-primary">
+        <p class="report-note-kicker">顾问结论</p>
+        <h4>顾问判断</h4>
+        <p>${advisorConclusion}</p>
+      </article>
+    `
     : "";
-  const calibrationHTML = isAdaptiveMode(selectedMode) && calibrationContext?.boundaryDims?.length
+  const calibrationCardHTML = isAdaptiveMode(selectedMode) && calibrationContext?.boundaryDims?.length
     ? `
-    <section class="advice">
-      <h3>完整评估自适应校准说明</h3>
-      <p>本次正式完整评估在核心评估完成后，围绕 ${calibrationContext.topMajor || "当前优先方向"}${calibrationContext.compareMajor ? ` 与 ${calibrationContext.compareMajor}` : ""} 的关键分流维度，追加了针对性校准题。重点校准维度包括：${calibrationContext.boundaryDims.map((dim) => dimensionNameMap[dim] || dim).join("、")}；同时补充关注了当前相对薄弱的维度：${(calibrationContext.lowDims || []).map((dim) => dimensionNameMap[dim] || dim).join("、")}。系统会优先抽取更贴近真实学习、项目与选择场景的问题，以提高相近方向之间的判别力。${followUpAdded ? "由于校准后优先方向仍然接近，系统已进一步追加分流追问题，以增强排序判别力。" : ""}</p>
-    </section>
-  `
+      <article class="report-note-card">
+        <p class="report-note-kicker">评估机制说明</p>
+        <h4>完整评估自适应校准说明</h4>
+        <p>本次正式完整评估在核心评估完成后，围绕 ${calibrationContext.topMajor || "当前优先方向"}${calibrationContext.compareMajor ? ` 与 ${calibrationContext.compareMajor}` : ""} 的关键分流维度，追加了针对性校准题。重点校准维度包括：${calibrationContext.boundaryDims.map((dim) => dimensionNameMap[dim] || dim).join("、")}；同时补充关注了当前相对薄弱的维度：${(calibrationContext.lowDims || []).map((dim) => dimensionNameMap[dim] || dim).join("、")}。系统会优先抽取更贴近真实学习、项目与选择场景的问题，以提高相近方向之间的判别力。${followUpAdded ? "由于校准后优先方向仍然接近，系统已进一步追加分流追问题，以增强排序判别力。" : ""}</p>
+      </article>
+    `
     : "";
+  const reportNotesHTML = [advisorConclusionCardHTML, comparisonCardHTML, reverseAdviceCardHTML, calibrationCardHTML]
+    .filter(Boolean)
+    .join("");
   const studentSummaryCards = `
     <div class="student-summary-grid">
       <article class="student-summary-card">
@@ -2652,10 +2659,20 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
       </div>
       <div class="rank-grid">${cards}</div>
     </section>
-    ${calibrationHTML}
-    ${advisorConclusionHTML}
-    ${comparisonHTML}
-    ${reverseAdviceHTML}
+    ${reportNotesHTML ? `
+      <section class="report-section report-notes-section">
+        <div class="report-section-heading">
+          <p class="report-section-index">Section 05</p>
+          <div>
+            <h3>顾问判断与补充说明</h3>
+            <p>用于帮助家长理解：为什么当前优先这个方向、相近方向之间差在哪里，以及系统本次如何做进一步校准。</p>
+          </div>
+        </div>
+        <div class="report-notes-grid">
+          ${reportNotesHTML}
+        </div>
+      </section>
+    ` : ""}
     ${schoolRestrictedHTML}
   `;
   drawRadarChart("profile-radar", radarProfile);
