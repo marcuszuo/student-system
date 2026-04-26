@@ -2427,8 +2427,49 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
     `
     : "";
 
+  const reportOverviewHTML = `
+    <section class="report-section report-overview-section">
+      <div class="report-section-heading">
+        <p class="report-section-index">Section 01</p>
+        <div>
+          <h3>综合评估摘要</h3>
+          <p>本页用于概括学生当前的核心发展方向、主要优势依据与报告阅读重点。</p>
+        </div>
+      </div>
+      <div class="report-overview-grid">
+        <article class="report-overview-card report-overview-card-primary">
+          <span class="report-overview-label">综合结论</span>
+          <strong>${summaryTitle}</strong>
+          <p>${summaryText}</p>
+        </article>
+        <article class="report-overview-card">
+          <span class="report-overview-label">方向判断</span>
+          <strong>${directionSummary || "当前已形成清晰优先方向。"}</strong>
+          <p>本结论用于帮助学生和家长先缩小方向，再在方向内部比较具体专业。</p>
+        </article>
+        <article class="report-overview-card">
+          <span class="report-overview-label">核心优势依据</span>
+          <strong>${traitText}</strong>
+          <p>${weightingSummary}</p>
+        </article>
+        <article class="report-overview-card">
+          <span class="report-overview-label">兴趣辅助参照</span>
+          <strong>Holland：${hollandCode}</strong>
+          <p>用于辅助理解兴趣结构，不单独作为专业选择结论。</p>
+        </article>
+      </div>
+    </section>
+  `;
+
   const careerAnalysisHTML = `
-    <section class="career-analysis-section">
+    <section class="report-section career-analysis-section">
+      <div class="report-section-heading">
+        <p class="report-section-index">Section 02</p>
+        <div>
+          <h3>职业性格与发展分析</h3>
+          <p>结合职业兴趣、认知方式、能力特征、韧性稳定性与价值偏好，判断学生未来更适合的发展方式与工作环境。</p>
+        </div>
+      </div>
       <div class="career-analysis-header">
         <div>
           <p class="career-analysis-kicker">职业性格与发展分析</p>
@@ -2476,7 +2517,14 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
   `;
 
   const developmentInsightsHTML = `
-    <section class="development-insights-section">
+    <section class="report-section development-insights-section">
+      <div class="report-section-heading">
+        <p class="report-section-index">Section 03</p>
+        <div>
+          <h3>大学学习方式与培养提醒</h3>
+          <p>帮助家长和学生理解：若优先考虑当前方向，大学阶段更适合怎样的学习节奏、培养环境与沟通方式。</p>
+        </div>
+      </div>
       <div class="development-insights-header">
         <div>
           <p class="career-analysis-kicker">大学学习方式与培养提醒</p>
@@ -2551,10 +2599,18 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
       : "";
 
   resultBox.innerHTML = `
-    <div class="result-header">
-      <p class="result-kicker">评估结论</p>
-      <h2>${summaryTitle}</h2>
-      <p class="result-summary">${summaryText}</p>
+    <div class="result-header report-cover">
+      <div class="report-cover-main">
+        <div>
+          <p class="result-kicker">MajorNavi 学生专业发展评估报告</p>
+          <h2>${summaryTitle}</h2>
+          <p class="result-summary">${summaryText}</p>
+        </div>
+        <div class="report-cover-side">
+          <span class="report-cover-badge">正式完整评估报告</span>
+          <p>适用于学生专业方向判断、家长沟通与后续志愿咨询参考。</p>
+        </div>
+      </div>
       ${studentSummaryCards}
       <div class="summary-chips">
         <span>优势特征：${traitText}</span>
@@ -2563,20 +2619,39 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
       </div>
       ${advisorTagsHTML}
       ${directionSummary ? `<p class="result-meta">${directionSummary}</p>` : ""}
-      <p class="result-meta">综合画像采用 8 维模型：6维兴趣（Holland）+ 2维能力韧性（选专业更实用）。</p>
+      <p class="result-meta">综合画像采用 8 维模型：6维兴趣（Holland）+ 2维能力韧性（选专业更实用）。本报告建议先看综合摘要，再看职业性格分析与专业建议。</p>
     </div>
     <div class="result-tools">
       <button type="button" id="export-pdf-btn" class="btn btn-ghost">导出 PDF（打印版）</button>
     </div>
-    <div class="radar-wrap">
-      <canvas id="profile-radar" width="360" height="360"></canvas>
-      <div class="radar-legend">
-        ${radarProfile.map((x) => `<span>${x.label} ${x.value}</span>`).join("")}
+    ${reportOverviewHTML}
+    <section class="report-section">
+      <div class="report-section-heading">
+        <p class="report-section-index">Profile</p>
+        <div>
+          <h3>综合画像雷达图</h3>
+          <p>用于查看学生在主要兴趣、能力和韧性维度上的相对分布，帮助理解推荐背后的整体画像结构。</p>
+        </div>
       </div>
-    </div>
-      ${careerAnalysisHTML}
-      ${developmentInsightsHTML}
+      <div class="radar-wrap">
+        <canvas id="profile-radar" width="360" height="360"></canvas>
+        <div class="radar-legend">
+          ${radarProfile.map((x) => `<span>${x.label} ${x.value}</span>`).join("")}
+        </div>
+      </div>
+    </section>
+    ${careerAnalysisHTML}
+    ${developmentInsightsHTML}
+    <section class="report-section">
+      <div class="report-section-heading">
+        <p class="report-section-index">Section 04</p>
+        <div>
+          <h3>专业建议与匹配依据</h3>
+          <p>在综合画像基础上，系统给出当前优先方向、次优方向与补充参考方向，并说明主要匹配依据与后续观察重点。</p>
+        </div>
+      </div>
       <div class="rank-grid">${cards}</div>
+    </section>
     ${calibrationHTML}
     ${advisorConclusionHTML}
     ${comparisonHTML}

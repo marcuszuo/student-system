@@ -793,6 +793,45 @@ body {
   font-weight: 700;
 }
 
+.report-cover {
+  padding: 22px 22px 18px;
+  border-radius: 24px;
+  border: 1px solid #d9e6dc;
+  background: linear-gradient(135deg, rgba(113, 154, 136, 0.08) 0%, rgba(255, 250, 243, 0.95) 36%, rgba(244, 248, 245, 0.9) 100%);
+}
+
+.report-cover-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 16px;
+  align-items: start;
+}
+
+.report-cover-side {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid #d9e6dc;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.report-cover-side p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.report-cover-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #eef7f1;
+  border: 1px solid #d4e4d9;
+  color: #315949;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
 .advisor-tags-admin {
   margin-bottom: 0;
 }
@@ -839,6 +878,82 @@ body {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+}
+
+.report-section {
+  margin-top: 18px;
+}
+
+.report-section-heading {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 14px;
+}
+
+.report-section-heading h3 {
+  margin: 0 0 6px;
+}
+
+.report-section-heading p:last-child {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.report-section-index {
+  margin: 2px 0 0;
+  color: #4d7f6d;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.report-overview-section {
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid #d8e5dc;
+  background: linear-gradient(180deg, #fbfdfb 0%, #fffdfa 100%);
+}
+
+.report-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.report-overview-card {
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+.report-overview-card-primary {
+  background: linear-gradient(180deg, #f4faf6 0%, #fffdf8 100%);
+}
+
+.report-overview-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #4d7f6d;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.report-overview-card strong {
+  display: block;
+  color: var(--ink);
+  font-size: 1.02rem;
+  line-height: 1.5;
+}
+
+.report-overview-card p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.65;
 }
 
 .career-analysis-section {
@@ -1200,6 +1315,7 @@ body {
 
   .career-analysis-section,
   .development-insights-section,
+  .report-overview-section,
   .rank-card,
   .advice,
   .restricted-section,
@@ -1210,6 +1326,7 @@ body {
   }
 
   .summary-chips span,
+  .report-overview-card,
   .career-axis-item,
   .career-analysis-card,
   .development-insight-card,
@@ -1231,8 +1348,33 @@ body {
 
   .development-insights-grid,
   .career-analysis-grid,
+  .report-overview-grid,
   .rank-grid {
     gap: 10px;
+  }
+
+  .report-cover {
+    padding: 0;
+    border: 0;
+    background: #fff;
+  }
+
+  .report-cover-main {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .report-cover-side {
+    padding: 12px 14px;
+  }
+
+  .report-section-heading {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .report-section-index {
+    font-size: 0.72rem;
   }
 
   .rank-details {
@@ -1260,6 +1402,12 @@ body {
   }
 
   .rank-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .report-cover-main,
+  .report-section-heading,
+  .report-overview-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1403,6 +1551,11 @@ body {
   }
 
   .career-analysis-section {
+    padding: 14px;
+  }
+
+  .report-overview-section,
+  .report-cover-side {
     padding: 14px;
   }
 }
