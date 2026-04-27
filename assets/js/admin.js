@@ -23,10 +23,18 @@ const gradeFilterEl = document.getElementById("admin-grade-filter");
 const dateFromEl = document.getElementById("admin-date-from");
 const dateToEl = document.getElementById("admin-date-to");
 const searchFilterEl = document.getElementById("admin-search-filter");
+const resetFiltersBtn = document.getElementById("admin-reset-filters-btn");
 
 let reports = [];
 let filteredReports = [];
 let selectedReportId = "";
+
+function getDefaultConfig() {
+  return {
+    apiBase: String(window.ADMIN_DEFAULT_API_BASE || "").trim(),
+    token: String(window.ADMIN_DEFAULT_TOKEN || "").trim()
+  };
+}
 
 function escapeHtml(text) {
   return String(text || "")
@@ -43,8 +51,7 @@ function setStatus(text, tone = "neutral") {
 }
 
 function loadConfig() {
-  const defaultApiBase = String(window.ADMIN_DEFAULT_API_BASE || "").trim();
-  const defaultToken = String(window.ADMIN_DEFAULT_TOKEN || "").trim();
+  const { apiBase: defaultApiBase, token: defaultToken } = getDefaultConfig();
   try {
     const raw = localStorage.getItem(ADMIN_STORAGE_KEY);
     if (!raw) {
@@ -71,8 +78,19 @@ function saveConfig() {
 
 function clearConfig() {
   localStorage.removeItem(ADMIN_STORAGE_KEY);
-  apiBaseInput.value = "";
-  tokenInput.value = "";
+  const { apiBase, token } = getDefaultConfig();
+  apiBaseInput.value = apiBase;
+  tokenInput.value = token;
+}
+
+function resetFilters() {
+  sortFilterEl.value = "submitted_desc";
+  typeFilterEl.value = "";
+  followupFilterEl.value = "";
+  gradeFilterEl.value = "";
+  dateFromEl.value = "";
+  dateToEl.value = "";
+  searchFilterEl.value = "";
 }
 
 function formatDateTime(value) {
@@ -578,14 +596,25 @@ loadBtn.addEventListener("click", async () => {
 
 clearBtn.addEventListener("click", () => {
   clearConfig();
+  resetFilters();
   reports = [];
   filteredReports = [];
   selectedReportId = "";
   renderOverview();
   renderReportList();
   renderReportDetail(null);
-  setStatus("已清空本地后台凭据。");
+  setStatus("已恢复后台默认配置，并清空本地缓存。");
 });
+
+if (resetFiltersBtn) {
+  resetFiltersBtn.addEventListener("click", () => {
+    resetFilters();
+    applyFilters();
+    renderReportList();
+    renderReportDetail(filteredReports.find((report) => report.id === selectedReportId) || null);
+    setStatus(`已重置筛选条件，当前显示 ${filteredReports.length} 份报告。`);
+  });
+}
 
 function toCsvValue(value) {
   const text = String(value == null ? "" : value);
@@ -692,5 +721,13 @@ clearSmokeBtn.addEventListener("click", async () => {
 });
 
 loadConfig();
+resetFilters();
 renderOverview();
 renderReportList();
+
+if (String(apiBaseInput.value || "").trim() && String(tokenInput.value || "").trim()) {
+  fetchReports().catch((error) => {
+    console.error(error);
+    setStatus(error.message || "后台加载失败。", "error");
+  });
+}

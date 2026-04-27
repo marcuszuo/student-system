@@ -112,6 +112,10 @@
               <span>专业或方向搜索</span>
               <input id="admin-search-filter" type="text" placeholder="如 计算机 / 医学 / 商科">
             </label>
+            <div class="single-field admin-filter-reset">
+              <span>快速操作</span>
+              <button id="admin-reset-filters-btn" type="button" class="btn btn-ghost">重置筛选</button>
+            </div>
           </div>
           <div id="admin-report-list" class="admin-report-list"></div>
         </aside>
@@ -128,6 +132,7 @@
 
   <script>
     window.ADMIN_DEFAULT_API_BASE = "https://api.majornavi.cn";
+    window.ADMIN_DEFAULT_TOKEN = "9c61f52c4ffc7e8b1d39e8c74e29cf625584fb7195c286b7";
   </script>
   <script src="../assets/js/admin.js"></script>
 </body>
