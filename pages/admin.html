@@ -21,22 +21,13 @@
 
     <section class="card admin-shell">
       <section class="admin-toolbar">
-        <label class="single-field">
-          <span>后台接口地址</span>
-          <input id="admin-api-base" type="text" placeholder="如 https://report-api.xxx.workers.dev">
-        </label>
-        <label class="single-field">
-          <span>后台访问令牌</span>
-          <input id="admin-token" type="password" placeholder="请输入后台管理员令牌">
-        </label>
         <div class="admin-actions">
-          <button id="admin-load-btn" type="button" class="btn btn-primary">加载报告</button>
-          <button id="admin-clear-btn" type="button" class="btn btn-ghost">清空本地凭据</button>
+          <button id="admin-reload-btn" type="button" class="btn btn-primary">刷新报告</button>
           <button id="admin-export-btn" type="button" class="btn btn-ghost">导出 CSV</button>
           <button id="admin-export-high-intent-btn" type="button" class="btn btn-ghost">导出高意向</button>
           <button id="admin-clear-smoke-btn" type="button" class="btn btn-ghost">清理测试报告</button>
         </div>
-        <p id="admin-status" class="auth-status">请输入后台地址和令牌后加载报告。</p>
+        <p id="admin-status" class="auth-status">系统将自动连接后台并加载报告数据。</p>
       </section>
 
       <section class="admin-overview">

@@ -1,9 +1,4 @@
-const ADMIN_STORAGE_KEY = "majornavi-report-admin-config";
-
-const apiBaseInput = document.getElementById("admin-api-base");
-const tokenInput = document.getElementById("admin-token");
-const loadBtn = document.getElementById("admin-load-btn");
-const clearBtn = document.getElementById("admin-clear-btn");
+const reloadBtn = document.getElementById("admin-reload-btn");
 const exportBtn = document.getElementById("admin-export-btn");
 const exportHighIntentBtn = document.getElementById("admin-export-high-intent-btn");
 const clearSmokeBtn = document.getElementById("admin-clear-smoke-btn");
@@ -31,9 +26,13 @@ let selectedReportId = "";
 
 function getDefaultConfig() {
   return {
-    apiBase: String(window.ADMIN_DEFAULT_API_BASE || "").trim(),
+    apiBase: String(window.ADMIN_DEFAULT_API_BASE || "").trim().replace(/\/+$/, ""),
     token: String(window.ADMIN_DEFAULT_TOKEN || "").trim()
   };
+}
+
+function getAdminConfig() {
+  return getDefaultConfig();
 }
 
 function escapeHtml(text) {
@@ -48,39 +47,6 @@ function escapeHtml(text) {
 function setStatus(text, tone = "neutral") {
   statusEl.textContent = text;
   statusEl.dataset.tone = tone;
-}
-
-function loadConfig() {
-  const { apiBase: defaultApiBase, token: defaultToken } = getDefaultConfig();
-  try {
-    const raw = localStorage.getItem(ADMIN_STORAGE_KEY);
-    if (!raw) {
-      if (defaultApiBase) apiBaseInput.value = defaultApiBase;
-      if (defaultToken) tokenInput.value = defaultToken;
-      return;
-    }
-    const parsed = JSON.parse(raw);
-    apiBaseInput.value = parsed.apiBase || defaultApiBase;
-    tokenInput.value = parsed.token || defaultToken;
-  } catch {
-    localStorage.removeItem(ADMIN_STORAGE_KEY);
-    if (defaultApiBase) apiBaseInput.value = defaultApiBase;
-    if (defaultToken) tokenInput.value = defaultToken;
-  }
-}
-
-function saveConfig() {
-  localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify({
-    apiBase: String(apiBaseInput.value || "").trim(),
-    token: String(tokenInput.value || "").trim()
-  }));
-}
-
-function clearConfig() {
-  localStorage.removeItem(ADMIN_STORAGE_KEY);
-  const { apiBase, token } = getDefaultConfig();
-  apiBaseInput.value = apiBase;
-  tokenInput.value = token;
 }
 
 function resetFilters() {
@@ -446,18 +412,16 @@ function renderReportDetail(report) {
 }
 
 async function fetchReports() {
-  const apiBase = String(apiBaseInput.value || "").trim().replace(/\/+$/, "");
-  const token = String(tokenInput.value || "").trim();
+  const { apiBase, token } = getAdminConfig();
   if (!apiBase) {
-    setStatus("请输入后台接口地址。", "error");
+    setStatus("后台接口地址未配置。", "error");
     return;
   }
   if (!token) {
-    setStatus("请输入后台访问令牌。", "error");
+    setStatus("后台访问令牌未配置。", "error");
     return;
   }
 
-  saveConfig();
   setStatus("正在加载报告…");
 
   const params = new URLSearchParams({ limit: "100" });
@@ -484,8 +448,7 @@ async function fetchReports() {
 }
 
 async function deleteReport(id) {
-  const apiBase = String(apiBaseInput.value || "").trim().replace(/\/+$/, "");
-  const token = String(tokenInput.value || "").trim();
+  const { apiBase, token } = getAdminConfig();
   if (!apiBase || !token || !id) {
     setStatus("缺少删除报告所需的后台配置。", "error");
     return;
@@ -511,8 +474,7 @@ async function deleteReport(id) {
 }
 
 async function clearSmokeReports() {
-  const apiBase = String(apiBaseInput.value || "").trim().replace(/\/+$/, "");
-  const token = String(tokenInput.value || "").trim();
+  const { apiBase, token } = getAdminConfig();
   if (!apiBase || !token) {
     setStatus("缺少清理测试数据所需的后台配置。", "error");
     return;
@@ -535,8 +497,7 @@ async function clearSmokeReports() {
 }
 
 async function saveReportNote(id) {
-  const apiBase = String(apiBaseInput.value || "").trim().replace(/\/+$/, "");
-  const token = String(tokenInput.value || "").trim();
+  const { apiBase, token } = getAdminConfig();
   const noteInput = document.getElementById("admin-note-input");
   const statusInput = document.getElementById("admin-followup-status");
   if (!apiBase || !token || !id || !(noteInput instanceof HTMLTextAreaElement) || !(statusInput instanceof HTMLSelectElement)) {
@@ -585,25 +546,13 @@ listEl.addEventListener("click", (event) => {
   });
 });
 
-loadBtn.addEventListener("click", async () => {
+reloadBtn.addEventListener("click", async () => {
   try {
     await fetchReports();
   } catch (error) {
     console.error(error);
     setStatus(error.message || "后台加载失败。", "error");
   }
-});
-
-clearBtn.addEventListener("click", () => {
-  clearConfig();
-  resetFilters();
-  reports = [];
-  filteredReports = [];
-  selectedReportId = "";
-  renderOverview();
-  renderReportList();
-  renderReportDetail(null);
-  setStatus("已恢复后台默认配置，并清空本地缓存。");
 });
 
 if (resetFiltersBtn) {
@@ -720,14 +669,10 @@ clearSmokeBtn.addEventListener("click", async () => {
   }
 });
 
-loadConfig();
 resetFilters();
 renderOverview();
 renderReportList();
-
-if (String(apiBaseInput.value || "").trim() && String(tokenInput.value || "").trim()) {
-  fetchReports().catch((error) => {
-    console.error(error);
-    setStatus(error.message || "后台加载失败。", "error");
-  });
-}
+fetchReports().catch((error) => {
+  console.error(error);
+  setStatus(error.message || "后台加载失败。", "error");
+});
