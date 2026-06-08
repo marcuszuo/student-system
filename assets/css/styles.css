@@ -104,16 +104,24 @@ body {
 
 .auth-status {
   margin: 0;
+  display: inline-flex;
+  align-items: center;
   min-height: 22px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #f4f8f4;
   color: var(--muted);
-  font-size: 0.92rem;
+  font-size: 0.88rem;
+  line-height: 1.2;
 }
 
 .auth-status[data-tone="success"] {
+  background: #e8f7ef;
   color: #2f7a63;
 }
 
 .auth-status[data-tone="error"] {
+  background: #fff1ed;
   color: #b84f3a;
 }
 
@@ -483,6 +491,14 @@ body {
   gap: 12px;
 }
 
+.admin-toolbar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 18px;
+  flex-wrap: wrap;
+}
+
 .admin-overview {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -493,6 +509,7 @@ body {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .detail-actions {

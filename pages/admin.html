@@ -21,13 +21,15 @@
 
     <section class="card admin-shell">
       <section class="admin-toolbar">
-        <div class="admin-actions">
-          <button id="admin-reload-btn" type="button" class="btn btn-primary">刷新报告</button>
-          <button id="admin-export-btn" type="button" class="btn btn-ghost">导出 CSV</button>
-          <button id="admin-export-high-intent-btn" type="button" class="btn btn-ghost">导出高意向</button>
-          <button id="admin-clear-smoke-btn" type="button" class="btn btn-ghost">清理测试报告</button>
+        <div class="admin-toolbar-head">
+          <p id="admin-status" class="auth-status">系统将自动连接后台并加载报告数据。</p>
+          <div class="admin-actions">
+            <button id="admin-reload-btn" type="button" class="btn btn-primary">刷新报告</button>
+            <button id="admin-export-btn" type="button" class="btn btn-ghost">导出 CSV</button>
+            <button id="admin-export-high-intent-btn" type="button" class="btn btn-ghost">导出高意向</button>
+            <button id="admin-clear-smoke-btn" type="button" class="btn btn-ghost">清理测试报告</button>
+          </div>
         </div>
-        <p id="admin-status" class="auth-status">系统将自动连接后台并加载报告数据。</p>
       </section>
 
       <section class="admin-overview">
