@@ -2326,12 +2326,27 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
     .map((major, index) => {
       const ev = buildEvidence(major, studentVector.score);
       const narrative = buildMajorNarrative(major, studentVector.score);
+      const scoreTone = major.matchIndex >= 96 ? "strong" : major.matchIndex >= 90 ? "steady" : "watch";
+      const scoreToneLabel = scoreTone === "strong"
+        ? "优先建议"
+        : scoreTone === "steady"
+          ? "重点比较"
+          : "建议继续验证";
+      const verdictTitle = index === 0
+        ? "当前可优先进入筛选"
+        : index === 1
+          ? "适合作为重点比较对象"
+          : "可作为补充保留方向";
       const headline =
         index === 0 && tieTop
           ? `${major.name} 与另一方向匹配度接近，建议结合学科成绩与实践经历做进一步判断。`
           : `${major.name} 当前与学生画像匹配度较高，可列为优先考虑方向。`;
       return `
       <article class="rank-card">
+        <div class="rank-verdict-row">
+          <span class="fit-badge fit-${scoreTone}">${scoreToneLabel}</span>
+          <span class="rank-verdict-title">${verdictTitle}</span>
+        </div>
         <div class="rank-card-top">
           <div>
             <p class="rank-label">${rankNames[index]}</p>
@@ -2345,13 +2360,17 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
           <span>课程关键词：${major.courses}</span>
           <span>典型去向：${major.careers}</span>
         </div>
-        <p class="evidence"><strong>核心判断：</strong>${narrative.fit}</p>
-        <p class="evidence"><strong>匹配亮点：</strong>${narrative.edge}</p>
-        <p class="evidence"><strong>匹配依据：</strong>${ev.positives.join("、") || "综合匹配度较高"}</p>
+        <div class="rank-insight-block">
+          <p class="evidence"><strong>核心判断：</strong>${narrative.fit}</p>
+          <p class="evidence"><strong>优先推荐理由：</strong>${narrative.edge}</p>
+        </div>
+        <div class="rank-evidence-list">
+          ${(ev.positives.length ? ev.positives : ["综合匹配度较高"]).map((item) => `<span>${item}</span>`).join("")}
+        </div>
         <details class="rank-details">
           <summary>查看详细解释</summary>
-          <p class="risk"><strong>继续验证时重点看：</strong>${narrative.caution}</p>
-          <p class="risk"><strong>风险提示：</strong>${ev.risks.join("、") || "当前未见明显核心短板，可持续观察学业压力承受度"}</p>
+          <p class="risk"><strong>下一步验证重点：</strong>${narrative.caution}</p>
+          <p class="risk"><strong>潜在风险提醒：</strong>${ev.risks.join("、") || "当前未见明显核心短板，可持续观察学业压力承受度"}</p>
         </details>
       </article>
     `;
@@ -2537,6 +2556,23 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
         <p class="career-analysis-holland">Holland 辅助代码：${hollandCode}</p>
       </div>
       <p class="career-analysis-summary">${careerAnalysis.summary}</p>
+      <div class="career-highlight-grid">
+        <article class="career-highlight-card career-highlight-card-primary">
+          <span class="career-highlight-label">发展定位摘要</span>
+          <strong>${careerAnalysis.label}</strong>
+          <p>${careerAnalysis.advice}</p>
+        </article>
+        <article class="career-highlight-card">
+          <span class="career-highlight-label">更适合的任务环境</span>
+          <strong>优先选择与当前优势一致的培养方式</strong>
+          <p>${careerAnalysis.environment}</p>
+        </article>
+        <article class="career-highlight-card">
+          <span class="career-highlight-label">需要警惕的判断偏差</span>
+          <strong>避免只凭兴趣印象做方向决定</strong>
+          <p>${careerAnalysis.directionBlindspot || "建议结合真实学科投入、项目体验与长期稳定性综合判断，而不是只根据单次偏好做决定。"}</p>
+        </article>
+      </div>
       <div class="career-analysis-grid">
         <article class="career-analysis-card">
           <h4>未来工作中的核心优势</h4>

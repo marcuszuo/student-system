@@ -1123,6 +1123,48 @@ body {
   line-height: 1.7;
 }
 
+.career-highlight-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.career-highlight-card {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(128, 156, 136, 0.18);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 24px rgba(86, 117, 97, 0.05);
+}
+
+.career-highlight-card-primary {
+  background: linear-gradient(180deg, #eef8f1 0%, #fffdf8 100%);
+}
+
+.career-highlight-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #4d7f6d;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.career-highlight-card strong {
+  display: block;
+  color: var(--ink);
+  font-size: 1.04rem;
+  line-height: 1.5;
+}
+
+.career-highlight-card p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.68;
+}
+
 .career-analysis-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1288,6 +1330,21 @@ body {
   border-radius: 18px;
   padding: 14px;
   background: linear-gradient(180deg, #ffffff 0%, #fafcfb 100%);
+  box-shadow: 0 10px 24px rgba(86, 117, 97, 0.05);
+}
+
+.rank-verdict-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.rank-verdict-title {
+  color: #5c7367;
+  font-size: 0.86rem;
+  font-weight: 700;
 }
 
 .rank-card-top {
@@ -1326,6 +1383,33 @@ body {
   color: var(--muted);
   font-size: 0.92rem;
   margin-bottom: 10px;
+}
+
+.rank-insight-block {
+  padding: 12px 12px 4px;
+  border-radius: 14px;
+  background: #f8fbf9;
+  border: 1px solid rgba(128, 156, 136, 0.14);
+  margin-bottom: 10px;
+}
+
+.rank-evidence-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.rank-evidence-list span {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef6f1;
+  border: 1px solid #d8e5dc;
+  color: #486b5d;
+  font-size: 0.84rem;
+  font-weight: 700;
 }
 
 .evidence,
@@ -1416,6 +1500,21 @@ body {
 .fit-high {
   background: #e8f7ef;
   color: #166534;
+}
+
+.fit-strong {
+  background: #e8f7ef;
+  color: #166534;
+}
+
+.fit-steady {
+  background: #fff3d6;
+  color: #9a5b00;
+}
+
+.fit-watch {
+  background: #eef4fb;
+  color: #315b8a;
 }
 
 .fit-medium {
@@ -1524,6 +1623,7 @@ body {
 
   .development-insights-grid,
   .career-analysis-grid,
+  .career-highlight-grid,
   .parent-brief-grid,
   .report-overview-grid,
   .report-notes-grid,
@@ -1597,7 +1697,8 @@ body {
 
   .career-analysis-grid,
   .career-axis-list,
-  .development-insights-grid {
+  .development-insights-grid,
+  .career-highlight-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1689,6 +1790,11 @@ body {
 
   .rank-card-top {
     flex-direction: column;
+  }
+
+  .rank-verdict-row {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   #profile-radar {
