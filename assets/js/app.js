@@ -1829,11 +1829,11 @@ function buildMajorNarrative(major, studentScore) {
   const weakMeta = weakCore.map((item) => dimensionMetaMap[item.dim]?.riskText).filter(Boolean);
 
   return {
-    fit: `${major.name} 更匹配你当前的 ${topText}，这和它要求的 ${major.courses} 比较贴合。`,
-    edge: topMeta[0] || `${major.name} 可作为当前优先评估方向。`,
+    fit: `${major.name} 与当前画像中的 ${topText} 具有较高一致性，这与该方向所要求的 ${major.courses} 特征较为契合。`,
+    edge: topMeta[0] || `${major.name} 可作为当前阶段的优先评估方向。`,
     caution: weakText
-      ? `继续往这个方向走时，要特别留意 ${weakText}。${weakMeta[0] || ""}`.trim()
-      : "当前没有明显的核心短板，后续重点观察真实投入感和持续性。"
+      ? `如继续深入该方向，建议重点核验 ${weakText} 相关表现。${weakMeta[0] || ""}`.trim()
+      : "当前未见明显核心短板，后续重点观察持续投入意愿与稳定性表现。"
   };
 }
 
@@ -1860,14 +1860,14 @@ function buildChoiceComparison(topMajors, studentScore) {
     .join("、");
 
   if (!firstLead && !secondLead) {
-    return `${first.name} 与 ${second.name} 的整体方向接近，需要重点比较培养方案、课程结构与未来岗位场景。${boundaryIntro}${boundaryText ? ` 当前更值得重点复核的边界维度是 ${boundaryText}。` : ""}`;
+    return `${first.name} 与 ${second.name} 在整体方向上较为接近，建议重点比较培养方案、课程结构与未来岗位场景。${boundaryIntro}${boundaryText ? ` 当前更值得重点复核的边界维度为 ${boundaryText}。` : ""}`;
   }
   if (firstLead && secondLead) {
-    return `${first.name} 与 ${second.name} 的差异，主要体现在 ${dimensionNameMap[firstLead.dim] || firstLead.dim} 和 ${dimensionNameMap[secondLead.dim] || secondLead.dim} 两类要求上。${boundaryIntro}${first.name} 更强调 ${formatDimensionScore(firstLead.dim, studentScore)} 所代表的匹配特征，而 ${second.name} 更强调 ${formatDimensionScore(secondLead.dim, studentScore)} 所对应的发展要求；按当前画像，前者更适合作为优先考虑方向。`;
+    return `${first.name} 与 ${second.name} 的主要差异，体现在 ${dimensionNameMap[firstLead.dim] || firstLead.dim} 与 ${dimensionNameMap[secondLead.dim] || secondLead.dim} 两类要求上。${boundaryIntro}${first.name} 更强调 ${formatDimensionScore(firstLead.dim, studentScore)} 所代表的匹配特征，而 ${second.name} 更强调 ${formatDimensionScore(secondLead.dim, studentScore)} 所对应的发展要求；基于当前画像，前者更适合作为优先考察方向。`;
   }
   const lead = firstLead || secondLead;
   const leadMajor = firstLead ? first.name : second.name;
-  return `${leadMajor} 在 ${dimensionNameMap[lead.dim] || lead.dim} 这一要求上特征更鲜明。${boundaryIntro}${boundaryText ? ` 当前画像在 ${boundaryText} 上的信息量更高，因此系统会优先将其作为分流依据。` : ""}`;
+  return `${leadMajor} 在 ${dimensionNameMap[lead.dim] || lead.dim} 这一要求上的特征更为鲜明。${boundaryIntro}${boundaryText ? ` 当前画像在 ${boundaryText} 上的区分信息更充分，因此会优先将其作为判断依据。` : ""}`;
 }
 
 function buildReverseAdvice(rankedMajors, studentScore) {
@@ -1896,7 +1896,7 @@ function buildReverseAdvice(rankedMajors, studentScore) {
     .map(({ major, weakMatches }) => `${major.name}（对 ${weakMatches.map((x) => dimensionNameMap[x.dim] || x.dim).join(" / ")} 要求更高）`)
     .join("；");
 
-  return `从当前画像看，不建议将强依赖 ${dimText} 的方向作为第一志愿优先填报，例如 ${majorText}。如后续仍希望考虑此类路径，建议先通过课程体验、项目实践或阶段性训练，进一步评估相关能力是否能够稳定提升。`;
+  return `基于当前画像，不建议将强依赖 ${dimText} 的方向作为现阶段第一志愿的优先方案，例如 ${majorText}。如后续仍希望考虑此类路径，建议先通过课程体验、项目实践或阶段性训练，进一步评估相关能力是否具备稳定提升空间。`;
 }
 
 function buildAdvisorConclusion(topMajors, rankedMajors, studentScore) {
@@ -1908,7 +1908,7 @@ function buildAdvisorConclusion(topMajors, rankedMajors, studentScore) {
   const boundaryIntro = boundaryTags.length ? (BOUNDARY_GROUP_COPY[boundaryTags[0]] || "") : "";
 
   if (!second) {
-    return `${first.name} 与当前学生画像的适配度最明确，可作为优先进入课程体验与实践验证的方向。现阶段更建议围绕 ${primaryDirection?.label || first.name} 继续收集学科表现、项目投入和真实反馈，再细化到院校与具体专业层。`;
+    return `${first.name} 与当前学生画像的适配关系最为明确，可作为优先进入课程体验与实践验证的方向。现阶段建议围绕 ${primaryDirection?.label || first.name} 继续收集学科表现、项目投入与真实反馈，再逐步细化到院校与具体专业层面。`;
   }
 
   const gap = Math.abs((first.matchIndex || 0) - (second.matchIndex || 0));
@@ -1917,10 +1917,10 @@ function buildAdvisorConclusion(topMajors, rankedMajors, studentScore) {
     .join("、");
 
   if (gap <= FOLLOW_UP_GAP_THRESHOLD) {
-    return `${first.name} 与 ${second.name} 当前都具备较强匹配性，但更适合作为“先比较、再收敛”的决策关系。${boundaryIntro}${boundaryDims ? ` 现阶段最值得继续观察的分流点是 ${boundaryDims}。` : ""}建议结合课程强度、培养方式、项目体验和长期投入感再做最终判断。`;
+    return `${first.name} 与 ${second.name} 当前均具备较强匹配性，但更适合作为“先比较、再收敛”的决策关系。${boundaryIntro}${boundaryDims ? ` 现阶段最值得继续观察的分流点为 ${boundaryDims}。` : ""}建议结合课程强度、培养方式、项目体验与长期投入感，再完成最终判断。`;
   }
 
-  return `${first.name} 当前可以作为更优先的建议方向，${second.name} 仍可保留为次优比较对象。${boundaryIntro}${boundaryDims ? ` 当前拉开两者差异的关键依据主要落在 ${boundaryDims}。` : ""}如果后续学科表现和真实体验没有明显反转，优先方向可以继续围绕 ${first.name} 深化。`;
+  return `${first.name} 当前可作为更优先的建议方向，${second.name} 仍可保留为次优比较对象。${boundaryIntro}${boundaryDims ? ` 当前拉开两者差异的关键依据主要落在 ${boundaryDims}。` : ""}如后续学科表现与真实体验未出现明显反转，优先方向可继续围绕 ${first.name} 深化。`;
 }
 
 function getFitTone(score) {
@@ -2331,16 +2331,16 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
         ? "优先建议"
         : scoreTone === "steady"
           ? "重点比较"
-          : "建议继续验证";
+          : "建议审慎验证";
       const verdictTitle = index === 0
-        ? "当前可优先进入筛选"
+        ? "当前可优先进入筛选阶段"
         : index === 1
-          ? "适合作为重点比较对象"
-          : "可作为补充保留方向";
+          ? "适合作为重点比较对象保留"
+          : "可作为补充方向继续观察";
       const headline =
         index === 0 && tieTop
-          ? `${major.name} 与另一方向匹配度接近，建议结合学科成绩与实践经历做进一步判断。`
-          : `${major.name} 当前与学生画像匹配度较高，可列为优先考虑方向。`;
+          ? `${major.name} 与另一优先方向的匹配度较为接近，建议结合学科成绩、课程承受度与实践经历做进一步判断。`
+          : `${major.name} 与当前学生画像的匹配度较高，可纳入优先考虑范围。`;
       return `
       <article class="rank-card">
         <div class="rank-verdict-row">
@@ -2381,10 +2381,10 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
     ? `建议重点比较：${primaryDirection?.label || top3[0].name} 与 ${secondaryDirection?.label || top3[1].name}`
     : `建议优先关注：${primaryDirection?.label || top3[0].name}`;
   const summaryText = tieTop
-    ? "两类方向当前都具备较强匹配性，建议结合学科基础、培养方案、课程强度与未来发展路径做进一步比较判断。"
-    : `${primaryDirection?.label || top3[0].name}与当前学生画像的整体匹配度最高，可作为优先评估方向；具体专业建议应在此方向内进一步筛选。`;
+    ? "两类方向当前均具备较强匹配性，建议结合学科基础、培养方案、课程强度与未来发展路径做进一步比较判断。"
+    : `${primaryDirection?.label || top3[0].name} 与当前学生画像的整体匹配度最高，可作为优先评估方向；具体专业建议应在该方向内部进一步筛选。`;
   const directionSummary = directionRecommendations.length
-    ? `方向判断：优先考虑${primaryDirection?.label || "当前优先方向"}${secondaryDirection ? `，其次可关注${secondaryDirection.label}` : ""}。`
+    ? `方向判断：建议优先考察 ${primaryDirection?.label || "当前优先方向"}${secondaryDirection ? `，并同步关注 ${secondaryDirection.label}` : ""}。`
     : "";
   const topMatch = Number(top3[0]?.matchIndex || 0);
   const secondMatch = Number(top3[1]?.matchIndex || 0);
@@ -2392,31 +2392,31 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
   const decisionStage = tieTop
     ? {
         label: "需重点比较筛选",
-        text: `当前前两类方向的综合匹配度接近，建议不要急于只看单一专业名称，而要进一步比较课程结构、大学培养方式与学科成绩支撑。`
+        text: `当前前两类方向的综合匹配度接近，建议避免仅凭单一专业名称做决定，而应进一步比较课程结构、大学培养方式与学科成绩支撑。`
       }
     : topMatch >= 96 && topGap >= 5
       ? {
-          label: "方向相对清晰",
-          text: `当前优先方向的匹配度明显领先，可先把咨询重点放在该方向内部的专业筛选、学校层次与培养差异上。`
-        }
+        label: "方向相对清晰",
+        text: `当前优先方向的匹配度已形成相对领先优势，可先将咨询重点放在该方向内部的专业筛选、学校层次与培养差异上。`
+      }
       : {
           label: "建议继续验证",
-          text: `当前已经形成优先方向，但仍建议结合成绩表现、实践经历与未来可接受的学习强度做进一步确认。`
+          text: `当前已形成优先方向，但仍建议结合成绩表现、实践经历与未来可接受的学习强度做进一步确认。`
         };
   const nextVerificationFocus = top3[0]
     ? buildMajorNarrative(top3[0], studentVector.score).caution
     : "建议继续核对学科基础、学习投入方式与未来发展环境偏好。";
   const parentReadGuide = tieTop
-    ? "建议先看“综合评估摘要”和“顾问判断与补充说明”，重点比较两类优先方向之间的关键差异。"
-    : "建议先看“综合评估摘要”和“专业建议与匹配依据”，优先确认当前首选方向是否与学生的真实学业状态一致。";
+    ? "建议优先阅读“综合评估摘要”和“顾问判断与补充说明”，重点比较两类优先方向之间的关键差异。"
+    : "建议优先阅读“综合评估摘要”和“专业建议与匹配依据”，先确认首选方向是否与学生的真实学业状态一致。";
   const coverDecisionLabel = tieTop
     ? "当前属于重点比较型结论"
     : topMatch >= 96 && topGap >= 5
       ? "当前属于相对清晰型结论"
       : "当前属于建议继续验证型结论";
   const coverActionText = tieTop
-    ? "下一步建议先比较前两类方向的课程结构、学科门槛与培养差异。"
-    : `下一步建议围绕 ${top3[0]?.name || primaryDirection?.label || "当前优先方向"} 深入筛选学校与专业。`;
+    ? "下一阶段建议优先比较前两类方向的课程结构、学科门槛与培养差异。"
+    : `下一阶段建议围绕 ${top3[0]?.name || primaryDirection?.label || "当前优先方向"} 深入筛选学校与专业。`;
   const coverMetricsHTML = `
     <div class="report-cover-metrics">
       <article class="report-cover-metric">
@@ -2561,7 +2561,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
         <p class="report-section-index">Parent First</p>
         <div>
           <h3>家长优先阅读摘要</h3>
-          <p>如果只先看一页，建议先看这里。它会先说明当前方向判断是否清晰、建议优先如何使用这份报告，以及后续最值得继续验证的重点。</p>
+          <p>如需先快速把握报告结论，建议优先阅读本部分。它会先说明当前方向判断是否清晰、这份报告应如何使用，以及后续最值得继续验证的重点。</p>
         </div>
       </div>
       <div class="parent-brief-grid">
@@ -2609,12 +2609,12 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
         </article>
         <article class="career-highlight-card">
           <span class="career-highlight-label">更适合的任务环境</span>
-          <strong>优先选择与当前优势一致的培养方式</strong>
+          <strong>建议优先选择与当前优势一致的培养方式</strong>
           <p>${careerAnalysis.environment}</p>
         </article>
         <article class="career-highlight-card">
           <span class="career-highlight-label">需要警惕的判断偏差</span>
-          <strong>避免只凭兴趣印象做方向决定</strong>
+          <strong>避免仅凭兴趣印象做方向决定</strong>
           <p>${careerAnalysis.directionBlindspot || "建议结合真实学科投入、项目体验与长期稳定性综合判断，而不是只根据单次偏好做决定。"}</p>
         </article>
       </div>
@@ -2726,7 +2726,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
           `;
         }).join("")}
       </div>
-      <p class="mapping-note"><strong>使用建议：</strong>如果理想方向与校内可报专业差异较大，建议优先考虑“偏管理、偏服务、偏应用协同”的专业；不建议仅为进入学校而优先选择与学生画像明显不一致的高强度技术研发方向。</p>
+      <p class="mapping-note"><strong>使用建议：</strong>如果理想方向与校内可报专业差异较大，建议优先考虑偏管理、偏服务、偏应用协同的专业；不建议仅为进入学校而优先选择与学生画像明显不一致的高强度技术研发方向。</p>
     </section>
   `
     : schoolMajorText
@@ -2761,7 +2761,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
       </div>
       ${advisorTagsHTML}
       ${directionSummary ? `<p class="result-meta">${directionSummary}</p>` : ""}
-      <p class="result-meta">综合画像采用 8 维模型：6维兴趣（Holland）+ 2维能力韧性（选专业更实用）。本报告建议先看综合摘要，再看职业性格分析与专业建议。</p>
+      <p class="result-meta">综合画像采用 8 维模型：6维兴趣（Holland）+ 2维能力与韧性维度，用于提升专业判断的实用性与可解释性。建议先阅读综合摘要，再进入职业性格分析与专业建议部分。</p>
     </div>
     <div class="result-tools">
       <button type="button" id="export-pdf-btn" class="btn btn-ghost">导出 PDF（打印版）</button>
@@ -2790,7 +2790,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
         <p class="report-section-index">Section 04</p>
         <div>
           <h3>专业建议与匹配依据</h3>
-          <p>在综合画像基础上，系统给出当前优先方向、次优方向与补充参考方向，并说明主要匹配依据与后续观察重点。</p>
+          <p>在综合画像基础上，系统给出当前优先方向、次优方向与补充参考方向，并同步说明主要匹配依据与后续观察重点。</p>
         </div>
       </div>
       <div class="rank-grid">${cards}</div>
@@ -2801,7 +2801,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
           <p class="report-section-index">Section 05</p>
           <div>
             <h3>顾问判断与补充说明</h3>
-            <p>用于帮助家长理解：为什么当前优先这个方向、相近方向之间差在哪里，以及系统本次如何做进一步校准。</p>
+            <p>用于帮助家长理解：为何当前优先该方向、相近方向之间的关键差异在哪里，以及本次评估如何进一步完成校准。</p>
           </div>
         </div>
         ${reportNotesSummaryHTML}
