@@ -994,6 +994,56 @@ body {
   background: linear-gradient(180deg, #fbfdfb 0%, #fffdfa 100%);
 }
 
+.parent-brief-section {
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid #d8e5dc;
+  background:
+    radial-gradient(circle at top right, rgba(143, 179, 156, 0.12), transparent 34%),
+    linear-gradient(180deg, #f8fcf9 0%, #fffdfa 100%);
+}
+
+.parent-brief-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.parent-brief-card {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(128, 156, 136, 0.18);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 10px 24px rgba(86, 117, 97, 0.06);
+}
+
+.parent-brief-card-primary {
+  background: linear-gradient(180deg, #eef8f1 0%, #fffdf8 100%);
+}
+
+.parent-brief-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #4d7f6d;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.parent-brief-card strong {
+  display: block;
+  color: var(--ink);
+  font-size: 1.06rem;
+  line-height: 1.5;
+}
+
+.parent-brief-card p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
 .report-overview-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1436,6 +1486,7 @@ body {
   }
 
   .career-analysis-section,
+  .parent-brief-section,
   .development-insights-section,
   .report-overview-section,
   .report-notes-section,
@@ -1449,6 +1500,7 @@ body {
   }
 
   .summary-chips span,
+  .parent-brief-card,
   .report-overview-card,
   .report-note-card,
   .career-axis-item,
@@ -1472,6 +1524,7 @@ body {
 
   .development-insights-grid,
   .career-analysis-grid,
+  .parent-brief-grid,
   .report-overview-grid,
   .report-notes-grid,
   .rank-grid {
@@ -1533,7 +1586,8 @@ body {
   .report-cover-main,
   .report-section-heading,
   .report-overview-grid,
-  .report-notes-grid {
+  .report-notes-grid,
+  .parent-brief-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1681,6 +1735,7 @@ body {
   }
 
   .report-overview-section,
+  .parent-brief-section,
   .report-notes-section,
   .report-cover-side {
     padding: 14px;

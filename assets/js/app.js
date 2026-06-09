@@ -2367,6 +2367,29 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
   const directionSummary = directionRecommendations.length
     ? `方向判断：优先考虑${primaryDirection?.label || "当前优先方向"}${secondaryDirection ? `，其次可关注${secondaryDirection.label}` : ""}。`
     : "";
+  const topMatch = Number(top3[0]?.matchIndex || 0);
+  const secondMatch = Number(top3[1]?.matchIndex || 0);
+  const topGap = Math.max(0, topMatch - secondMatch);
+  const decisionStage = tieTop
+    ? {
+        label: "需重点比较筛选",
+        text: `当前前两类方向的综合匹配度接近，建议不要急于只看单一专业名称，而要进一步比较课程结构、大学培养方式与学科成绩支撑。`
+      }
+    : topMatch >= 96 && topGap >= 5
+      ? {
+          label: "方向相对清晰",
+          text: `当前优先方向的匹配度明显领先，可先把咨询重点放在该方向内部的专业筛选、学校层次与培养差异上。`
+        }
+      : {
+          label: "建议继续验证",
+          text: `当前已经形成优先方向，但仍建议结合成绩表现、实践经历与未来可接受的学习强度做进一步确认。`
+        };
+  const nextVerificationFocus = top3[0]
+    ? buildMajorNarrative(top3[0], studentVector.score).caution
+    : "建议继续核对学科基础、学习投入方式与未来发展环境偏好。";
+  const parentReadGuide = tieTop
+    ? "建议先看“综合评估摘要”和“顾问判断与补充说明”，重点比较两类优先方向之间的关键差异。"
+    : "建议先看“综合评估摘要”和“专业建议与匹配依据”，优先确认当前首选方向是否与学生的真实学业状态一致。";
   const comparisonCardHTML = choiceComparison
     ? `
       <article class="report-note-card">
@@ -2463,6 +2486,35 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
           <span class="report-overview-label">兴趣辅助参照</span>
           <strong>Holland：${hollandCode}</strong>
           <p>用于辅助理解兴趣结构，不单独作为专业选择结论。</p>
+        </article>
+      </div>
+    </section>
+  `;
+
+  const parentBriefHTML = `
+    <section class="report-section parent-brief-section">
+      <div class="report-section-heading">
+        <p class="report-section-index">Parent First</p>
+        <div>
+          <h3>家长优先阅读摘要</h3>
+          <p>如果只先看一页，建议先看这里。它会先说明当前方向判断是否清晰、建议优先如何使用这份报告，以及后续最值得继续验证的重点。</p>
+        </div>
+      </div>
+      <div class="parent-brief-grid">
+        <article class="parent-brief-card parent-brief-card-primary">
+          <span class="parent-brief-label">当前方向结论</span>
+          <strong>${decisionStage.label}</strong>
+          <p>${decisionStage.text}</p>
+        </article>
+        <article class="parent-brief-card">
+          <span class="parent-brief-label">建议先怎么用这份报告</span>
+          <strong>${summaryTitle}</strong>
+          <p>${parentReadGuide}</p>
+        </article>
+        <article class="parent-brief-card">
+          <span class="parent-brief-label">下一步最值得验证的重点</span>
+          <strong>${top3[0]?.name || primaryDirection?.label || "当前优先方向"}</strong>
+          <p>${nextVerificationFocus}</p>
         </article>
       </div>
     </section>
@@ -2631,6 +2683,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
     <div class="result-tools">
       <button type="button" id="export-pdf-btn" class="btn btn-ghost">导出 PDF（打印版）</button>
     </div>
+    ${parentBriefHTML}
     ${reportOverviewHTML}
     <section class="report-section">
       <div class="report-section-heading">
