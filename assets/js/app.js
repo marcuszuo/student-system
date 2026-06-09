@@ -2409,6 +2409,37 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
   const parentReadGuide = tieTop
     ? "建议先看“综合评估摘要”和“顾问判断与补充说明”，重点比较两类优先方向之间的关键差异。"
     : "建议先看“综合评估摘要”和“专业建议与匹配依据”，优先确认当前首选方向是否与学生的真实学业状态一致。";
+  const coverDecisionLabel = tieTop
+    ? "当前属于重点比较型结论"
+    : topMatch >= 96 && topGap >= 5
+      ? "当前属于相对清晰型结论"
+      : "当前属于建议继续验证型结论";
+  const coverActionText = tieTop
+    ? "下一步建议先比较前两类方向的课程结构、学科门槛与培养差异。"
+    : `下一步建议围绕 ${top3[0]?.name || primaryDirection?.label || "当前优先方向"} 深入筛选学校与专业。`;
+  const coverMetricsHTML = `
+    <div class="report-cover-metrics">
+      <article class="report-cover-metric">
+        <span>首选匹配度</span>
+        <strong>${topMatch} / 100</strong>
+      </article>
+      <article class="report-cover-metric">
+        <span>方向差距</span>
+        <strong>${topGap} 分</strong>
+      </article>
+      <article class="report-cover-metric">
+        <span>兴趣辅助参照</span>
+        <strong>${hollandCode}</strong>
+      </article>
+    </div>
+  `;
+  const coverChecklistHTML = `
+    <div class="report-cover-checklist">
+      <p><strong>结论状态：</strong>${coverDecisionLabel}</p>
+      <p><strong>当前重点：</strong>${coverActionText}</p>
+      <p><strong>家长阅读顺序：</strong>${parentReadGuide}</p>
+    </div>
+  `;
   const comparisonCardHTML = choiceComparison
     ? `
       <article class="report-note-card">
@@ -2448,6 +2479,20 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
   const reportNotesHTML = [advisorConclusionCardHTML, comparisonCardHTML, reverseAdviceCardHTML, calibrationCardHTML]
     .filter(Boolean)
     .join("");
+  const reportNotesSummaryHTML = `
+    <div class="report-notes-summary">
+      <article class="report-notes-summary-card report-notes-summary-card-primary">
+        <span>顾问判断重点</span>
+        <strong>${top3[0]?.name || primaryDirection?.label || "当前优先方向"}</strong>
+        <p>${advisorConclusion || summaryText}</p>
+      </article>
+      <article class="report-notes-summary-card">
+        <span>需要继续比较的关键点</span>
+        <strong>${secondaryDirection ? `${primaryDirection?.label || top3[0]?.name} vs ${secondaryDirection.label}` : "当前优先方向的后续验证"}</strong>
+        <p>${choiceComparison || nextVerificationFocus}</p>
+      </article>
+    </div>
+  `;
   const studentSummaryCards = `
     <div class="student-summary-grid">
       <article class="student-summary-card">
@@ -2700,10 +2745,12 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
           <p class="result-kicker">MajorNavi 学生专业发展评估报告</p>
           <h2>${summaryTitle}</h2>
           <p class="result-summary">${summaryText}</p>
+          ${coverMetricsHTML}
         </div>
         <div class="report-cover-side">
           <span class="report-cover-badge">正式完整评估报告</span>
           <p>适用于学生专业方向判断、家长沟通与后续志愿咨询参考。</p>
+          ${coverChecklistHTML}
         </div>
       </div>
       ${studentSummaryCards}
@@ -2757,6 +2804,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
             <p>用于帮助家长理解：为什么当前优先这个方向、相近方向之间差在哪里，以及系统本次如何做进一步校准。</p>
           </div>
         </div>
+        ${reportNotesSummaryHTML}
         <div class="report-notes-grid">
           ${reportNotesHTML}
         </div>
