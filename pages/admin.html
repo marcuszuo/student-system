@@ -3,14 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>报告后台</title>
   <script>
+    const ADMIN_PAGE_VERSION = "20260627-admin-v2";
     const isLocalPreviewHost = ["127.0.0.1", "localhost"].includes(location.hostname);
+    const adminUrl = new URL(location.href);
+    if (!isLocalPreviewHost && adminUrl.searchParams.get("v") !== ADMIN_PAGE_VERSION) {
+      adminUrl.searchParams.set("v", ADMIN_PAGE_VERSION);
+      location.replace(adminUrl.toString());
+    }
     if (location.protocol === "http:" && !isLocalPreviewHost) {
       location.replace("https://" + location.host + location.pathname + location.search + location.hash);
     }
   </script>
-  <link rel="stylesheet" href="../assets/css/styles.css?v=20260609-admin-clean">
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260627-admin-v2">
 </head>
 <body>
   <main class="page">
@@ -23,7 +32,7 @@
     <section class="card admin-shell">
       <section class="admin-toolbar">
         <div class="admin-toolbar-head">
-          <p id="admin-status" class="auth-status">系统将自动连接后台并加载报告数据。</p>
+          <p id="admin-status" class="auth-status">系统将自动连接后台并加载最新报告数据。</p>
           <div class="admin-actions">
             <button id="admin-reload-btn" type="button" class="btn btn-primary">刷新报告</button>
             <button id="admin-export-btn" type="button" class="btn btn-ghost">导出 CSV</button>
@@ -128,6 +137,6 @@
     window.ADMIN_DEFAULT_API_BASE = "https://api.majornavi.cn";
     window.ADMIN_DEFAULT_TOKEN = "9c61f52c4ffc7e8b1d39e8c74e29cf625584fb7195c286b7";
   </script>
-  <script src="../assets/js/admin.js?v=20260609-admin-clean"></script>
+  <script src="../assets/js/admin.js?v=20260627-admin-v2"></script>
 </body>
 </html>
