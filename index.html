@@ -6,11 +6,12 @@
   <title>MajorNavi 学生专业发展评估系统</title>
   <meta name="description" content="MajorNavi 面向初高中学生的专业发展评估与升学规划系统，基于多维画像与专业匹配模型输出专业方向建议。">
   <script>
-    if (location.protocol === "http:") {
+    const isLocalPreviewHost = ["127.0.0.1", "localhost"].includes(location.hostname);
+    if (location.protocol === "http:" && !isLocalPreviewHost) {
       location.replace("https://" + location.host + location.pathname + location.search + location.hash);
     }
   </script>
-  <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20260609-report-refresh">
 </head>
 <body>
   <main class="page">
@@ -154,8 +155,8 @@
     </footer>
   </main>
 
-  <script src="assets/js/official_data.js"></script>
-  <script src="assets/js/majors_v2.js"></script>
+  <script src="assets/js/official_data.js?v=20260609-report-refresh"></script>
+  <script src="assets/js/majors_v2.js?v=20260609-report-refresh"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script>
@@ -173,7 +174,7 @@
     window.REPORT_API_BASE_URL = "https://api.majornavi.cn";
     window.REPORT_INGEST_KEY = "3ee938df43c042796300cd54cc40cd19";
   </script>
-  <script src="assets/js/analytics.js"></script>
-  <script src="assets/js/app.js"></script>
+  <script src="assets/js/analytics.js?v=20260609-report-refresh"></script>
+  <script src="assets/js/app.js?v=20260609-report-refresh"></script>
 </body>
 </html>

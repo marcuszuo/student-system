@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>报告后台</title>
   <script>
-    if (location.protocol === "http:") {
+    const isLocalPreviewHost = ["127.0.0.1", "localhost"].includes(location.hostname);
+    if (location.protocol === "http:" && !isLocalPreviewHost) {
       location.replace("https://" + location.host + location.pathname + location.search + location.hash);
     }
   </script>
-  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260609-admin-clean">
 </head>
 <body>
   <main class="page">
@@ -127,6 +128,6 @@
     window.ADMIN_DEFAULT_API_BASE = "https://api.majornavi.cn";
     window.ADMIN_DEFAULT_TOKEN = "9c61f52c4ffc7e8b1d39e8c74e29cf625584fb7195c286b7";
   </script>
-  <script src="../assets/js/admin.js"></script>
+  <script src="../assets/js/admin.js?v=20260609-admin-clean"></script>
 </body>
 </html>

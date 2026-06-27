@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>隐私说明与家长知情同意</title>
   <script>
-    if (location.protocol === "http:") {
+    const isLocalPreviewHost = ["127.0.0.1", "localhost"].includes(location.hostname);
+    if (location.protocol === "http:" && !isLocalPreviewHost) {
       location.replace("https://" + location.host + location.pathname + location.search + location.hash);
     }
   </script>
