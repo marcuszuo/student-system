@@ -11,7 +11,7 @@
       location.replace("https://" + location.host + location.pathname + location.search + location.hash);
     }
   </script>
-  <link rel="stylesheet" href="../assets/css/styles.css?v=20260629-gaokao-launch">
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260629-gaokao-v2">
 </head>
 <body>
   <main class="page">
@@ -32,7 +32,7 @@
             <h2>填写高考参考信息</h2>
             <p>如果暂时没有正式高考成绩，也可以先使用模考分数与当前全省位次做预估。</p>
           </div>
-          <div class="gaokao-data-badge">当前为首批参考数据版本</div>
+          <div class="gaokao-data-badge">当前为第二批参考数据版本</div>
         </div>
 
         <div class="gaokao-form-grid">
@@ -51,6 +51,20 @@
           <label class="single-field">
             <span>全省位次</span>
             <input id="gaokao-rank" type="number" min="1" inputmode="numeric" autocomplete="off" placeholder="如 13852">
+          </label>
+          <label class="single-field">
+            <span>城市偏好（可选）</span>
+            <input id="gaokao-city" type="text" autocomplete="off" placeholder="如 广州 / 南京 / 杭州">
+          </label>
+          <label class="single-field">
+            <span>院校层级（可选）</span>
+            <select id="gaokao-tier">
+              <option value="">全部</option>
+              <option value="985">985</option>
+              <option value="211">211</option>
+              <option value="双一流">双一流</option>
+              <option value="省属重点">省属重点</option>
+            </select>
           </label>
         </div>
 
@@ -84,7 +98,7 @@
     </section>
   </main>
 
-  <script src="../assets/js/gaokao_data.js?v=20260629-gaokao-launch"></script>
-  <script src="../assets/js/gaokao.js?v=20260629-gaokao-launch"></script>
+  <script src="../assets/js/gaokao_data.js?v=20260629-gaokao-v2"></script>
+  <script src="../assets/js/gaokao.js?v=20260629-gaokao-v2"></script>
 </body>
 </html>

@@ -402,6 +402,24 @@ body {
   margin-bottom: 18px;
 }
 
+.gaokao-strategy-card {
+  margin-bottom: 18px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(239, 247, 242, 0.95), rgba(255, 255, 255, 0.92));
+}
+
+.gaokao-strategy-card h3 {
+  margin: 0 0 8px;
+}
+
+.gaokao-strategy-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
 .gaokao-summary-card span {
   display: block;
   margin-bottom: 8px;

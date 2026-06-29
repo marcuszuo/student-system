@@ -3,6 +3,8 @@ const provinceSelect = document.getElementById("gaokao-province");
 const trackSelect = document.getElementById("gaokao-track");
 const scoreInput = document.getElementById("gaokao-score");
 const rankInput = document.getElementById("gaokao-rank");
+const cityInput = document.getElementById("gaokao-city");
+const tierSelect = document.getElementById("gaokao-tier");
 const resultPanel = document.getElementById("gaokao-result");
 const searchBtn = document.getElementById("gaokao-search-btn");
 const resetBtn = document.getElementById("gaokao-reset-btn");
@@ -57,6 +59,18 @@ function getBucket(entry, studentRank, studentScore) {
     if (gap >= 10) return "safe";
     if (gap >= 2) return "steady";
     if (gap >= -8) return "reach";
+  }
+  return "out";
+}
+
+function getFallbackBucket(entry, studentRank, studentScore) {
+  if (Number.isFinite(studentRank) && studentRank > 0 && Number.isFinite(entry.minRank)) {
+    const ratio = studentRank / entry.minRank;
+    if (ratio <= 1.3) return "reach";
+  }
+  if (Number.isFinite(studentScore) && Number.isFinite(entry.minScore)) {
+    const gap = studentScore - entry.minScore;
+    if (gap >= -15) return "reach";
   }
   return "out";
 }
@@ -154,6 +168,14 @@ function renderResults(province, track, studentScore, studentRank, ranked) {
     safe: ranked.filter((item) => item.bucket === "safe")
   };
 
+  const cityKeyword = String(cityInput.value || "").trim();
+  const tierFilter = String(tierSelect.value || "").trim();
+  const strategyNote = groups.steady.length
+    ? "建议先以稳妥池为主体，再搭配少量冲刺与保底院校形成完整志愿结构。"
+    : groups.reach.length
+      ? "当前结果偏向冲刺判断，建议同步放宽城市或院校层级条件，以形成更稳定的志愿组合。"
+      : "当前结果偏向保底区间，建议继续补充更高匹配院校或结合专业组进一步扩展选择。";
+
   resultPanel.innerHTML = `
     <div class="gaokao-result-head">
       <div>
@@ -164,6 +186,8 @@ function renderResults(province, track, studentScore, studentRank, ranked) {
       <div class="gaokao-student-brief">
         <span>分数：${studentScore ? escapeHtml(studentScore) : "未填"}</span>
         <span>位次：${studentRank ? escapeHtml(formatRank(studentRank)) : "未填"}</span>
+        ${cityKeyword ? `<span>城市偏好：${escapeHtml(cityKeyword)}</span>` : ""}
+        ${tierFilter ? `<span>层级筛选：${escapeHtml(tierFilter)}</span>` : ""}
         <span>参考逻辑：上一年位次带估算</span>
       </div>
     </div>
@@ -181,6 +205,10 @@ function renderResults(province, track, studentScore, studentRank, ranked) {
         <strong>${groups.safe.length}</strong>
       </article>
     </div>
+    <section class="gaokao-strategy-card">
+      <h3>本轮志愿组合建议</h3>
+      <p>${escapeHtml(strategyNote)}</p>
+    </section>
     ${renderGroup("冲刺参考院校", "适合作为上探院校范围，但建议同步关注专业冷热变化和招生计划波动。", groups.reach)}
     ${renderGroup("稳妥参考院校", "与当前位次相对接近，建议作为志愿表主体院校池继续细筛。", groups.steady)}
     ${renderGroup("保底参考院校", "可作为结果稳定区间参考，但仍建议检查具体专业组录取情况。", groups.safe)}
@@ -200,6 +228,8 @@ function rankSchools() {
   const track = getTrack(province, trackSelect.value);
   const studentScore = Number(scoreInput.value || 0);
   const studentRank = Number(rankInput.value || 0);
+  const cityKeyword = String(cityInput.value || "").trim().toLowerCase();
+  const tierFilter = String(tierSelect.value || "").trim();
 
   if (!province) return renderError("请先选择所在省份。");
   if (!track) return renderError("请先选择科类 / 选科方向。");
@@ -209,7 +239,8 @@ function rankSchools() {
 
   const ranked = (track.schools || [])
     .map((entry) => {
-      const bucket = getBucket(entry, studentRank, studentScore);
+      const directBucket = getBucket(entry, studentRank, studentScore);
+      const bucket = directBucket === "out" ? getFallbackBucket(entry, studentRank, studentScore) : directBucket;
       const bucketMeta = getBucketMeta(bucket);
       const rankGap = Number.isFinite(studentRank) && entry.minRank ? Math.abs(studentRank - entry.minRank) : 999999;
       const scoreGap = Number.isFinite(studentScore) && entry.minScore ? Math.abs(studentScore - entry.minScore) : 999999;
@@ -223,7 +254,13 @@ function rankSchools() {
       };
     })
     .filter((entry) => entry.bucket !== "out")
+    .filter((entry) => !cityKeyword || String(entry.city || "").toLowerCase().includes(cityKeyword))
+    .filter((entry) => !tierFilter || String(entry.tier || "") === tierFilter)
     .sort((a, b) => a.bucketMeta.order - b.bucketMeta.order || a.rankGap - b.rankGap || a.scoreGap - b.scoreGap);
+
+  if (!ranked.length) {
+    return renderError("当前筛选条件下暂无合适院校。建议放宽城市偏好、院校层级，或优先使用全省位次重新匹配。");
+  }
 
   renderResults(province, track, studentScore, studentRank, ranked);
 }
@@ -231,6 +268,8 @@ function rankSchools() {
 function resetForm() {
   scoreInput.value = "";
   rankInput.value = "";
+  cityInput.value = "";
+  tierSelect.value = "";
   resultPanel.innerHTML = `
     <div class="empty-state">
       <h2>等待生成结果</h2>
@@ -245,6 +284,8 @@ function applyPreviewParams() {
   const track = String(params.get("track") || "").trim();
   const score = String(params.get("score") || "").trim();
   const rank = String(params.get("rank") || "").trim();
+  const city = String(params.get("city") || "").trim();
+  const tier = String(params.get("tier") || "").trim();
 
   if (province && getProvince(province)) {
     provinceSelect.value = province;
@@ -258,8 +299,10 @@ function applyPreviewParams() {
 
   if (score) scoreInput.value = score;
   if (rank) rankInput.value = rank;
+  if (city) cityInput.value = city;
+  if (tier) tierSelect.value = tier;
 
-  if (province || track || score || rank) {
+  if (province || track || score || rank || city || tier) {
     rankSchools();
   }
 }
@@ -271,6 +314,21 @@ provinceSelect.addEventListener("change", () => {
 
 searchBtn.addEventListener("click", rankSchools);
 resetBtn.addEventListener("click", resetForm);
+[scoreInput, rankInput, cityInput].forEach((input) => {
+  input.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    rankSchools();
+  });
+});
+
+[tierSelect, trackSelect].forEach((input) => {
+  input.addEventListener("change", () => {
+    if (resultPanel.querySelector(".gaokao-result-head")) {
+      rankSchools();
+    }
+  });
+});
 
 populateProvinceOptions();
 populateTrackOptions();
