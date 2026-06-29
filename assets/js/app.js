@@ -2846,7 +2846,7 @@ function validateIntroStep(step) {
   return true;
 }
 
-loginBtn.addEventListener("click", () => {
+function handleLoginAttempt() {
   const username = normalizeUsername(authUsernameInput.value);
   const password = String(authPasswordInput.value || "").trim();
   authUsernameInput.value = username;
@@ -2881,6 +2881,18 @@ loginBtn.addEventListener("click", () => {
   authPasswordInput.value = "";
   renderAuthState();
   setAuthStatus("登录成功", "success");
+}
+
+loginBtn.addEventListener("click", () => {
+  handleLoginAttempt();
+});
+
+[authUsernameInput, authPasswordInput].forEach((input) => {
+  input.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    handleLoginAttempt();
+  });
 });
 
 logoutBtn.addEventListener("click", () => {

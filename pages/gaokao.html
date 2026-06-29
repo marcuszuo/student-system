@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>高考志愿参考 | MajorNavi</title>
+  <meta name="description" content="输入高考分数、所属省份和全省位次，查看按上一年投档区间估算的国内大学参考名单。">
+  <script>
+    const isLocalPreviewHost = ["127.0.0.1", "localhost"].includes(location.hostname);
+    if (location.protocol === "http:" && !isLocalPreviewHost) {
+      location.replace("https://" + location.host + location.pathname + location.search + location.hash);
+    }
+  </script>
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260629-gaokao-launch">
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <p class="tag">MajorNavi · 高考志愿参考</p>
+      <h1>国内大学志愿参考系统</h1>
+      <p class="subtitle">输入省份、科类、分数与全省位次，系统将结合上一年院校投档区间，给出可重点关注的国内大学参考名单。</p>
+      <div class="tool-back-row">
+        <a class="btn btn-ghost" href="../index.html">返回专业评估首页</a>
+      </div>
+    </section>
+
+    <section class="card gaokao-shell">
+      <section class="gaokao-form-panel">
+        <div class="gaokao-panel-head">
+          <div>
+            <p class="panel-kicker">Step 1</p>
+            <h2>填写高考参考信息</h2>
+            <p>如果暂时没有正式高考成绩，也可以先使用模考分数与当前全省位次做预估。</p>
+          </div>
+          <div class="gaokao-data-badge">当前为首批参考数据版本</div>
+        </div>
+
+        <div class="gaokao-form-grid">
+          <label class="single-field">
+            <span>所在省份</span>
+            <select id="gaokao-province"></select>
+          </label>
+          <label class="single-field">
+            <span>科类 / 选科方向</span>
+            <select id="gaokao-track"></select>
+          </label>
+          <label class="single-field">
+            <span>高考或模考分数</span>
+            <input id="gaokao-score" type="number" min="0" max="900" inputmode="numeric" autocomplete="off" placeholder="如 602">
+          </label>
+          <label class="single-field">
+            <span>全省位次</span>
+            <input id="gaokao-rank" type="number" min="1" inputmode="numeric" autocomplete="off" placeholder="如 13852">
+          </label>
+        </div>
+
+        <div class="gaokao-form-actions">
+          <button type="button" id="gaokao-search-btn" class="btn btn-primary">开始匹配院校</button>
+          <button type="button" id="gaokao-reset-btn" class="btn btn-ghost">清空重填</button>
+        </div>
+
+        <div class="gaokao-explain-grid">
+          <article class="gaokao-explain-card">
+            <strong>判断逻辑</strong>
+            <p>优先使用全省位次与上一年院校最低录取位次做近似匹配，分为冲刺、稳妥、保底三档。</p>
+          </article>
+          <article class="gaokao-explain-card">
+            <strong>缺少当年数据时</strong>
+            <p>默认回退到上一年参考区间，仅用于初筛院校范围，不能直接替代正式志愿填报。</p>
+          </article>
+          <article class="gaokao-explain-card">
+            <strong>建议使用方式</strong>
+            <p>先用本页缩小院校范围，再结合专业录取分、招生计划、城市偏好与学费因素进一步筛选。</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="gaokao-result" class="gaokao-result-panel">
+        <div class="empty-state">
+          <h2>等待生成结果</h2>
+          <p>填写完成后点击“开始匹配院校”，系统会按当前省份和科类给出参考结果。</p>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="../assets/js/gaokao_data.js?v=20260629-gaokao-launch"></script>
+  <script src="../assets/js/gaokao.js?v=20260629-gaokao-launch"></script>
+</body>
+</html>
