@@ -521,6 +521,26 @@ body {
   margin: 0 0 8px;
 }
 
+.gaokao-major-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.gaokao-major-tags span {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef6f1;
+  border: 1px solid #d8e5dc;
+  color: #486b5d;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.gaokao-school-fit,
 .gaokao-school-estimate,
 .gaokao-school-note {
   margin: 0;

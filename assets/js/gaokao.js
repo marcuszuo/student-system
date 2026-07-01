@@ -8,6 +8,110 @@ const tierSelect = document.getElementById("gaokao-tier");
 const resultPanel = document.getElementById("gaokao-result");
 const searchBtn = document.getElementById("gaokao-search-btn");
 const resetBtn = document.getElementById("gaokao-reset-btn");
+const coverageEl = document.getElementById("gaokao-coverage");
+
+const SCHOOL_MAJOR_HINTS = {
+  "中山大学": {
+    majors: ["临床医学", "工商管理", "计算机类", "材料与化学"],
+    fit: "适合基础能力强、后续仍希望保留专业上探空间的学生。",
+    caution: "学校层级很高，专业组之间竞争差异明显，后续必须细看具体专业分层。"
+  },
+  "华南理工大学": {
+    majors: ["计算机类", "自动化", "电子信息", "建筑类"],
+    fit: "适合数理基础较好、愿意接受工科训练节奏的学生。",
+    caution: "如果学生不适应高密度理工课程，不建议只因为学校名气而强行冲刺。"
+  },
+  "暨南大学": {
+    majors: ["新闻传播", "经济金融", "临床医学", "国际商务"],
+    fit: "适合综合发展取向明显、希望兼顾城市资源与学科选择弹性的学生。",
+    caution: "院校整体吸引力较强，热门专业实际竞争通常高于最低投档线。"
+  },
+  "华南师范大学": {
+    majors: ["师范类", "心理学", "汉语言", "数学与应用数学"],
+    fit: "适合倾向教育、人文社科或希望兼顾稳定培养路径的学生。",
+    caution: "若学生并不接受教育类或公共服务类路径，需要提前核对专业偏好。"
+  },
+  "深圳大学": {
+    majors: ["计算机类", "金融科技", "传播学", "建筑与设计"],
+    fit: "适合看重城市机会、实习资源和就业导向的学生。",
+    caution: "城市热度会抬高报考强度，建议不要只按学校最低线判断。"
+  },
+  "广州大学": {
+    majors: ["土木工程", "法学", "教育学", "计算机类"],
+    fit: "适合希望在省会城市完成综合培养、并保留专业调整弹性的学生。",
+    caution: "不同学院冷热差距较大，最好结合专业去向进一步判断。"
+  },
+  "广东工业大学": {
+    majors: ["自动化", "机械类", "电子信息", "软件工程"],
+    fit: "适合理工应用取向较强、愿意接受工程训练的学生。",
+    caution: "如果学生未来更偏商科或文科表达方向，这类院校未必最优。"
+  },
+  "汕头大学": {
+    majors: ["临床医学", "工商管理", "法学", "新闻传播"],
+    fit: "适合希望在相对稳定区间内兼顾综合培养的学生。",
+    caution: "更适合作为稳妥或保底层院校，不建议把它误当作热门城市替代项。"
+  },
+  "南京大学": {
+    majors: ["人工智能", "计算机类", "经济管理", "人文社科实验班"],
+    fit: "适合位次很强、学术基础扎实且后续仍想保留上限空间的学生。",
+    caution: "院校整体门槛极高，专业组细分后竞争只会更强。"
+  },
+  "东南大学": {
+    majors: ["建筑类", "电子信息", "自动化", "工科试验班"],
+    fit: "适合工程、建筑、理工导向明确的学生。",
+    caution: "如果学生对工科长期训练接受度不高，不宜仅按学校层级做选择。"
+  },
+  "苏州大学": {
+    majors: ["临床医学", "法学", "设计类", "计算机类"],
+    fit: "适合希望兼顾城市资源、综合培养和一定专业弹性的学生。",
+    caution: "热门城市会提高真实报考竞争，建议同步准备稳妥替代院校。"
+  },
+  "南京师范大学": {
+    majors: ["教育学", "汉语言文学", "心理学", "新闻传播"],
+    fit: "适合人文社科、教育与表达型方向较强的学生。",
+    caution: "若学生未来并不接受师范或教育相关路径，需重点核对专业组。"
+  },
+  "浙江大学": {
+    majors: ["工科试验班", "医学试验班", "经济管理", "计算机类"],
+    fit: "适合顶尖位次段、后续仍希望保持多方向选择权的学生。",
+    caution: "学校层级极高，志愿决策必须进入专业层和培养层比较。"
+  },
+  "宁波大学": {
+    majors: ["法学", "信息工程", "临床医学", "师范类"],
+    fit: "适合希望兼顾城市、综合培养和一定专业选择余地的学生。",
+    caution: "不同专业间录取强度可能差距较大，建议核查具体专业线。"
+  },
+  "山东大学": {
+    majors: ["临床医学", "数学类", "计算机类", "经济学"],
+    fit: "适合中高分段、希望兼顾学校层级与综合学科面的学生。",
+    caution: "建议优先确认学生是否有明确专业组偏好，避免只看学校名字。"
+  },
+  "郑州大学": {
+    majors: ["临床医学", "材料类", "计算机类", "法学"],
+    fit: "适合本省中高位次、希望在综合院校内保留专业弹性的学生。",
+    caution: "热门专业真实竞争明显高于校线，建议结合专业组再细筛。"
+  },
+  "河南大学": {
+    majors: ["师范类", "汉语言文学", "法学", "生物类"],
+    fit: "适合希望兼顾综合培养、人文教育与稳定升学路径的学生。",
+    caution: "如果学生未来倾向强工科应用路径，这所院校未必最匹配。"
+  },
+  "华北水利水电大学": {
+    majors: ["水利类", "土木工程", "电气工程", "自动化"],
+    fit: "适合理工应用与工程执行取向比较明确的学生。",
+    caution: "更适合工程方向，不建议把它当作泛综合院校理解。"
+  },
+  "北京邮电大学": {
+    majors: ["信息通信", "计算机类", "电子工程", "网络安全"],
+    fit: "适合信息类方向明确、数理能力较强的学生。",
+    caution: "院校热度高，专业线通常抬升明显，建议同步准备稳妥替代项。"
+  },
+  "中国传媒大学": {
+    majors: ["新闻传播", "广播电视", "数字媒体", "广告学"],
+    fit: "适合表达、传播、内容创作与媒介方向关注度高的学生。",
+    caution: "如果学生只是看中学校名气而非传播内容方向，后续匹配可能下降。"
+  }
+};
 
 function escapeHtml(text) {
   return String(text || "")
@@ -42,6 +146,23 @@ function populateTrackOptions() {
 
 function formatRank(rank) {
   return Number(rank || 0).toLocaleString("zh-CN");
+}
+
+function getCoverageStats() {
+  const provinceCount = (gaokaoData.provinces || []).length;
+  const trackCount = (gaokaoData.provinces || []).reduce((sum, province) => sum + (province.tracks || []).length, 0);
+  const schoolCount = (gaokaoData.provinces || []).reduce((sum, province) => {
+    return sum + (province.tracks || []).reduce((inner, track) => inner + (track.schools || []).length, 0);
+  }, 0);
+  return { provinceCount, trackCount, schoolCount };
+}
+
+function getSchoolHint(entry) {
+  return SCHOOL_MAJOR_HINTS[entry.name] || {
+    majors: ["建议后续核查该校优势学院与热门专业组"],
+    fit: "更适合先将学校放入候选池，再结合专业组、城市与培养路径继续比较。",
+    caution: "当前仅完成学校层级初筛，不能直接替代正式志愿方案。"
+  };
 }
 
 function getBucket(entry, studentRank, studentScore) {
@@ -153,7 +274,12 @@ function renderGroup(title, intro, items) {
             </div>
             <p class="gaokao-school-summary">${escapeHtml(item.bucketMeta.summary)}</p>
             <p class="gaokao-school-estimate">${escapeHtml(item.estimateSummary)}</p>
+            <div class="gaokao-major-tags">
+              ${getSchoolHint(item).majors.map((major) => `<span>${escapeHtml(major)}</span>`).join("")}
+            </div>
+            <p class="gaokao-school-fit"><strong>更适合关注：</strong>${escapeHtml(getSchoolHint(item).fit)}</p>
             <p class="gaokao-school-note"><strong>提醒：</strong>${escapeHtml(item.note || "建议继续结合专业组与招生计划判断。")}</p>
+            <p class="gaokao-school-note"><strong>报考补充提醒：</strong>${escapeHtml(getSchoolHint(item).caution)}</p>
           </article>
         `).join("")}
       </div>
@@ -333,3 +459,8 @@ resetBtn.addEventListener("click", resetForm);
 populateProvinceOptions();
 populateTrackOptions();
 applyPreviewParams();
+
+if (coverageEl) {
+  const coverage = getCoverageStats();
+  coverageEl.textContent = `当前已覆盖 ${coverage.provinceCount} 个省份、${coverage.trackCount} 个科类方向、${coverage.schoolCount} 条院校参考记录。`;
+}
