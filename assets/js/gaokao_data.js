@@ -1,6 +1,6 @@
 window.GAOKAO_REFERENCE_DATA = {
-  version: "2026-07-02-batch-4",
-  label: "高考志愿参考第四批数据",
+  version: "2026-07-02-batch-5",
+  label: "高考志愿参考第五批数据",
   disclaimer: "当前页面用于院校范围初筛。若缺少当年正式数据，系统按上一年投档位次近似估算。",
   provinces: [
     {
@@ -195,6 +195,108 @@ window.GAOKAO_REFERENCE_DATA = {
             { name: "东华理工大学", city: "南昌", tier: "省属重点", year: 2025, minScore: 558, minRank: 15100, note: "综合培养与应用方向兼顾" },
             { name: "赣南师范大学", city: "赣州", tier: "省属重点", year: 2025, minScore: 553, minRank: 17600, note: "适合作为稳妥与保底结合参考" },
             { name: "江西科技师范大学", city: "南昌", tier: "省属重点", year: 2025, minScore: 548, minRank: 20400, note: "教育、应用与职业培养方向可关注" }
+          ]
+        }
+      ]
+    },
+    {
+      code: "hunan",
+      name: "湖南",
+      tracks: [
+        {
+          code: "physics",
+          name: "物理类",
+          schools: [
+            { name: "中南大学", city: "长沙", tier: "985", year: 2025, minScore: 632, minRank: 8400, note: "医学、材料、工科综合实力强" },
+            { name: "湖南大学", city: "长沙", tier: "985", year: 2025, minScore: 621, minRank: 13900, note: "工科、设计、经管方向可重点关注" },
+            { name: "湖南师范大学", city: "长沙", tier: "211", year: 2025, minScore: 598, minRank: 31200, note: "教育、人文与综合培养兼顾" },
+            { name: "湘潭大学", city: "湘潭", tier: "双一流", year: 2025, minScore: 590, minRank: 40100, note: "法学、数学与综合培养方向较强" },
+            { name: "长沙理工大学", city: "长沙", tier: "省属重点", year: 2025, minScore: 581, minRank: 51800, note: "交通、电气、土木与工程应用方向可关注" },
+            { name: "湖南农业大学", city: "长沙", tier: "省属重点", year: 2025, minScore: 572, minRank: 65200, note: "农学、食品、生物与综合方向兼顾" },
+            { name: "中南林业科技大学", city: "长沙", tier: "省属重点", year: 2025, minScore: 565, minRank: 76100, note: "林业、材料、设计与工程应用方向可关注" },
+            { name: "南华大学", city: "衡阳", tier: "省属重点", year: 2025, minScore: 559, minRank: 84500, note: "医学、核工程与应用类专业关注度较高" }
+          ]
+        },
+        {
+          code: "history",
+          name: "历史类",
+          schools: [
+            { name: "湖南大学", city: "长沙", tier: "985", year: 2025, minScore: 603, minRank: 2920, note: "经管、人文与综合培养方向可重点关注" },
+            { name: "中南大学", city: "长沙", tier: "985", year: 2025, minScore: 599, minRank: 3740, note: "综合层级高，适合高位次学生关注" },
+            { name: "湖南师范大学", city: "长沙", tier: "211", year: 2025, minScore: 585, minRank: 7420, note: "教育、人文社科方向优势明显" },
+            { name: "湘潭大学", city: "湘潭", tier: "双一流", year: 2025, minScore: 579, minRank: 9580, note: "法学、汉语言、综合培养方向可关注" },
+            { name: "长沙理工大学", city: "长沙", tier: "省属重点", year: 2025, minScore: 568, minRank: 13900, note: "适合作为稳妥区间院校" },
+            { name: "湖南工商大学", city: "长沙", tier: "省属重点", year: 2025, minScore: 564, minRank: 15800, note: "财经管理方向关注度较高" },
+            { name: "湖南农业大学", city: "长沙", tier: "省属重点", year: 2025, minScore: 558, minRank: 18900, note: "适合作为稳妥与保底结合参考" },
+            { name: "湖南第一师范学院", city: "长沙", tier: "省属重点", year: 2025, minScore: 551, minRank: 22800, note: "教育培养路径较明确，适合作为保底层参考" }
+          ]
+        }
+      ]
+    },
+    {
+      code: "fujian",
+      name: "福建",
+      tracks: [
+        {
+          code: "physics",
+          name: "物理类",
+          schools: [
+            { name: "厦门大学", city: "厦门", tier: "985", year: 2025, minScore: 641, minRank: 5600, note: "综合层级高，经管、法学、理工方向都可关注" },
+            { name: "福州大学", city: "福州", tier: "211", year: 2025, minScore: 610, minRank: 21400, note: "工科、材料、化工与信息方向较强" },
+            { name: "福建师范大学", city: "福州", tier: "省属重点", year: 2025, minScore: 592, minRank: 36700, note: "教育、人文与综合培养兼顾" },
+            { name: "华侨大学", city: "泉州", tier: "省属重点", year: 2025, minScore: 584, minRank: 45600, note: "建筑、经管与综合培养方向可关注" },
+            { name: "集美大学", city: "厦门", tier: "省属重点", year: 2025, minScore: 577, minRank: 55300, note: "航运、财经、师范与综合培养方向兼顾" },
+            { name: "福建农林大学", city: "福州", tier: "省属重点", year: 2025, minScore: 569, minRank: 66100, note: "农学、食品、生物与环境方向较强" },
+            { name: "厦门理工学院", city: "厦门", tier: "省属重点", year: 2025, minScore: 562, minRank: 75800, note: "电子、车辆、软件与应用方向可关注" },
+            { name: "闽江学院", city: "福州", tier: "省属重点", year: 2025, minScore: 553, minRank: 88900, note: "适合作为稳妥与保底结合参考院校" }
+          ]
+        },
+        {
+          code: "history",
+          name: "历史类",
+          schools: [
+            { name: "厦门大学", city: "厦门", tier: "985", year: 2025, minScore: 612, minRank: 1840, note: "经管、人文、法学方向适合高位次学生关注" },
+            { name: "福州大学", city: "福州", tier: "211", year: 2025, minScore: 588, minRank: 6180, note: "综合层级较好，适合作为主参考院校池" },
+            { name: "福建师范大学", city: "福州", tier: "省属重点", year: 2025, minScore: 580, minRank: 8920, note: "教育、人文社科方向优势明显" },
+            { name: "华侨大学", city: "泉州", tier: "省属重点", year: 2025, minScore: 573, minRank: 11800, note: "综合与管理类方向可关注" },
+            { name: "集美大学", city: "厦门", tier: "省属重点", year: 2025, minScore: 568, minRank: 14100, note: "适合作为稳妥区间院校" },
+            { name: "福建农林大学", city: "福州", tier: "省属重点", year: 2025, minScore: 562, minRank: 17300, note: "综合与应用培养方向兼顾" },
+            { name: "福建江夏学院", city: "福州", tier: "省属重点", year: 2025, minScore: 556, minRank: 20800, note: "财经、法学与管理方向可关注" },
+            { name: "闽南师范大学", city: "漳州", tier: "省属重点", year: 2025, minScore: 551, minRank: 23700, note: "适合作为保底层参考" }
+          ]
+        }
+      ]
+    },
+    {
+      code: "anhui",
+      name: "安徽",
+      tracks: [
+        {
+          code: "physics",
+          name: "物理类",
+          schools: [
+            { name: "中国科学技术大学", city: "合肥", tier: "985", year: 2025, minScore: 666, minRank: 2140, note: "顶尖理工院校，适合高位次数理型学生" },
+            { name: "合肥工业大学", city: "合肥", tier: "211", year: 2025, minScore: 612, minRank: 22100, note: "机械、车辆、自动化与工科训练优势明显" },
+            { name: "安徽大学", city: "合肥", tier: "211", year: 2025, minScore: 603, minRank: 29100, note: "综合培养面较广，适合保留专业弹性" },
+            { name: "安徽师范大学", city: "芜湖", tier: "省属重点", year: 2025, minScore: 586, minRank: 45800, note: "教育、人文与综合方向兼顾" },
+            { name: "安徽财经大学", city: "蚌埠", tier: "省属重点", year: 2025, minScore: 579, minRank: 55300, note: "财经管理方向可重点关注" },
+            { name: "安徽工业大学", city: "马鞍山", tier: "省属重点", year: 2025, minScore: 571, minRank: 65700, note: "材料、机械、冶金与工程应用方向较强" },
+            { name: "安徽理工大学", city: "淮南", tier: "省属重点", year: 2025, minScore: 565, minRank: 74200, note: "安全工程、矿业、土木与应用方向可关注" },
+            { name: "安徽建筑大学", city: "合肥", tier: "省属重点", year: 2025, minScore: 557, minRank: 86100, note: "适合作为稳妥与保底结合参考院校" }
+          ]
+        },
+        {
+          code: "history",
+          name: "历史类",
+          schools: [
+            { name: "安徽大学", city: "合肥", tier: "211", year: 2025, minScore: 586, minRank: 5140, note: "综合实力较强，法学、人文与经管方向可关注" },
+            { name: "中国科学技术大学", city: "合肥", tier: "985", year: 2025, minScore: 606, minRank: 1280, note: "文科招生极少，仅适合极高位次学生关注" },
+            { name: "合肥工业大学", city: "合肥", tier: "211", year: 2025, minScore: 579, minRank: 7060, note: "综合与管理方向可作为主参考院校池" },
+            { name: "安徽师范大学", city: "芜湖", tier: "省属重点", year: 2025, minScore: 572, minRank: 9640, note: "教育、人文社科方向优势较明显" },
+            { name: "安徽财经大学", city: "蚌埠", tier: "省属重点", year: 2025, minScore: 566, minRank: 12400, note: "财经管理方向关注度较高" },
+            { name: "安徽农业大学", city: "合肥", tier: "省属重点", year: 2025, minScore: 559, minRank: 16200, note: "综合培养与应用方向兼顾" },
+            { name: "安徽建筑大学", city: "合肥", tier: "省属重点", year: 2025, minScore: 554, minRank: 19100, note: "适合作为稳妥与保底结合参考" },
+            { name: "合肥学院", city: "合肥", tier: "省属重点", year: 2025, minScore: 549, minRank: 22300, note: "适合作为保底层参考院校" }
           ]
         }
       ]
