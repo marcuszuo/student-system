@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>报告后台</title>
   <script>
-    const ADMIN_PAGE_VERSION = "20260702-admin-v3";
+    const ADMIN_PAGE_VERSION = "20260702-admin-v4";
     const isLocalPreviewHost = ["127.0.0.1", "localhost"].includes(location.hostname);
     const adminUrl = new URL(location.href);
     if (!isLocalPreviewHost && adminUrl.searchParams.get("v") !== ADMIN_PAGE_VERSION) {
@@ -19,7 +19,7 @@
       location.replace("https://" + location.host + location.pathname + location.search + location.hash);
     }
   </script>
-  <link rel="stylesheet" href="../assets/css/styles.css?v=20260702-admin-v3">
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260702-admin-v4">
 </head>
 <body>
   <main class="page">
@@ -107,6 +107,14 @@
             <h3>高频方向偏好</h3>
             <div id="admin-gaokao-focus-tags" class="advisor-tags advisor-tags-admin"></div>
           </article>
+          <article class="advice admin-gaokao-card">
+            <h3>热门学校</h3>
+            <div id="admin-gaokao-school-tags" class="advisor-tags advisor-tags-admin"></div>
+          </article>
+          <article class="advice admin-gaokao-card">
+            <h3>高频专业方向</h3>
+            <div id="admin-gaokao-major-tags" class="advisor-tags advisor-tags-admin"></div>
+          </article>
         </div>
         <div id="admin-gaokao-list" class="admin-gaokao-list"></div>
       </section>
@@ -183,6 +191,6 @@
     window.ADMIN_DEFAULT_API_BASE = "https://api.majornavi.cn";
     window.ADMIN_DEFAULT_TOKEN = "9c61f52c4ffc7e8b1d39e8c74e29cf625584fb7195c286b7";
   </script>
-  <script src="../assets/js/admin.js?v=20260702-admin-v3"></script>
+  <script src="../assets/js/admin.js?v=20260702-admin-v4"></script>
 </body>
 </html>

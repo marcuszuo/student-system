@@ -18,6 +18,8 @@ const gaokaoHistoryCountEl = document.getElementById("admin-gaokao-history-count
 const gaokaoEngineeringCountEl = document.getElementById("admin-gaokao-engineering-count");
 const gaokaoProvinceTagsEl = document.getElementById("admin-gaokao-province-tags");
 const gaokaoFocusTagsEl = document.getElementById("admin-gaokao-focus-tags");
+const gaokaoSchoolTagsEl = document.getElementById("admin-gaokao-school-tags");
+const gaokaoMajorTagsEl = document.getElementById("admin-gaokao-major-tags");
 const gaokaoListEl = document.getElementById("admin-gaokao-list");
 const listEl = document.getElementById("admin-report-list");
 const detailEl = document.getElementById("admin-detail");
@@ -188,6 +190,14 @@ function countTopValues(items, selector, limit = 5) {
     .slice(0, limit);
 }
 
+function flattenTopResults(queries) {
+  return queries.flatMap((item) => Array.isArray(item.topResults) ? item.topResults : []);
+}
+
+function flattenTopMajorDirections(queries) {
+  return queries.flatMap((item) => Array.isArray(item.topMajorDirections) ? item.topMajorDirections : []);
+}
+
 function applyFilters() {
   filteredReports = reports.filter(reportMatchesFilters).sort(compareReports);
   if (!filteredReports.find((item) => item.id === selectedReportId)) {
@@ -228,6 +238,8 @@ function renderGaokaoOverview() {
     (item) => getFocusLabel(item.focusFilter),
     6
   );
+  const topSchools = countTopValues(flattenTopResults(gaokaoQueries), (item) => item.name, 8);
+  const topMajors = countTopValues(flattenTopMajorDirections(gaokaoQueries), (item) => item, 8);
 
   gaokaoProvinceTagsEl.innerHTML = topProvinces.length
     ? topProvinces.map(([label, count]) => `<span>${escapeHtml(label)} · ${count}</span>`).join("")
@@ -235,6 +247,14 @@ function renderGaokaoOverview() {
 
   gaokaoFocusTagsEl.innerHTML = topFocuses.length
     ? topFocuses.map(([label, count]) => `<span>${escapeHtml(label)} · ${count}</span>`).join("")
+    : "<span>暂无数据</span>";
+
+  gaokaoSchoolTagsEl.innerHTML = topSchools.length
+    ? topSchools.map(([label, count]) => `<span>${escapeHtml(label)} · ${count}</span>`).join("")
+    : "<span>暂无数据</span>";
+
+  gaokaoMajorTagsEl.innerHTML = topMajors.length
+    ? topMajors.map(([label, count]) => `<span>${escapeHtml(label)} · ${count}</span>`).join("")
     : "<span>暂无数据</span>";
 }
 

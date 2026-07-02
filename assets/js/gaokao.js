@@ -644,6 +644,7 @@ function rankSchools() {
     cityKeyword: cityInput.value.trim(),
     tierFilter,
     focusFilter,
+    topMajorDirections,
     resultCount: ranked.length,
     reachCount: ranked.filter((item) => item.bucket === "reach").length,
     steadyCount: ranked.filter((item) => item.bucket === "steady").length,
