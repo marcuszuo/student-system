@@ -420,6 +420,20 @@ body {
   line-height: 1.65;
 }
 
+.gaokao-major-snapshot {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(128, 156, 136, 0.26);
+}
+
+.gaokao-major-snapshot > span {
+  display: block;
+  margin-bottom: 8px;
+  color: #4d7f6d;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
 .gaokao-summary-card span {
   display: block;
   margin-bottom: 8px;
@@ -538,6 +552,19 @@ body {
   color: #486b5d;
   font-size: 0.82rem;
   font-weight: 700;
+}
+
+.gaokao-major-heading {
+  margin: 0 0 8px;
+  color: #4d7f6d;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.gaokao-major-reason {
+  margin: 0 0 10px;
+  color: #5b7167;
+  line-height: 1.6;
 }
 
 .gaokao-school-fit,

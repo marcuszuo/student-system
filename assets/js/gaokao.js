@@ -241,6 +241,66 @@ function getSchoolFocusTags(entry) {
   return Array.from(tags);
 }
 
+function getDefaultFocusByTrack(trackCode) {
+  return /(history|文科|历史)/i.test(String(trackCode || ""))
+    ? "humanities"
+    : "engineering";
+}
+
+function getRecommendedMajors(entry, focusCode, trackCode) {
+  const hint = getSchoolHint(entry);
+  const majors = Array.isArray(hint.majors) ? hint.majors.slice() : [];
+  if (!majors.length) {
+    return {
+      primary: ["建议后续核查该校优势专业组"],
+      reason: "当前学校结果主要基于院校层级与位次估算，专业层仍需二次确认。"
+    };
+  }
+
+  const effectiveFocus = focusCode || getDefaultFocusByTrack(trackCode);
+  const focusMatchers = {
+    engineering: /(工程|工科|自动化|电子|信息|通信|计算机|机械|材料|建筑|土木|网络|人工智能|测控|车辆|化工|水利|电气)/,
+    medicine: /(医学|临床|护理|药学|健康|口腔|生物医)/,
+    business: /(经济|金融|工商|管理|会计|财务|商务|财经|统计|法学)/,
+    humanities: /(汉语言|新闻|传播|哲学|历史|社会|法学|经济学|英语|外语)/,
+    education: /(师范|教育|心理学|学前|课程)/,
+    media: /(传媒|广播|电视|数字媒体|广告|设计|艺术|动画)/
+  };
+
+  const matcher = focusMatchers[effectiveFocus];
+  const matched = matcher ? majors.filter((major) => matcher.test(major)) : [];
+  const selected = (matched.length ? matched : majors).slice(0, 3);
+
+  const reasonMap = {
+    engineering: "当前更建议优先比较工科与技术导向专业组，再结合实验条件、实习资源和就业去向做二轮筛选。",
+    medicine: "当前更建议优先比较医学健康相关专业组，再结合培养年限、实习体系和升学要求判断。",
+    business: "当前更建议优先比较经管财经相关专业组，再结合课程数学要求、实习资源和就业路径筛选。",
+    humanities: "当前更建议优先比较人文社科相关专业组，再结合表达训练、深造路径和院系特色判断。",
+    education: "当前更建议优先比较教育师范相关专业组，再结合是否接受教师培养路径和实践要求判断。",
+    media: "当前更建议优先比较传媒艺术相关专业组，再结合作品训练、项目机会和表达输出方式筛选。"
+  };
+
+  return {
+    primary: selected,
+    reason: reasonMap[effectiveFocus] || "建议进一步核查该校优势专业组与实际录取热度。"
+  };
+}
+
+function summarizeMajorDirections(ranked, focusCode, trackCode) {
+  const counts = new Map();
+  ranked.slice(0, 8).forEach((item) => {
+    const majors = getRecommendedMajors(item, focusCode, trackCode).primary;
+    majors.forEach((major) => {
+      counts.set(major, (counts.get(major) || 0) + 1);
+    });
+  });
+
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "zh-CN"))
+    .slice(0, 6)
+    .map(([major]) => major);
+}
+
 function getBucket(entry, studentRank, studentScore) {
   const hasRank = Number.isFinite(studentRank) && studentRank > 0;
   if (hasRank && Number.isFinite(entry.minRank)) {
@@ -328,7 +388,7 @@ function renderError(message) {
   `;
 }
 
-function renderGroup(title, intro, items) {
+function renderGroup(title, intro, items, focusCode, trackCode) {
   if (!items.length) {
     return `
       <section class="gaokao-group">
@@ -366,6 +426,13 @@ function renderGroup(title, intro, items) {
             </div>
             <p class="gaokao-school-summary">${escapeHtml(item.bucketMeta.summary)}</p>
             <p class="gaokao-school-estimate">${escapeHtml(item.estimateSummary)}</p>
+            <div class="gaokao-major-box">
+              <p class="gaokao-major-heading">更值得优先查看的专业方向</p>
+              <div class="gaokao-major-tags">
+                ${getRecommendedMajors(item, focusCode, trackCode).primary.map((major) => `<span>${escapeHtml(major)}</span>`).join("")}
+              </div>
+              <p class="gaokao-major-reason">${escapeHtml(getRecommendedMajors(item, focusCode, trackCode).reason)}</p>
+            </div>
             <div class="gaokao-major-tags">
               ${getSchoolHint(item).majors.map((major) => `<span>${escapeHtml(major)}</span>`).join("")}
             </div>
@@ -388,6 +455,8 @@ function renderResults(province, track, studentScore, studentRank, ranked) {
 
   const cityKeyword = String(cityInput.value || "").trim();
   const tierFilter = String(tierSelect.value || "").trim();
+  const focusFilter = String(focusSelect.value || "").trim();
+  const topMajorDirections = summarizeMajorDirections(ranked, focusFilter, track.code);
   const strategyNote = groups.steady.length
     ? "建议先以稳妥池为主体，再搭配少量冲刺与保底院校形成完整志愿结构。"
     : groups.reach.length
@@ -406,6 +475,7 @@ function renderResults(province, track, studentScore, studentRank, ranked) {
         <span>位次：${studentRank ? escapeHtml(formatRank(studentRank)) : "未填"}</span>
         ${cityKeyword ? `<span>城市偏好：${escapeHtml(cityKeyword)}</span>` : ""}
         ${tierFilter ? `<span>层级筛选：${escapeHtml(tierFilter)}</span>` : ""}
+        ${focusFilter ? `<span>方向偏好：${escapeHtml(focusSelect.options[focusSelect.selectedIndex]?.text || "")}</span>` : ""}
         <span>参考逻辑：上一年位次带估算</span>
       </div>
     </div>
@@ -426,10 +496,18 @@ function renderResults(province, track, studentScore, studentRank, ranked) {
     <section class="gaokao-strategy-card">
       <h3>本轮志愿组合建议</h3>
       <p>${escapeHtml(strategyNote)}</p>
+      ${topMajorDirections.length ? `
+        <div class="gaokao-major-snapshot">
+          <span>当前结果中更值得优先比较的专业方向</span>
+          <div class="gaokao-major-tags">
+            ${topMajorDirections.map((major) => `<span>${escapeHtml(major)}</span>`).join("")}
+          </div>
+        </div>
+      ` : ""}
     </section>
-    ${renderGroup("冲刺参考院校", "适合作为上探院校范围，但建议同步关注专业冷热变化和招生计划波动。", groups.reach)}
-    ${renderGroup("稳妥参考院校", "与当前位次相对接近，建议作为志愿表主体院校池继续细筛。", groups.steady)}
-    ${renderGroup("保底参考院校", "可作为结果稳定区间参考，但仍建议检查具体专业组录取情况。", groups.safe)}
+    ${renderGroup("冲刺参考院校", "适合作为上探院校范围，但建议同步关注专业冷热变化和招生计划波动。", groups.reach, focusFilter, track.code)}
+    ${renderGroup("稳妥参考院校", "与当前位次相对接近，建议作为志愿表主体院校池继续细筛。", groups.steady, focusFilter, track.code)}
+    ${renderGroup("保底参考院校", "可作为结果稳定区间参考，但仍建议检查具体专业组录取情况。", groups.safe, focusFilter, track.code)}
     <section class="gaokao-note-card">
       <h3>使用提醒</h3>
       <ul>
