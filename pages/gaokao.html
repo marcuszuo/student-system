@@ -11,7 +11,7 @@
       location.replace("https://" + location.host + location.pathname + location.search + location.hash);
     }
   </script>
-  <link rel="stylesheet" href="../assets/css/styles.css?v=20260629-gaokao-v2">
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260702-gaokao-v4">
 </head>
 <body>
   <main class="page">
@@ -67,6 +67,18 @@
               <option value="省属重点">省属重点</option>
             </select>
           </label>
+          <label class="single-field">
+            <span>专业方向偏好（可选）</span>
+            <select id="gaokao-focus">
+              <option value="">全部</option>
+              <option value="engineering">工科技术</option>
+              <option value="medicine">医学健康</option>
+              <option value="business">经管财经</option>
+              <option value="humanities">人文社科</option>
+              <option value="education">教育师范</option>
+              <option value="media">传媒艺术</option>
+            </select>
+          </label>
         </div>
 
         <div class="gaokao-form-actions">
@@ -99,7 +111,11 @@
     </section>
   </main>
 
-  <script src="../assets/js/gaokao_data.js?v=20260629-gaokao-v2"></script>
-  <script src="../assets/js/gaokao.js?v=20260629-gaokao-v2"></script>
+  <script>
+    window.GAOKAO_QUERY_API_BASE_URL = "https://api.majornavi.cn";
+    window.GAOKAO_QUERY_INGEST_KEY = "3ee938df43c042796300cd54cc40cd19";
+  </script>
+  <script src="../assets/js/gaokao_data.js?v=20260702-gaokao-v4"></script>
+  <script src="../assets/js/gaokao.js?v=20260702-gaokao-v4"></script>
 </body>
 </html>

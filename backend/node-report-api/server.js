@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const PORT = Number(process.env.PORT || 8787);
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
 const DATA_FILE = process.env.DATA_FILE || path.join(DATA_DIR, "reports.json");
+const GAOKAO_QUERY_FILE = process.env.GAOKAO_QUERY_FILE || path.join(DATA_DIR, "gaokao_queries.json");
 const ADMIN_TOKEN = String(process.env.ADMIN_TOKEN || "").trim();
 const INGEST_KEY = String(process.env.INGEST_KEY || "").trim();
 const ALLOWED_ORIGINS = String(process.env.ALLOWED_ORIGINS || "")
@@ -37,6 +38,14 @@ const server = http.createServer(async (req, res) => {
 
     if (url.pathname === "/api/reports" && req.method === "DELETE") {
       return handleBulkDelete(req, res, url);
+    }
+
+    if (url.pathname === "/api/gaokao-queries" && req.method === "POST") {
+      return handleCreateGaokaoQuery(req, res);
+    }
+
+    if (url.pathname === "/api/gaokao-queries" && req.method === "GET") {
+      return handleListGaokaoQueries(req, res, url);
     }
 
     const reportMatch = url.pathname.match(/^\/api\/reports\/([^/]+)$/);
@@ -86,6 +95,9 @@ function ensureStorage() {
   if (!fs.existsSync(DATA_FILE)) {
     fs.writeFileSync(DATA_FILE, "[]\n", "utf8");
   }
+  if (!fs.existsSync(GAOKAO_QUERY_FILE)) {
+    fs.writeFileSync(GAOKAO_QUERY_FILE, "[]\n", "utf8");
+  }
 }
 
 function readReports() {
@@ -101,6 +113,21 @@ function readReports() {
 
 function writeReports(items) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(items, null, 2), "utf8");
+}
+
+function readGaokaoQueries() {
+  ensureStorage();
+  try {
+    const raw = fs.readFileSync(GAOKAO_QUERY_FILE, "utf8");
+    const parsed = JSON.parse(raw || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeGaokaoQueries(items) {
+  fs.writeFileSync(GAOKAO_QUERY_FILE, JSON.stringify(items, null, 2), "utf8");
 }
 
 function readBody(req) {
@@ -176,6 +203,28 @@ async function handleCreateReport(req, res) {
   return respondJson(res, 200, { ok: true, id }, corsHeaders(req));
 }
 
+async function handleCreateGaokaoQuery(req, res) {
+  if (!requireIngest(req)) {
+    return respondJson(res, 403, { error: "Forbidden" }, corsHeaders(req));
+  }
+
+  const payload = await readBody(req);
+  const id = String(payload.id || "").trim() || crypto.randomUUID();
+  const submittedAt = String(payload.submittedAt || new Date().toISOString());
+
+  const queries = readGaokaoQueries();
+  const normalized = {
+    ...payload,
+    id,
+    submittedAt,
+    recordType: "gaokao_query"
+  };
+  const next = [normalized, ...queries.filter((item) => item.id !== id)].slice(0, 3000);
+  writeGaokaoQueries(next);
+
+  return respondJson(res, 200, { ok: true, id }, corsHeaders(req));
+}
+
 function handleListReports(req, res, url) {
   if (!requireAdmin(req)) {
     return respondJson(res, 403, { error: "Forbidden" }, corsHeaders(req));
@@ -209,6 +258,32 @@ function handleGetReport(req, res, id) {
   }
 
   return respondJson(res, 200, { item }, corsHeaders(req));
+}
+
+function handleListGaokaoQueries(req, res, url) {
+  if (!requireAdmin(req)) {
+    return respondJson(res, 403, { error: "Forbidden" }, corsHeaders(req));
+  }
+
+  const limit = Math.min(Number(url.searchParams.get("limit") || 50), 300);
+  const dateFrom = normalizeDateValue(url.searchParams.get("date_from"), "start");
+  const dateTo = normalizeDateValue(url.searchParams.get("date_to"), "end");
+  const province = String(url.searchParams.get("province") || "").trim();
+  const track = String(url.searchParams.get("track") || "").trim();
+
+  const items = readGaokaoQueries()
+    .filter((item) => {
+      const submittedAt = normalizeDateValue(item.submittedAt);
+      if (dateFrom && submittedAt && submittedAt < dateFrom) return false;
+      if (dateTo && submittedAt && submittedAt > dateTo) return false;
+      if (province && String(item.provinceCode || "") !== province) return false;
+      if (track && String(item.trackCode || "") !== track) return false;
+      return true;
+    })
+    .sort((a, b) => String(b.submittedAt || "").localeCompare(String(a.submittedAt || "")))
+    .slice(0, limit);
+
+  return respondJson(res, 200, { items }, corsHeaders(req));
 }
 
 function handleDeleteReport(req, res, id) {

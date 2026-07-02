@@ -2,6 +2,8 @@ const reloadBtn = document.getElementById("admin-reload-btn");
 const exportBtn = document.getElementById("admin-export-btn");
 const exportHighIntentBtn = document.getElementById("admin-export-high-intent-btn");
 const clearSmokeBtn = document.getElementById("admin-clear-smoke-btn");
+const gaokaoReloadBtn = document.getElementById("admin-gaokao-reload-btn");
+const gaokaoExportBtn = document.getElementById("admin-gaokao-export-btn");
 const statusEl = document.getElementById("admin-status");
 const countEl = document.getElementById("admin-count");
 const totalCountEl = document.getElementById("admin-total-count");
@@ -9,6 +11,14 @@ const todayCountEl = document.getElementById("admin-today-count");
 const publicCountEl = document.getElementById("admin-public-count");
 const internationalCountEl = document.getElementById("admin-international-count");
 const highIntentCountEl = document.getElementById("admin-high-intent-count");
+const gaokaoTotalCountEl = document.getElementById("admin-gaokao-total-count");
+const gaokaoTodayCountEl = document.getElementById("admin-gaokao-today-count");
+const gaokaoPhysicsCountEl = document.getElementById("admin-gaokao-physics-count");
+const gaokaoHistoryCountEl = document.getElementById("admin-gaokao-history-count");
+const gaokaoEngineeringCountEl = document.getElementById("admin-gaokao-engineering-count");
+const gaokaoProvinceTagsEl = document.getElementById("admin-gaokao-province-tags");
+const gaokaoFocusTagsEl = document.getElementById("admin-gaokao-focus-tags");
+const gaokaoListEl = document.getElementById("admin-gaokao-list");
 const listEl = document.getElementById("admin-report-list");
 const detailEl = document.getElementById("admin-detail");
 const sortFilterEl = document.getElementById("admin-sort-filter");
@@ -23,6 +33,7 @@ const resetFiltersBtn = document.getElementById("admin-reset-filters-btn");
 let reports = [];
 let filteredReports = [];
 let selectedReportId = "";
+let gaokaoQueries = [];
 
 function getDefaultConfig() {
   return {
@@ -145,6 +156,38 @@ function compareReports(a, b) {
   }
 }
 
+function normalizeTrackLabel(query) {
+  const text = String(query.track || query.trackCode || "").trim();
+  if (!text) return "未填写";
+  if (/(physics|理科|物理)/i.test(text)) return "物理 / 理科";
+  if (/(history|文科|历史)/i.test(text)) return "历史 / 文科";
+  return text;
+}
+
+function getFocusLabel(code) {
+  const map = {
+    engineering: "工科技术",
+    medicine: "医学健康",
+    business: "经管财经",
+    humanities: "人文社科",
+    education: "教育师范",
+    media: "传媒艺术"
+  };
+  return map[String(code || "").trim()] || "未指定";
+}
+
+function countTopValues(items, selector, limit = 5) {
+  const buckets = new Map();
+  items.forEach((item) => {
+    const key = String(selector(item) || "").trim();
+    if (!key) return;
+    buckets.set(key, (buckets.get(key) || 0) + 1);
+  });
+  return Array.from(buckets.entries())
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "zh-CN"))
+    .slice(0, limit);
+}
+
 function applyFilters() {
   filteredReports = reports.filter(reportMatchesFilters).sort(compareReports);
   if (!filteredReports.find((item) => item.id === selectedReportId)) {
@@ -164,6 +207,71 @@ function renderOverview() {
   publicCountEl.textContent = String(publicCount);
   internationalCountEl.textContent = String(internationalCount);
   highIntentCountEl.textContent = String(highIntentCount);
+}
+
+function renderGaokaoOverview() {
+  const today = new Date().toISOString().slice(0, 10);
+  const todayCount = gaokaoQueries.filter((item) => String(item.submittedAt || "").startsWith(today)).length;
+  const physicsCount = gaokaoQueries.filter((item) => /(physics|理科|物理)/i.test(String(item.trackCode || item.track || ""))).length;
+  const historyCount = gaokaoQueries.filter((item) => /(history|文科|历史)/i.test(String(item.trackCode || item.track || ""))).length;
+  const engineeringCount = gaokaoQueries.filter((item) => String(item.focusFilter || "") === "engineering").length;
+
+  gaokaoTotalCountEl.textContent = String(gaokaoQueries.length);
+  gaokaoTodayCountEl.textContent = String(todayCount);
+  gaokaoPhysicsCountEl.textContent = String(physicsCount);
+  gaokaoHistoryCountEl.textContent = String(historyCount);
+  gaokaoEngineeringCountEl.textContent = String(engineeringCount);
+
+  const topProvinces = countTopValues(gaokaoQueries, (item) => item.province, 6);
+  const topFocuses = countTopValues(
+    gaokaoQueries.filter((item) => String(item.focusFilter || "").trim()),
+    (item) => getFocusLabel(item.focusFilter),
+    6
+  );
+
+  gaokaoProvinceTagsEl.innerHTML = topProvinces.length
+    ? topProvinces.map(([label, count]) => `<span>${escapeHtml(label)} · ${count}</span>`).join("")
+    : "<span>暂无数据</span>";
+
+  gaokaoFocusTagsEl.innerHTML = topFocuses.length
+    ? topFocuses.map(([label, count]) => `<span>${escapeHtml(label)} · ${count}</span>`).join("")
+    : "<span>暂无数据</span>";
+}
+
+function renderGaokaoList() {
+  if (!gaokaoQueries.length) {
+    gaokaoListEl.innerHTML = `
+      <div class="empty-state compact">
+        <p>当前还没有高考查询数据</p>
+      </div>
+    `;
+    return;
+  }
+
+  gaokaoListEl.innerHTML = `
+    <div class="admin-gaokao-list-head">
+      <h3>最近查询</h3>
+      <span>${gaokaoQueries.length} 条</span>
+    </div>
+    <div class="admin-gaokao-items">
+      ${gaokaoQueries.slice(0, 10).map((item) => `
+        <article class="admin-gaokao-item">
+          <div class="admin-gaokao-item-top">
+            <strong>${escapeHtml(item.province || "未知省份")} · ${escapeHtml(normalizeTrackLabel(item))}</strong>
+            <span>${escapeHtml(formatDateTime(item.submittedAt))}</span>
+          </div>
+          <p>分数 ${escapeHtml(String(item.score || "-"))}，位次 ${escapeHtml(String(item.rank || "-"))}，结果 ${escapeHtml(String(item.resultCount || 0))} 所</p>
+          <p>筛选条件：${escapeHtml(item.cityKeyword || "不限城市")} / ${escapeHtml(item.tierFilter || "不限层级")} / ${escapeHtml(getFocusLabel(item.focusFilter))}</p>
+          <p>结果分布：冲 ${escapeHtml(String(item.reachCount || 0))}，稳 ${escapeHtml(String(item.steadyCount || 0))}，保 ${escapeHtml(String(item.safeCount || 0))}</p>
+          ${Array.isArray(item.topResults) && item.topResults.length ? `
+            <div class="advisor-tags advisor-tags-list">
+              ${item.topResults.slice(0, 4).map((school) => `<span>${escapeHtml(school.name || "")}</span>`).join("")}
+            </div>
+          ` : ""}
+        </article>
+      `).join("")}
+    </div>
+  `;
 }
 
 function renderReportList() {
@@ -447,6 +555,35 @@ async function fetchReports() {
   setStatus(`已加载 ${reports.length} 份报告。`, "success");
 }
 
+async function fetchGaokaoQueries() {
+  const { apiBase, token } = getAdminConfig();
+  if (!apiBase || !token) return;
+
+  const params = new URLSearchParams({ limit: "200" });
+  const dateFrom = String(dateFromEl.value || "").trim();
+  const dateTo = String(dateToEl.value || "").trim();
+  if (dateFrom) params.set("date_from", dateFrom);
+  if (dateTo) params.set("date_to", dateTo);
+
+  const response = await fetch(`${apiBase}/api/gaokao-queries?${params.toString()}`, {
+    headers: {
+      "x-admin-token": token
+    }
+  });
+  if (!response.ok) {
+    throw new Error(`高考查询加载失败（${response.status}）`);
+  }
+  const data = await response.json();
+  gaokaoQueries = Array.isArray(data.items) ? data.items : [];
+  renderGaokaoOverview();
+  renderGaokaoList();
+}
+
+async function fetchAllAdminData() {
+  await Promise.all([fetchReports(), fetchGaokaoQueries()]);
+  setStatus(`已加载 ${reports.length} 份报告，${gaokaoQueries.length} 条高考查询。`, "success");
+}
+
 async function deleteReport(id) {
   const { apiBase, token } = getAdminConfig();
   if (!apiBase || !token || !id) {
@@ -660,6 +797,43 @@ function exportReportDetail(report) {
 
 exportBtn.addEventListener("click", exportReports);
 exportHighIntentBtn.addEventListener("click", exportHighIntentReports);
+
+function exportGaokaoQueries() {
+  if (!gaokaoQueries.length) {
+    setStatus("当前没有可导出的高考查询。", "error");
+    return;
+  }
+
+  const rows = [
+    ["提交时间", "省份", "科类", "分数", "位次", "城市偏好", "院校层级", "专业方向偏好", "结果数", "冲刺", "稳妥", "保底"],
+    ...gaokaoQueries.map((item) => [
+      formatDateTime(item.submittedAt),
+      item.province || "",
+      normalizeTrackLabel(item),
+      item.score || "",
+      item.rank || "",
+      item.cityKeyword || "",
+      item.tierFilter || "",
+      getFocusLabel(item.focusFilter),
+      item.resultCount || 0,
+      item.reachCount || 0,
+      item.steadyCount || 0,
+      item.safeCount || 0
+    ])
+  ];
+
+  const csv = "\uFEFF" + rows.map((row) => row.map(toCsvValue).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `majornavi-gaokao-queries-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
+  setStatus(`已导出 ${gaokaoQueries.length} 条高考查询。`, "success");
+}
+
 clearSmokeBtn.addEventListener("click", async () => {
   try {
     await clearSmokeReports();
@@ -669,10 +843,28 @@ clearSmokeBtn.addEventListener("click", async () => {
   }
 });
 
+if (gaokaoReloadBtn) {
+  gaokaoReloadBtn.addEventListener("click", async () => {
+    try {
+      await fetchGaokaoQueries();
+      setStatus(`已刷新 ${gaokaoQueries.length} 条高考查询。`, "success");
+    } catch (error) {
+      console.error(error);
+      setStatus(error.message || "高考查询加载失败。", "error");
+    }
+  });
+}
+
+if (gaokaoExportBtn) {
+  gaokaoExportBtn.addEventListener("click", exportGaokaoQueries);
+}
+
 resetFilters();
 renderOverview();
 renderReportList();
-fetchReports().catch((error) => {
+renderGaokaoOverview();
+renderGaokaoList();
+fetchAllAdminData().catch((error) => {
   console.error(error);
   setStatus(error.message || "后台加载失败。", "error");
 });

@@ -5,10 +5,13 @@ const scoreInput = document.getElementById("gaokao-score");
 const rankInput = document.getElementById("gaokao-rank");
 const cityInput = document.getElementById("gaokao-city");
 const tierSelect = document.getElementById("gaokao-tier");
+const focusSelect = document.getElementById("gaokao-focus");
 const resultPanel = document.getElementById("gaokao-result");
 const searchBtn = document.getElementById("gaokao-search-btn");
 const resetBtn = document.getElementById("gaokao-reset-btn");
 const coverageEl = document.getElementById("gaokao-coverage");
+const GAOKAO_QUERY_API_BASE_URL = String(window.GAOKAO_QUERY_API_BASE_URL || "").trim().replace(/\/+$/, "");
+const GAOKAO_QUERY_INGEST_KEY = String(window.GAOKAO_QUERY_INGEST_KEY || "").trim();
 
 const SCHOOL_MAJOR_HINTS = {
   "中山大学": {
@@ -91,6 +94,21 @@ const SCHOOL_MAJOR_HINTS = {
     fit: "适合本省中高位次、希望在综合院校内保留专业弹性的学生。",
     caution: "热门专业真实竞争明显高于校线，建议结合专业组再细筛。"
   },
+  "南昌大学": {
+    majors: ["临床医学", "食品科学", "计算机类", "材料与化工"],
+    fit: "适合希望在省会综合院校中兼顾学校层级、专业面和区域资源的学生。",
+    caution: "校内不同专业组热度差异较大，医学、计算机等热门方向通常高于最低投档线。"
+  },
+  "江西财经大学": {
+    majors: ["会计学", "金融学", "经济统计", "法学"],
+    fit: "适合财经管理取向较明确、希望尽早形成就业方向感的学生。",
+    caution: "如果学生更偏理工研发或医学训练路径，这类院校的长期匹配度可能一般。"
+  },
+  "江西师范大学": {
+    majors: ["教育学", "汉语言文学", "心理学", "数学与应用数学"],
+    fit: "适合教育、人文社科或希望兼顾稳定培养路径的学生。",
+    caution: "若学生并不接受师范或公共服务类发展路径，需重点核对专业志愿。"
+  },
   "河南大学": {
     majors: ["师范类", "汉语言文学", "法学", "生物类"],
     fit: "适合希望兼顾综合培养、人文教育与稳定升学路径的学生。",
@@ -165,6 +183,19 @@ function getSchoolHint(entry) {
   };
 }
 
+function getSchoolFocusTags(entry) {
+  const hint = getSchoolHint(entry);
+  const text = [entry.name, entry.note, ...(hint.majors || [])].join(" ").toLowerCase();
+  const tags = new Set();
+  if (/(工程|工科|自动化|电子|信息|通信|计算机|机械|材料|建筑|土木|网络|人工智能|水利)/.test(text)) tags.add("engineering");
+  if (/(医学|临床|护理|药学|健康)/.test(text)) tags.add("medicine");
+  if (/(经济|金融|工商|管理|会计|财务|商务|财经|法学)/.test(text)) tags.add("business");
+  if (/(汉语言|新闻|传播|哲学|历史|社会|人文|法学|经济学)/.test(text)) tags.add("humanities");
+  if (/(师范|教育|心理学)/.test(text)) tags.add("education");
+  if (/(传媒|广播|电视|数字媒体|广告|设计|艺术)/.test(text)) tags.add("media");
+  return Array.from(tags);
+}
+
 function getBucket(entry, studentRank, studentScore) {
   const hasRank = Number.isFinite(studentRank) && studentRank > 0;
   if (hasRank && Number.isFinite(entry.minRank)) {
@@ -225,6 +256,22 @@ function buildEstimateSummary(studentRank, studentScore, entry) {
   }
 
   return "当前依据上一年参考区间做近似估算。";
+}
+
+async function syncGaokaoQueryRecord(payload) {
+  if (!GAOKAO_QUERY_API_BASE_URL) return;
+  const headers = { "Content-Type": "application/json" };
+  if (GAOKAO_QUERY_INGEST_KEY) {
+    headers["x-report-ingest-key"] = GAOKAO_QUERY_INGEST_KEY;
+  }
+  const response = await fetch(`${GAOKAO_QUERY_API_BASE_URL}/api/gaokao-queries`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) {
+    throw new Error(`query sync failed (${response.status})`);
+  }
 }
 
 function renderError(message) {
@@ -356,6 +403,7 @@ function rankSchools() {
   const studentRank = Number(rankInput.value || 0);
   const cityKeyword = String(cityInput.value || "").trim().toLowerCase();
   const tierFilter = String(tierSelect.value || "").trim();
+  const focusFilter = String(focusSelect.value || "").trim();
 
   if (!province) return renderError("请先选择所在省份。");
   if (!track) return renderError("请先选择科类 / 选科方向。");
@@ -376,12 +424,14 @@ function rankSchools() {
         bucketMeta,
         rankGap,
         scoreGap,
-        estimateSummary: buildEstimateSummary(studentRank, studentScore, entry)
+        estimateSummary: buildEstimateSummary(studentRank, studentScore, entry),
+        focusTags: getSchoolFocusTags(entry)
       };
     })
     .filter((entry) => entry.bucket !== "out")
     .filter((entry) => !cityKeyword || String(entry.city || "").toLowerCase().includes(cityKeyword))
     .filter((entry) => !tierFilter || String(entry.tier || "") === tierFilter)
+    .filter((entry) => !focusFilter || entry.focusTags.includes(focusFilter))
     .sort((a, b) => a.bucketMeta.order - b.bucketMeta.order || a.rankGap - b.rankGap || a.scoreGap - b.scoreGap);
 
   if (!ranked.length) {
@@ -389,6 +439,33 @@ function rankSchools() {
   }
 
   renderResults(province, track, studentScore, studentRank, ranked);
+  void syncGaokaoQueryRecord({
+    id: `gaokao_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    submittedAt: new Date().toISOString(),
+    province: province.name,
+    provinceCode: province.code,
+    track: track.name,
+    trackCode: track.code,
+    score: studentScore || null,
+    rank: studentRank || null,
+    cityKeyword: cityInput.value.trim(),
+    tierFilter,
+    focusFilter,
+    resultCount: ranked.length,
+    reachCount: ranked.filter((item) => item.bucket === "reach").length,
+    steadyCount: ranked.filter((item) => item.bucket === "steady").length,
+    safeCount: ranked.filter((item) => item.bucket === "safe").length,
+    topResults: ranked.slice(0, 5).map((item) => ({
+      name: item.name,
+      tier: item.tier,
+      city: item.city,
+      bucket: item.bucket,
+      minScore: item.minScore,
+      minRank: item.minRank
+    }))
+  }).catch((error) => {
+    console.error(error);
+  });
 }
 
 function resetForm() {
@@ -396,6 +473,7 @@ function resetForm() {
   rankInput.value = "";
   cityInput.value = "";
   tierSelect.value = "";
+  focusSelect.value = "";
   resultPanel.innerHTML = `
     <div class="empty-state">
       <h2>等待生成结果</h2>
@@ -412,6 +490,7 @@ function applyPreviewParams() {
   const rank = String(params.get("rank") || "").trim();
   const city = String(params.get("city") || "").trim();
   const tier = String(params.get("tier") || "").trim();
+  const focus = String(params.get("focus") || "").trim();
 
   if (province && getProvince(province)) {
     provinceSelect.value = province;
@@ -427,8 +506,9 @@ function applyPreviewParams() {
   if (rank) rankInput.value = rank;
   if (city) cityInput.value = city;
   if (tier) tierSelect.value = tier;
+  if (focus) focusSelect.value = focus;
 
-  if (province || track || score || rank || city || tier) {
+  if (province || track || score || rank || city || tier || focus) {
     rankSchools();
   }
 }
@@ -448,7 +528,7 @@ resetBtn.addEventListener("click", resetForm);
   });
 });
 
-[tierSelect, trackSelect].forEach((input) => {
+[tierSelect, trackSelect, focusSelect].forEach((input) => {
   input.addEventListener("change", () => {
     if (resultPanel.querySelector(".gaokao-result-head")) {
       rankSchools();

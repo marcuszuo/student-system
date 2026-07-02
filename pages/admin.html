@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>报告后台</title>
   <script>
-    const ADMIN_PAGE_VERSION = "20260627-admin-v2";
+    const ADMIN_PAGE_VERSION = "20260702-admin-v3";
     const isLocalPreviewHost = ["127.0.0.1", "localhost"].includes(location.hostname);
     const adminUrl = new URL(location.href);
     if (!isLocalPreviewHost && adminUrl.searchParams.get("v") !== ADMIN_PAGE_VERSION) {
@@ -19,7 +19,7 @@
       location.replace("https://" + location.host + location.pathname + location.search + location.hash);
     }
   </script>
-  <link rel="stylesheet" href="../assets/css/styles.css?v=20260627-admin-v2">
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260702-admin-v3">
 </head>
 <body>
   <main class="page">
@@ -63,6 +63,52 @@
           <span class="student-summary-label">高意向</span>
           <strong id="admin-high-intent-count">0</strong>
         </article>
+      </section>
+
+      <section class="admin-gaokao-section">
+        <div class="admin-list-head">
+          <div>
+            <h2>高考查询概览</h2>
+            <p class="admin-section-subtitle">查看学生在高考志愿参考模块中的查询热度、偏好方向和最近行为。</p>
+          </div>
+          <div class="admin-actions">
+            <button id="admin-gaokao-reload-btn" type="button" class="btn btn-ghost">刷新高考查询</button>
+            <button id="admin-gaokao-export-btn" type="button" class="btn btn-ghost">导出高考查询</button>
+          </div>
+        </div>
+        <div class="admin-gaokao-overview">
+          <article class="student-summary-card">
+            <span class="student-summary-label">查询总数</span>
+            <strong id="admin-gaokao-total-count">0</strong>
+          </article>
+          <article class="student-summary-card">
+            <span class="student-summary-label">今日查询</span>
+            <strong id="admin-gaokao-today-count">0</strong>
+          </article>
+          <article class="student-summary-card">
+            <span class="student-summary-label">物理 / 理科</span>
+            <strong id="admin-gaokao-physics-count">0</strong>
+          </article>
+          <article class="student-summary-card">
+            <span class="student-summary-label">历史 / 文科</span>
+            <strong id="admin-gaokao-history-count">0</strong>
+          </article>
+          <article class="student-summary-card">
+            <span class="student-summary-label">工科方向偏好</span>
+            <strong id="admin-gaokao-engineering-count">0</strong>
+          </article>
+        </div>
+        <div class="admin-gaokao-grid">
+          <article class="advice admin-gaokao-card">
+            <h3>高频省份</h3>
+            <div id="admin-gaokao-province-tags" class="advisor-tags advisor-tags-admin"></div>
+          </article>
+          <article class="advice admin-gaokao-card">
+            <h3>高频方向偏好</h3>
+            <div id="admin-gaokao-focus-tags" class="advisor-tags advisor-tags-admin"></div>
+          </article>
+        </div>
+        <div id="admin-gaokao-list" class="admin-gaokao-list"></div>
       </section>
 
       <section class="admin-content">
@@ -137,6 +183,6 @@
     window.ADMIN_DEFAULT_API_BASE = "https://api.majornavi.cn";
     window.ADMIN_DEFAULT_TOKEN = "9c61f52c4ffc7e8b1d39e8c74e29cf625584fb7195c286b7";
   </script>
-  <script src="../assets/js/admin.js?v=20260627-admin-v2"></script>
+  <script src="../assets/js/admin.js?v=20260702-admin-v3"></script>
 </body>
 </html>

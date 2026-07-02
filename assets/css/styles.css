@@ -880,6 +880,96 @@ body {
   color: #20362a;
 }
 
+.admin-gaokao-section {
+  margin-top: 6px;
+  padding: 18px;
+  border-radius: 24px;
+  border: 1px solid rgba(128, 156, 136, 0.16);
+  background: linear-gradient(180deg, rgba(247, 251, 248, 0.95) 0%, rgba(255, 253, 249, 0.96) 100%);
+}
+
+.admin-section-subtitle {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.admin-gaokao-overview {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0 14px;
+}
+
+.admin-gaokao-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-gaokao-card {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.admin-gaokao-list {
+  margin-top: 14px;
+}
+
+.admin-gaokao-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-gaokao-list-head h3 {
+  margin: 0;
+}
+
+.admin-gaokao-list-head span {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.admin-gaokao-items {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-gaokao-item {
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(86, 117, 97, 0.04);
+}
+
+.admin-gaokao-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.admin-gaokao-item-top strong {
+  color: var(--ink);
+}
+
+.admin-gaokao-item-top span,
+.admin-gaokao-item p {
+  color: var(--muted);
+}
+
+.admin-gaokao-item p {
+  margin: 8px 0 0;
+  line-height: 1.62;
+}
+
 .admin-actions {
   display: flex;
   gap: 10px;
@@ -2143,6 +2233,12 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .admin-gaokao-overview,
+  .admin-gaokao-grid,
+  .admin-gaokao-items {
+    grid-template-columns: 1fr;
+  }
+
   .admin-content {
     grid-template-columns: 1fr;
   }
@@ -2253,6 +2349,10 @@ body {
 
   .admin-overview {
     grid-template-columns: 1fr;
+  }
+
+  .admin-gaokao-section {
+    padding: 16px;
   }
 
   .hero h1 {
