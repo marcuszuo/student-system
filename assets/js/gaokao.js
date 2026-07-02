@@ -301,6 +301,61 @@ function summarizeMajorDirections(ranked, focusCode, trackCode) {
     .map(([major]) => major);
 }
 
+function getSchoolRiskSignals(entry, focusCode, trackCode) {
+  const risks = [];
+  const effectiveFocus = focusCode || getDefaultFocusByTrack(trackCode);
+  const isHighTier = /^(985|211|双一流)$/.test(String(entry.tier || ""));
+  const rankGap = Number(entry.rankGap || 0);
+  const scoreGap = Number(entry.scoreGap || 0);
+
+  if (entry.bucket === "reach") {
+    risks.push("当前定位属于冲刺区间，学校可以冲，但专业不要全部押在最热门方向。");
+  }
+  if (entry.bucket === "steady" && isHighTier) {
+    risks.push("院校层级较高，即使整体进入稳妥区间，热门专业组的实际竞争仍可能上浮。");
+  }
+  if (entry.bucket === "safe") {
+    risks.push("学校层面相对稳，但仍要防止因为热门专业过于集中而出现专业滑档。");
+  }
+  if (isHighTier && rankGap < 5000) {
+    risks.push("与校线距离不算特别宽，建议同步准备一所层级略低但专业更稳的替代院校。");
+  }
+  if (effectiveFocus === "medicine") {
+    risks.push("医学类方向要额外核对培养年限、实习安排和是否接受长期投入。");
+  }
+  if (effectiveFocus === "engineering") {
+    risks.push("工科类方向要重点比较实验条件、课程强度和是否适合长期理工训练。");
+  }
+  if (effectiveFocus === "business") {
+    risks.push("经管类方向建议进一步分清偏金融、偏管理还是偏会计，避免笼统报考。");
+  }
+  if (effectiveFocus === "humanities" || effectiveFocus === "media") {
+    risks.push("人文传播类方向需继续核查院系平台、实践资源和升学去向，不能只看学校名称。");
+  }
+  if (effectiveFocus === "education") {
+    risks.push("教育类方向要提前确认是否真正接受师范培养路径与职业取向。");
+  }
+  if (scoreGap <= 3 && scoreGap >= 0) {
+    risks.push("当前分数领先幅度不大，若当年分数线波动，结果可能从稳妥转为冲刺。");
+  }
+
+  return risks.slice(0, 3);
+}
+
+function summarizePortfolioRisks(ranked, focusCode, trackCode) {
+  const riskCounts = new Map();
+  ranked.slice(0, 10).forEach((item) => {
+    getSchoolRiskSignals(item, focusCode, trackCode).forEach((risk) => {
+      riskCounts.set(risk, (riskCounts.get(risk) || 0) + 1);
+    });
+  });
+
+  return Array.from(riskCounts.entries())
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "zh-CN"))
+    .slice(0, 3)
+    .map(([risk]) => risk);
+}
+
 function getBucket(entry, studentRank, studentScore) {
   const hasRank = Number.isFinite(studentRank) && studentRank > 0;
   if (hasRank && Number.isFinite(entry.minRank)) {
@@ -439,6 +494,12 @@ function renderGroup(title, intro, items, focusCode, trackCode) {
             <p class="gaokao-school-fit"><strong>更适合关注：</strong>${escapeHtml(getSchoolHint(item).fit)}</p>
             <p class="gaokao-school-note"><strong>提醒：</strong>${escapeHtml(item.note || "建议继续结合专业组与招生计划判断。")}</p>
             <p class="gaokao-school-note"><strong>报考补充提醒：</strong>${escapeHtml(getSchoolHint(item).caution)}</p>
+            <div class="gaokao-risk-box">
+              <p class="gaokao-risk-heading">本校报考风险提醒</p>
+              <ul class="gaokao-risk-list">
+                ${getSchoolRiskSignals(item, focusCode, trackCode).map((risk) => `<li>${escapeHtml(risk)}</li>`).join("")}
+              </ul>
+            </div>
           </article>
         `).join("")}
       </div>
@@ -457,6 +518,7 @@ function renderResults(province, track, studentScore, studentRank, ranked) {
   const tierFilter = String(tierSelect.value || "").trim();
   const focusFilter = String(focusSelect.value || "").trim();
   const topMajorDirections = summarizeMajorDirections(ranked, focusFilter, track.code);
+  const portfolioRisks = summarizePortfolioRisks(ranked, focusFilter, track.code);
   const strategyNote = groups.steady.length
     ? "建议先以稳妥池为主体，再搭配少量冲刺与保底院校形成完整志愿结构。"
     : groups.reach.length
@@ -502,6 +564,14 @@ function renderResults(province, track, studentScore, studentRank, ranked) {
           <div class="gaokao-major-tags">
             ${topMajorDirections.map((major) => `<span>${escapeHtml(major)}</span>`).join("")}
           </div>
+        </div>
+      ` : ""}
+      ${portfolioRisks.length ? `
+        <div class="gaokao-risk-snapshot">
+          <span>本轮最需要注意的风险点</span>
+          <ul class="gaokao-risk-list">
+            ${portfolioRisks.map((risk) => `<li>${escapeHtml(risk)}</li>`).join("")}
+          </ul>
         </div>
       ` : ""}
     </section>

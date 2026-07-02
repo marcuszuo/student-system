@@ -434,6 +434,20 @@ body {
   font-weight: 700;
 }
 
+.gaokao-risk-snapshot {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(191, 133, 82, 0.24);
+}
+
+.gaokao-risk-snapshot > span {
+  display: block;
+  margin-bottom: 8px;
+  color: #8b5a2f;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
 .gaokao-summary-card span {
   display: block;
   margin-bottom: 8px;
@@ -565,6 +579,31 @@ body {
   margin: 0 0 10px;
   color: #5b7167;
   line-height: 1.6;
+}
+
+.gaokao-risk-box {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid #f0dfcf;
+  background: linear-gradient(180deg, #fff9f3 0%, #fff 100%);
+}
+
+.gaokao-risk-heading {
+  margin: 0 0 8px;
+  color: #8b5a2f;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.gaokao-risk-list {
+  margin: 0;
+  padding-left: 18px;
+  color: #6d6258;
+}
+
+.gaokao-risk-list li + li {
+  margin-top: 6px;
 }
 
 .gaokao-school-fit,
