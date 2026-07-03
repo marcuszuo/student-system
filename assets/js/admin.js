@@ -21,6 +21,11 @@ const gaokaoFocusTagsEl = document.getElementById("admin-gaokao-focus-tags");
 const gaokaoSchoolTagsEl = document.getElementById("admin-gaokao-school-tags");
 const gaokaoMajorTagsEl = document.getElementById("admin-gaokao-major-tags");
 const gaokaoListEl = document.getElementById("admin-gaokao-list");
+const gaokaoProvinceFilterEl = document.getElementById("admin-gaokao-province-filter");
+const gaokaoTrackFilterEl = document.getElementById("admin-gaokao-track-filter");
+const gaokaoSevenDayCountEl = document.getElementById("admin-gaokao-7day-count");
+const gaokaoThirtyDayCountEl = document.getElementById("admin-gaokao-30day-count");
+const gaokaoResetFiltersBtn = document.getElementById("admin-gaokao-reset-filters-btn");
 const listEl = document.getElementById("admin-report-list");
 const detailEl = document.getElementById("admin-detail");
 const sortFilterEl = document.getElementById("admin-sort-filter");
@@ -36,6 +41,7 @@ let reports = [];
 let filteredReports = [];
 let selectedReportId = "";
 let gaokaoQueries = [];
+let filteredGaokaoQueries = [];
 
 function getDefaultConfig() {
   return {
@@ -198,6 +204,45 @@ function flattenTopMajorDirections(queries) {
   return queries.flatMap((item) => Array.isArray(item.topMajorDirections) ? item.topMajorDirections : []);
 }
 
+function getDaysAgoStart(days) {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  now.setDate(now.getDate() - (days - 1));
+  return now;
+}
+
+function gaokaoQueryMatchesFilters(item) {
+  const provinceFilter = String(gaokaoProvinceFilterEl?.value || "").trim();
+  const trackFilter = String(gaokaoTrackFilterEl?.value || "").trim();
+  if (provinceFilter && String(item.provinceCode || "") !== provinceFilter) return false;
+  if (trackFilter && !String(item.trackCode || "").includes(trackFilter)) return false;
+  return true;
+}
+
+function applyGaokaoFilters() {
+  filteredGaokaoQueries = gaokaoQueries.filter(gaokaoQueryMatchesFilters);
+}
+
+function populateGaokaoProvinceFilter() {
+  if (!gaokaoProvinceFilterEl) return;
+  const current = String(gaokaoProvinceFilterEl.value || "");
+  const provinces = Array.from(
+    new Map(
+      gaokaoQueries
+        .filter((item) => item.provinceCode && item.province)
+        .map((item) => [item.provinceCode, item.province])
+    ).entries()
+  ).sort((a, b) => a[1].localeCompare(b[1], "zh-CN"));
+
+  gaokaoProvinceFilterEl.innerHTML = [
+    '<option value="">全部省份</option>',
+    ...provinces.map(([code, name]) => `<option value="${escapeHtml(code)}">${escapeHtml(name)}</option>`)
+  ].join("");
+  if (current && provinces.some(([code]) => code === current)) {
+    gaokaoProvinceFilterEl.value = current;
+  }
+}
+
 function applyFilters() {
   filteredReports = reports.filter(reportMatchesFilters).sort(compareReports);
   if (!filteredReports.find((item) => item.id === selectedReportId)) {
@@ -220,26 +265,33 @@ function renderOverview() {
 }
 
 function renderGaokaoOverview() {
+  const items = filteredGaokaoQueries;
   const today = new Date().toISOString().slice(0, 10);
-  const todayCount = gaokaoQueries.filter((item) => String(item.submittedAt || "").startsWith(today)).length;
-  const physicsCount = gaokaoQueries.filter((item) => /(physics|理科|物理)/i.test(String(item.trackCode || item.track || ""))).length;
-  const historyCount = gaokaoQueries.filter((item) => /(history|文科|历史)/i.test(String(item.trackCode || item.track || ""))).length;
-  const engineeringCount = gaokaoQueries.filter((item) => String(item.focusFilter || "") === "engineering").length;
+  const todayCount = items.filter((item) => String(item.submittedAt || "").startsWith(today)).length;
+  const physicsCount = items.filter((item) => /(physics|理科|物理)/i.test(String(item.trackCode || item.track || ""))).length;
+  const historyCount = items.filter((item) => /(history|文科|历史)/i.test(String(item.trackCode || item.track || ""))).length;
+  const engineeringCount = items.filter((item) => String(item.focusFilter || "") === "engineering").length;
+  const sevenDayStart = getDaysAgoStart(7);
+  const thirtyDayStart = getDaysAgoStart(30);
+  const sevenDayCount = items.filter((item) => new Date(item.submittedAt || 0) >= sevenDayStart).length;
+  const thirtyDayCount = items.filter((item) => new Date(item.submittedAt || 0) >= thirtyDayStart).length;
 
-  gaokaoTotalCountEl.textContent = String(gaokaoQueries.length);
+  gaokaoTotalCountEl.textContent = String(items.length);
   gaokaoTodayCountEl.textContent = String(todayCount);
   gaokaoPhysicsCountEl.textContent = String(physicsCount);
   gaokaoHistoryCountEl.textContent = String(historyCount);
   gaokaoEngineeringCountEl.textContent = String(engineeringCount);
+  if (gaokaoSevenDayCountEl) gaokaoSevenDayCountEl.textContent = String(sevenDayCount);
+  if (gaokaoThirtyDayCountEl) gaokaoThirtyDayCountEl.textContent = String(thirtyDayCount);
 
-  const topProvinces = countTopValues(gaokaoQueries, (item) => item.province, 6);
+  const topProvinces = countTopValues(items, (item) => item.province, 6);
   const topFocuses = countTopValues(
-    gaokaoQueries.filter((item) => String(item.focusFilter || "").trim()),
+    items.filter((item) => String(item.focusFilter || "").trim()),
     (item) => getFocusLabel(item.focusFilter),
     6
   );
-  const topSchools = countTopValues(flattenTopResults(gaokaoQueries), (item) => item.name, 8);
-  const topMajors = countTopValues(flattenTopMajorDirections(gaokaoQueries), (item) => item, 8);
+  const topSchools = countTopValues(flattenTopResults(items), (item) => item.name, 8);
+  const topMajors = countTopValues(flattenTopMajorDirections(items), (item) => item, 8);
 
   gaokaoProvinceTagsEl.innerHTML = topProvinces.length
     ? topProvinces.map(([label, count]) => `<span>${escapeHtml(label)} · ${count}</span>`).join("")
@@ -259,10 +311,10 @@ function renderGaokaoOverview() {
 }
 
 function renderGaokaoList() {
-  if (!gaokaoQueries.length) {
+  if (!filteredGaokaoQueries.length) {
     gaokaoListEl.innerHTML = `
       <div class="empty-state compact">
-        <p>当前还没有高考查询数据</p>
+        <p>当前筛选条件下暂无高考查询数据</p>
       </div>
     `;
     return;
@@ -271,10 +323,10 @@ function renderGaokaoList() {
   gaokaoListEl.innerHTML = `
     <div class="admin-gaokao-list-head">
       <h3>最近查询</h3>
-      <span>${gaokaoQueries.length} 条</span>
+      <span>${filteredGaokaoQueries.length} 条</span>
     </div>
     <div class="admin-gaokao-items">
-      ${gaokaoQueries.slice(0, 10).map((item) => `
+      ${filteredGaokaoQueries.slice(0, 10).map((item) => `
         <article class="admin-gaokao-item">
           <div class="admin-gaokao-item-top">
             <strong>${escapeHtml(item.province || "未知省份")} · ${escapeHtml(normalizeTrackLabel(item))}</strong>
@@ -595,6 +647,8 @@ async function fetchGaokaoQueries() {
   }
   const data = await response.json();
   gaokaoQueries = Array.isArray(data.items) ? data.items : [];
+  populateGaokaoProvinceFilter();
+  applyGaokaoFilters();
   renderGaokaoOverview();
   renderGaokaoList();
 }
@@ -867,7 +921,7 @@ if (gaokaoReloadBtn) {
   gaokaoReloadBtn.addEventListener("click", async () => {
     try {
       await fetchGaokaoQueries();
-      setStatus(`已刷新 ${gaokaoQueries.length} 条高考查询。`, "success");
+      setStatus(`已刷新 ${filteredGaokaoQueries.length} 条高考查询。`, "success");
     } catch (error) {
       console.error(error);
       setStatus(error.message || "高考查询加载失败。", "error");
@@ -877,6 +931,27 @@ if (gaokaoReloadBtn) {
 
 if (gaokaoExportBtn) {
   gaokaoExportBtn.addEventListener("click", exportGaokaoQueries);
+}
+
+[gaokaoProvinceFilterEl, gaokaoTrackFilterEl].forEach((input) => {
+  if (!input) return;
+  input.addEventListener("change", () => {
+    applyGaokaoFilters();
+    renderGaokaoOverview();
+    renderGaokaoList();
+    setStatus(`当前高考筛选结果 ${filteredGaokaoQueries.length} 条。`);
+  });
+});
+
+if (gaokaoResetFiltersBtn) {
+  gaokaoResetFiltersBtn.addEventListener("click", () => {
+    if (gaokaoProvinceFilterEl) gaokaoProvinceFilterEl.value = "";
+    if (gaokaoTrackFilterEl) gaokaoTrackFilterEl.value = "";
+    applyGaokaoFilters();
+    renderGaokaoOverview();
+    renderGaokaoList();
+    setStatus(`已重置高考筛选条件，当前显示 ${filteredGaokaoQueries.length} 条查询。`);
+  });
 }
 
 resetFilters();

@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>报告后台</title>
   <script>
-    const ADMIN_PAGE_VERSION = "20260702-admin-v4";
+    const ADMIN_PAGE_VERSION = "20260703-admin-v5";
     const isLocalPreviewHost = ["127.0.0.1", "localhost"].includes(location.hostname);
     const adminUrl = new URL(location.href);
     if (!isLocalPreviewHost && adminUrl.searchParams.get("v") !== ADMIN_PAGE_VERSION) {
@@ -19,7 +19,7 @@
       location.replace("https://" + location.host + location.pathname + location.search + location.hash);
     }
   </script>
-  <link rel="stylesheet" href="../assets/css/styles.css?v=20260702-admin-v4">
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260703-admin-v5">
 </head>
 <body>
   <main class="page">
@@ -97,6 +97,34 @@
             <span class="student-summary-label">工科方向偏好</span>
             <strong id="admin-gaokao-engineering-count">0</strong>
           </article>
+        </div>
+        <div class="admin-gaokao-filters">
+          <label class="single-field">
+            <span>高考省份筛选</span>
+            <select id="admin-gaokao-province-filter">
+              <option value="">全部省份</option>
+            </select>
+          </label>
+          <label class="single-field">
+            <span>高考科类筛选</span>
+            <select id="admin-gaokao-track-filter">
+              <option value="">全部科类</option>
+              <option value="physics">物理 / 理科</option>
+              <option value="history">历史 / 文科</option>
+              <option value="general">综合改革</option>
+            </select>
+          </label>
+          <label class="single-field">
+            <span>趋势观察</span>
+            <div class="admin-gaokao-trend-inline">
+              <span>近 7 天：<strong id="admin-gaokao-7day-count">0</strong></span>
+              <span>近 30 天：<strong id="admin-gaokao-30day-count">0</strong></span>
+            </div>
+          </label>
+          <div class="single-field admin-filter-reset">
+            <span>快速操作</span>
+            <button id="admin-gaokao-reset-filters-btn" type="button" class="btn btn-ghost">重置高考筛选</button>
+          </div>
         </div>
         <div class="admin-gaokao-grid">
           <article class="advice admin-gaokao-card">
@@ -191,6 +219,6 @@
     window.ADMIN_DEFAULT_API_BASE = "https://api.majornavi.cn";
     window.ADMIN_DEFAULT_TOKEN = "9c61f52c4ffc7e8b1d39e8c74e29cf625584fb7195c286b7";
   </script>
-  <script src="../assets/js/admin.js?v=20260702-admin-v4"></script>
+  <script src="../assets/js/admin.js?v=20260703-admin-v5"></script>
 </body>
 </html>
