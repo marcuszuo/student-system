@@ -448,6 +448,22 @@ body {
   font-weight: 700;
 }
 
+.gaokao-category-snapshot {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(110, 136, 177, 0.22);
+  display: grid;
+  gap: 12px;
+}
+
+.gaokao-category-snapshot > div > span {
+  display: block;
+  margin-bottom: 8px;
+  color: #4d6884;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
 .gaokao-summary-card span {
   display: block;
   margin-bottom: 8px;
@@ -579,6 +595,36 @@ body {
   margin: 0 0 10px;
   color: #5b7167;
   line-height: 1.6;
+}
+
+.gaokao-major-box-secondary {
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid #dbe7f2;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+}
+
+.gaokao-major-box-warning {
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid #f0dfcf;
+  background: linear-gradient(180deg, #fffaf5 0%, #ffffff 100%);
+}
+
+.gaokao-major-tags-accent span {
+  background: #eef4fb;
+  border-color: #d7e4f1;
+  color: #46627b;
+}
+
+.gaokao-major-tags-warn span {
+  background: #fff4ea;
+  border-color: #f0dfcf;
+  color: #8b5a2f;
+}
+
+.gaokao-major-heading-warn {
+  color: #8b5a2f;
 }
 
 .gaokao-risk-box {

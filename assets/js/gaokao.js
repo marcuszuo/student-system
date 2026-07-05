@@ -286,6 +286,67 @@ function getRecommendedMajors(entry, focusCode, trackCode) {
   };
 }
 
+function getMajorCategoryLabel(major) {
+  const text = String(major || "");
+  if (/(医学|临床|护理|药学|健康|口腔|生物医)/.test(text)) return "医学健康类";
+  if (/(工程|工科|自动化|电子|信息|通信|计算机|机械|材料|建筑|土木|测控|车辆|化工|电气|人工智能|软件)/.test(text)) return "工科技术类";
+  if (/(经济|金融|工商|管理|会计|财务|商务|财经|统计)/.test(text)) return "经管财经类";
+  if (/(汉语言|新闻|传播|哲学|历史|社会|法学|经济学|英语|外语)/.test(text)) return "人文社科类";
+  if (/(师范|教育|心理学|学前|课程)/.test(text)) return "教育师范类";
+  if (/(传媒|广播|电视|数字媒体|广告|设计|艺术|动画)/.test(text)) return "传媒艺术类";
+  return "综合交叉类";
+}
+
+function summarizeMajorCategories(majors) {
+  const categories = [];
+  majors.forEach((major) => {
+    const category = getMajorCategoryLabel(major);
+    if (!categories.includes(category)) categories.push(category);
+  });
+  return categories.slice(0, 3);
+}
+
+function getAvoidMajorCategories(entry, focusCode, trackCode) {
+  const hint = getSchoolHint(entry);
+  const allCategories = summarizeMajorCategories(hint.majors || []);
+  const preferredCategories = summarizeMajorCategories(getRecommendedMajors(entry, focusCode, trackCode).primary || []);
+  const effectiveFocus = focusCode || getDefaultFocusByTrack(trackCode);
+
+  let avoid = allCategories.filter((category) => !preferredCategories.includes(category));
+
+  if (!avoid.length) {
+    const focusDefaultAvoid = {
+      engineering: ["人文社科类", "传媒艺术类"],
+      medicine: ["经管财经类", "传媒艺术类"],
+      business: ["工科技术类", "医学健康类"],
+      humanities: ["工科技术类", "医学健康类"],
+      education: ["工科技术类", "经管财经类"],
+      media: ["工科技术类", "医学健康类"]
+    };
+    avoid = (focusDefaultAvoid[effectiveFocus] || []).filter((category) => !preferredCategories.includes(category));
+  }
+
+  return avoid.slice(0, 2);
+}
+
+function buildAvoidMajorReason(entry, focusCode, trackCode) {
+  const effectiveFocus = focusCode || getDefaultFocusByTrack(trackCode);
+  const avoidCategories = getAvoidMajorCategories(entry, focusCode, trackCode);
+  if (!avoidCategories.length) {
+    return "当前更建议先围绕学校的优势专业组做细筛，不建议跨到完全不同训练逻辑的专业类别。";
+  }
+
+  const reasonMap = {
+    engineering: "若当前以理工应用为主，这些类别不建议放在最前面硬冲，避免培养方式与长期能力结构错位。",
+    medicine: "若当前以医学健康方向为主，这些类别不建议优先硬冲，后续应先核对培养年限与职业路径是否接受。",
+    business: "若当前更偏经管财经取向，这些类别不建议优先硬冲，建议先比较课程结构与就业路径是否匹配。",
+    humanities: "若当前更偏人文表达取向，这些类别不建议优先硬冲，建议避免只因学校名气而跨到训练逻辑差异过大的专业。",
+    education: "若当前更偏教育培养路径，这些类别不建议优先硬冲，建议先确认是否真正接受对应的职业训练方式。",
+    media: "若当前更偏传媒艺术表达，这些类别不建议优先硬冲，建议优先比较项目资源和作品训练环境。"
+  };
+  return reasonMap[effectiveFocus] || "这些类别当前不建议优先硬冲，建议先围绕更匹配的专业方向比较。";
+}
+
 function summarizeMajorDirections(ranked, focusCode, trackCode) {
   const counts = new Map();
   ranked.slice(0, 8).forEach((item) => {
@@ -354,6 +415,31 @@ function summarizePortfolioRisks(ranked, focusCode, trackCode) {
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "zh-CN"))
     .slice(0, 3)
     .map(([risk]) => risk);
+}
+
+function buildPortfolioCategoryAdvice(ranked, focusCode, trackCode) {
+  const preferred = new Map();
+  const avoid = new Map();
+
+  ranked.slice(0, 8).forEach((item) => {
+    summarizeMajorCategories(getRecommendedMajors(item, focusCode, trackCode).primary || []).forEach((category) => {
+      preferred.set(category, (preferred.get(category) || 0) + 1);
+    });
+    getAvoidMajorCategories(item, focusCode, trackCode).forEach((category) => {
+      avoid.set(category, (avoid.get(category) || 0) + 1);
+    });
+  });
+
+  return {
+    preferred: Array.from(preferred.entries())
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "zh-CN"))
+      .slice(0, 3)
+      .map(([category]) => category),
+    avoid: Array.from(avoid.entries())
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "zh-CN"))
+      .slice(0, 2)
+      .map(([category]) => category)
+  };
 }
 
 function getBucket(entry, studentRank, studentScore) {
@@ -488,6 +574,20 @@ function renderGroup(title, intro, items, focusCode, trackCode) {
               </div>
               <p class="gaokao-major-reason">${escapeHtml(getRecommendedMajors(item, focusCode, trackCode).reason)}</p>
             </div>
+            <div class="gaokao-major-box gaokao-major-box-secondary">
+              <p class="gaokao-major-heading">更适合优先考虑的专业类别</p>
+              <div class="gaokao-major-tags gaokao-major-tags-accent">
+                ${summarizeMajorCategories(getRecommendedMajors(item, focusCode, trackCode).primary || []).map((category) => `<span>${escapeHtml(category)}</span>`).join("")}
+              </div>
+              <p class="gaokao-major-reason">建议优先围绕这些类别做专业组比较，而不是只看学校最低录取区间。</p>
+            </div>
+            <div class="gaokao-major-box gaokao-major-box-warning">
+              <p class="gaokao-major-heading gaokao-major-heading-warn">当前不建议优先硬冲的专业类别</p>
+              <div class="gaokao-major-tags gaokao-major-tags-warn">
+                ${getAvoidMajorCategories(item, focusCode, trackCode).map((category) => `<span>${escapeHtml(category)}</span>`).join("") || '<span>暂无明显不建议项</span>'}
+              </div>
+              <p class="gaokao-major-reason">${escapeHtml(buildAvoidMajorReason(item, focusCode, trackCode))}</p>
+            </div>
             <div class="gaokao-major-tags">
               ${getSchoolHint(item).majors.map((major) => `<span>${escapeHtml(major)}</span>`).join("")}
             </div>
@@ -519,6 +619,7 @@ function renderResults(province, track, studentScore, studentRank, ranked) {
   const focusFilter = String(focusSelect.value || "").trim();
   const topMajorDirections = summarizeMajorDirections(ranked, focusFilter, track.code);
   const portfolioRisks = summarizePortfolioRisks(ranked, focusFilter, track.code);
+  const portfolioCategoryAdvice = buildPortfolioCategoryAdvice(ranked, focusFilter, track.code);
   const strategyNote = groups.steady.length
     ? "建议先以稳妥池为主体，再搭配少量冲刺与保底院校形成完整志愿结构。"
     : groups.reach.length
@@ -563,6 +664,22 @@ function renderResults(province, track, studentScore, studentRank, ranked) {
           <span>当前结果中更值得优先比较的专业方向</span>
           <div class="gaokao-major-tags">
             ${topMajorDirections.map((major) => `<span>${escapeHtml(major)}</span>`).join("")}
+          </div>
+        </div>
+      ` : ""}
+      ${(portfolioCategoryAdvice.preferred.length || portfolioCategoryAdvice.avoid.length) ? `
+        <div class="gaokao-category-snapshot">
+          <div>
+            <span>更适合优先考虑的专业类别</span>
+            <div class="gaokao-major-tags gaokao-major-tags-accent">
+              ${portfolioCategoryAdvice.preferred.map((category) => `<span>${escapeHtml(category)}</span>`).join("")}
+            </div>
+          </div>
+          <div>
+            <span>当前不建议优先硬冲的专业类别</span>
+            <div class="gaokao-major-tags gaokao-major-tags-warn">
+              ${portfolioCategoryAdvice.avoid.map((category) => `<span>${escapeHtml(category)}</span>`).join("") || '<span>暂无明显不建议项</span>'}
+            </div>
           </div>
         </div>
       ` : ""}
@@ -631,6 +748,7 @@ function rankSchools() {
     return renderError("当前筛选条件下暂无合适院校。建议放宽城市偏好、院校层级，或优先使用全省位次重新匹配。");
   }
 
+  const topMajorDirections = summarizeMajorDirections(ranked, focusFilter, track.code);
   renderResults(province, track, studentScore, studentRank, ranked);
   void syncGaokaoQueryRecord({
     id: `gaokao_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
