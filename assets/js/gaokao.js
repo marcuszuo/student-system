@@ -13,6 +13,87 @@ const coverageEl = document.getElementById("gaokao-coverage");
 const GAOKAO_QUERY_API_BASE_URL = String(window.GAOKAO_QUERY_API_BASE_URL || "").trim().replace(/\/+$/, "");
 const GAOKAO_QUERY_INGEST_KEY = String(window.GAOKAO_QUERY_INGEST_KEY || "").trim();
 
+const FOCUS_PROFILES = {
+  engineering: {
+    matcher: /(工程|工科|自动化|电子|信息|通信|计算机|机械|材料|建筑|土木|网络|人工智能|水利|测控|车辆|化工|电气|软件|制造|能源)/,
+    reason: "当前更建议优先比较理工技术大类，再结合实验条件、课程强度、就业面和读研衔接做二轮筛选。",
+    avoid: ["人文语言类", "传媒设计艺术类"],
+    risk: "理工技术大类建议继续细分到计算机、电子、机械、土木环境等子方向，不要只停留在大类判断。"
+  },
+  computer: {
+    matcher: /(计算机|软件|人工智能|网络工程|信息安全|数据科学|大数据|智能科学|物联网|算法)/,
+    reason: "当前更建议优先比较计算机与人工智能相关专业，再结合数学基础、编程训练强度与实习资源做细筛。",
+    avoid: ["教育心理类", "传媒设计艺术类"],
+    risk: "计算机与人工智能方向建议重点核查课程难度、项目资源和院校真实就业质量，避免只因名称热门而报考。"
+  },
+  electronic: {
+    matcher: /(电子信息|通信|自动化|电气|微电子|光电|集成电路|测控|控制|机器人)/,
+    reason: "当前更建议优先比较电子信息、自动化与电气控制方向，再结合实验平台和行业去向判断。",
+    avoid: ["人文语言类", "教育心理类"],
+    risk: "电子信息与自动化方向校际差异很大，建议重点看实验条件、学科平台和升学去向。"
+  },
+  mechanical: {
+    matcher: /(机械|车辆|材料|制造|能源与动力|工业工程|化工|过程装备|航空航天|船舶)/,
+    reason: "当前更建议优先比较机械制造、材料与能源动力方向，再结合工程实践机会和行业周期判断。",
+    avoid: ["传媒设计艺术类", "人文语言类"],
+    risk: "机械制造与材料方向要重点比较工程训练密度、行业区域资源和未来读研必要性。"
+  },
+  architecture: {
+    matcher: /(建筑|土木|城乡规划|风景园林|环境工程|给排水|水利|地理信息|测绘|交通工程)/,
+    reason: "当前更建议优先比较建筑、土木、环境和规划相关方向，再结合设计训练、项目实践和行业接受度判断。",
+    avoid: ["经管财经类", "教育心理类"],
+    risk: "建筑土木与环境方向建议继续核查行业周期、设计训练强度和职业资格路径。"
+  },
+  medicine: {
+    matcher: /(医学|临床|护理|药学|健康|口腔|生物医|预防医学|中医学|医学技术)/,
+    reason: "当前更建议优先比较医学健康相关专业组，再结合培养年限、实习体系和升学要求判断。",
+    avoid: ["经管财经类", "传媒设计艺术类"],
+    risk: "医学健康方向要额外核对培养年限、实习安排、职业资格要求和长期投入接受度。"
+  },
+  bioscience: {
+    matcher: /(生物科学|生物技术|生物工程|生态学|食品科学|农学|园艺|动物医学|动物科学|海洋)/,
+    reason: "当前更建议优先比较生物科学、农学与生命应用方向，再结合科研平台、升学比例和行业应用场景判断。",
+    avoid: ["经管财经类", "传媒设计艺术类"],
+    risk: "生物科学与农学方向通常更依赖科研平台或深造衔接，建议提前判断是否接受较长培养周期。"
+  },
+  business: {
+    matcher: /(经济|金融|工商|管理|会计|财务|商务|财经|统计|税务|审计)/,
+    reason: "当前更建议优先比较经管财经相关专业组，再结合课程数学要求、实习资源和就业路径筛选。",
+    avoid: ["建筑土木环境类", "医学健康类"],
+    risk: "经管财经方向建议继续区分金融、会计、统计、管理等不同路径，避免笼统报考。"
+  },
+  law: {
+    matcher: /(法学|政治学|行政管理|公共管理|国际关系|社会工作|公安|思想政治)/,
+    reason: "当前更建议优先比较法学、公共治理与社会政策方向，再结合升学、考编考公与职业路径判断。",
+    avoid: ["机械制造材料类", "医学健康类"],
+    risk: "法学与公共治理方向建议尽早判断未来是否接受考证、考公、深造等长期路径。"
+  },
+  humanities: {
+    matcher: /(汉语言|新闻|传播|哲学|历史|社会学|人文|考古|文化产业)/,
+    reason: "当前更建议优先比较人文社科相关专业组，再结合表达训练、深造路径和院系特色判断。",
+    avoid: ["工科技术类", "医学健康类"],
+    risk: "人文社科方向需要继续核查院系平台、研究资源和升学去向，不能只看学校名称。"
+  },
+  language: {
+    matcher: /(英语|外语|翻译|商务英语|日语|法语|德语|西班牙语|俄语|朝鲜语|汉语国际教育|国际传播)/,
+    reason: "当前更建议优先比较外语、翻译与国际传播相关方向，再结合语言训练密度、交换资源和就业场景判断。",
+    avoid: ["机械制造材料类", "建筑土木环境类"],
+    risk: "外语与国际传播方向校际差异很大，建议重点比较语言平台、国际交流资源和复合培养机会。"
+  },
+  education: {
+    matcher: /(师范|教育|心理学|学前|小学教育|课程与教学|特殊教育)/,
+    reason: "当前更建议优先比较教育师范与心理相关方向，再结合是否接受教师培养路径和实践要求判断。",
+    avoid: ["工科技术类", "经管财经类"],
+    risk: "教育师范与心理方向要提前确认是否真正接受师范培养、实习要求与职业取向。"
+  },
+  media: {
+    matcher: /(新闻|传播|传媒|广播|电视|数字媒体|广告|设计|艺术|动画|影视|戏剧|美术|音乐)/,
+    reason: "当前更建议优先比较传媒、设计与艺术表达方向，再结合作品训练、项目机会和表达输出方式筛选。",
+    avoid: ["工科技术类", "医学健康类"],
+    risk: "传媒设计与艺术方向建议优先比较作品训练环境、行业资源和项目实践强度。"
+  }
+};
+
 const SCHOOL_MAJOR_HINTS = {
   "中山大学": {
     majors: ["临床医学", "工商管理", "计算机类", "材料与化学"],
@@ -232,12 +313,9 @@ function getSchoolFocusTags(entry) {
   const hint = getSchoolHint(entry);
   const text = [entry.name, entry.note, ...(hint.majors || [])].join(" ").toLowerCase();
   const tags = new Set();
-  if (/(工程|工科|自动化|电子|信息|通信|计算机|机械|材料|建筑|土木|网络|人工智能|水利)/.test(text)) tags.add("engineering");
-  if (/(医学|临床|护理|药学|健康)/.test(text)) tags.add("medicine");
-  if (/(经济|金融|工商|管理|会计|财务|商务|财经|法学)/.test(text)) tags.add("business");
-  if (/(汉语言|新闻|传播|哲学|历史|社会|人文|法学|经济学)/.test(text)) tags.add("humanities");
-  if (/(师范|教育|心理学)/.test(text)) tags.add("education");
-  if (/(传媒|广播|电视|数字媒体|广告|设计|艺术)/.test(text)) tags.add("media");
+  Object.entries(FOCUS_PROFILES).forEach(([code, profile]) => {
+    if (profile.matcher.test(text)) tags.add(code);
+  });
   return Array.from(tags);
 }
 
@@ -258,42 +336,29 @@ function getRecommendedMajors(entry, focusCode, trackCode) {
   }
 
   const effectiveFocus = focusCode || getDefaultFocusByTrack(trackCode);
-  const focusMatchers = {
-    engineering: /(工程|工科|自动化|电子|信息|通信|计算机|机械|材料|建筑|土木|网络|人工智能|测控|车辆|化工|水利|电气)/,
-    medicine: /(医学|临床|护理|药学|健康|口腔|生物医)/,
-    business: /(经济|金融|工商|管理|会计|财务|商务|财经|统计|法学)/,
-    humanities: /(汉语言|新闻|传播|哲学|历史|社会|法学|经济学|英语|外语)/,
-    education: /(师范|教育|心理学|学前|课程)/,
-    media: /(传媒|广播|电视|数字媒体|广告|设计|艺术|动画)/
-  };
-
-  const matcher = focusMatchers[effectiveFocus];
+  const matcher = FOCUS_PROFILES[effectiveFocus]?.matcher;
   const matched = matcher ? majors.filter((major) => matcher.test(major)) : [];
   const selected = (matched.length ? matched : majors).slice(0, 3);
 
-  const reasonMap = {
-    engineering: "当前更建议优先比较工科与技术导向专业组，再结合实验条件、实习资源和就业去向做二轮筛选。",
-    medicine: "当前更建议优先比较医学健康相关专业组，再结合培养年限、实习体系和升学要求判断。",
-    business: "当前更建议优先比较经管财经相关专业组，再结合课程数学要求、实习资源和就业路径筛选。",
-    humanities: "当前更建议优先比较人文社科相关专业组，再结合表达训练、深造路径和院系特色判断。",
-    education: "当前更建议优先比较教育师范相关专业组，再结合是否接受教师培养路径和实践要求判断。",
-    media: "当前更建议优先比较传媒艺术相关专业组，再结合作品训练、项目机会和表达输出方式筛选。"
-  };
-
   return {
     primary: selected,
-    reason: reasonMap[effectiveFocus] || "建议进一步核查该校优势专业组与实际录取热度。"
+    reason: FOCUS_PROFILES[effectiveFocus]?.reason || "建议进一步核查该校优势专业组与实际录取热度。"
   };
 }
 
 function getMajorCategoryLabel(major) {
   const text = String(major || "");
-  if (/(医学|临床|护理|药学|健康|口腔|生物医)/.test(text)) return "医学健康类";
-  if (/(工程|工科|自动化|电子|信息|通信|计算机|机械|材料|建筑|土木|测控|车辆|化工|电气|人工智能|软件)/.test(text)) return "工科技术类";
+  if (/(计算机|软件|人工智能|网络工程|信息安全|数据科学|大数据|物联网|智能科学|算法)/.test(text)) return "计算机人工智能类";
+  if (/(电子信息|通信|自动化|电气|微电子|光电|集成电路|测控|控制|机器人)/.test(text)) return "电子信息自动化类";
+  if (/(机械|材料|制造|车辆|能源与动力|工业工程|化工|过程装备|航空航天|船舶)/.test(text)) return "机械制造材料类";
+  if (/(建筑|土木|城乡规划|风景园林|环境工程|给排水|水利|地理信息|测绘|交通工程)/.test(text)) return "建筑土木环境类";
+  if (/(医学|临床|护理|药学|健康|口腔|生物医|预防医学|中医学|医学技术)/.test(text)) return "医学健康类";
+  if (/(生物科学|生物技术|生物工程|生态学|食品科学|农学|园艺|动物医学|动物科学|海洋)/.test(text)) return "生物农学类";
   if (/(经济|金融|工商|管理|会计|财务|商务|财经|统计)/.test(text)) return "经管财经类";
-  if (/(汉语言|新闻|传播|哲学|历史|社会|法学|经济学|英语|外语)/.test(text)) return "人文社科类";
-  if (/(师范|教育|心理学|学前|课程)/.test(text)) return "教育师范类";
-  if (/(传媒|广播|电视|数字媒体|广告|设计|艺术|动画)/.test(text)) return "传媒艺术类";
+  if (/(法学|政治学|行政管理|公共管理|国际关系|社会工作|公安|思想政治)/.test(text)) return "法学治理类";
+  if (/(汉语言|哲学|历史|社会学|人文|考古|文化产业|英语|外语|翻译|日语|法语|德语|西班牙语|汉语国际教育)/.test(text)) return "人文语言类";
+  if (/(师范|教育|心理学|学前|课程|小学教育|特殊教育)/.test(text)) return "教育心理类";
+  if (/(新闻|传播|传媒|广播|电视|数字媒体|广告|设计|艺术|动画|影视|戏剧|美术|音乐)/.test(text)) return "传媒设计艺术类";
   return "综合交叉类";
 }
 
@@ -315,15 +380,7 @@ function getAvoidMajorCategories(entry, focusCode, trackCode) {
   let avoid = allCategories.filter((category) => !preferredCategories.includes(category));
 
   if (!avoid.length) {
-    const focusDefaultAvoid = {
-      engineering: ["人文社科类", "传媒艺术类"],
-      medicine: ["经管财经类", "传媒艺术类"],
-      business: ["工科技术类", "医学健康类"],
-      humanities: ["工科技术类", "医学健康类"],
-      education: ["工科技术类", "经管财经类"],
-      media: ["工科技术类", "医学健康类"]
-    };
-    avoid = (focusDefaultAvoid[effectiveFocus] || []).filter((category) => !preferredCategories.includes(category));
+    avoid = (FOCUS_PROFILES[effectiveFocus]?.avoid || []).filter((category) => !preferredCategories.includes(category));
   }
 
   return avoid.slice(0, 2);
@@ -336,15 +393,10 @@ function buildAvoidMajorReason(entry, focusCode, trackCode) {
     return "当前更建议先围绕学校的优势专业组做细筛，不建议跨到完全不同训练逻辑的专业类别。";
   }
 
-  const reasonMap = {
-    engineering: "若当前以理工应用为主，这些类别不建议放在最前面硬冲，避免培养方式与长期能力结构错位。",
-    medicine: "若当前以医学健康方向为主，这些类别不建议优先硬冲，后续应先核对培养年限与职业路径是否接受。",
-    business: "若当前更偏经管财经取向，这些类别不建议优先硬冲，建议先比较课程结构与就业路径是否匹配。",
-    humanities: "若当前更偏人文表达取向，这些类别不建议优先硬冲，建议避免只因学校名气而跨到训练逻辑差异过大的专业。",
-    education: "若当前更偏教育培养路径，这些类别不建议优先硬冲，建议先确认是否真正接受对应的职业训练方式。",
-    media: "若当前更偏传媒艺术表达，这些类别不建议优先硬冲，建议优先比较项目资源和作品训练环境。"
-  };
-  return reasonMap[effectiveFocus] || "这些类别当前不建议优先硬冲，建议先围绕更匹配的专业方向比较。";
+  if (FOCUS_PROFILES[effectiveFocus]?.risk) {
+    return FOCUS_PROFILES[effectiveFocus].risk;
+  }
+  return "这些类别当前不建议优先硬冲，建议先围绕更匹配的专业方向比较。";
 }
 
 function summarizeMajorDirections(ranked, focusCode, trackCode) {
@@ -381,20 +433,8 @@ function getSchoolRiskSignals(entry, focusCode, trackCode) {
   if (isHighTier && rankGap < 5000) {
     risks.push("与校线距离不算特别宽，建议同步准备一所层级略低但专业更稳的替代院校。");
   }
-  if (effectiveFocus === "medicine") {
-    risks.push("医学类方向要额外核对培养年限、实习安排和是否接受长期投入。");
-  }
-  if (effectiveFocus === "engineering") {
-    risks.push("工科类方向要重点比较实验条件、课程强度和是否适合长期理工训练。");
-  }
-  if (effectiveFocus === "business") {
-    risks.push("经管类方向建议进一步分清偏金融、偏管理还是偏会计，避免笼统报考。");
-  }
-  if (effectiveFocus === "humanities" || effectiveFocus === "media") {
-    risks.push("人文传播类方向需继续核查院系平台、实践资源和升学去向，不能只看学校名称。");
-  }
-  if (effectiveFocus === "education") {
-    risks.push("教育类方向要提前确认是否真正接受师范培养路径与职业取向。");
+  if (FOCUS_PROFILES[effectiveFocus]?.risk) {
+    risks.push(FOCUS_PROFILES[effectiveFocus].risk);
   }
   if (scoreGap <= 3 && scoreGap >= 0) {
     risks.push("当前分数领先幅度不大，若当年分数线波动，结果可能从稳妥转为冲刺。");
