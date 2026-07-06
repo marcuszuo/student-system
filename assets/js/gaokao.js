@@ -405,6 +405,7 @@ function populateFocusSubOptions() {
   }
 
   const options = FOCUS_GROUPS[groupCode].children || [];
+  const globalCoverage = getFocusGlobalCoverage();
   const currentSchools = (() => {
     const province = getProvince(provinceSelect?.value);
     const track = getTrack(province, trackSelect?.value);
@@ -413,18 +414,26 @@ function populateFocusSubOptions() {
   focusSelect.innerHTML = [
     '<option value="">全部细分方向</option>',
     ...options.map((item) => {
+      const globalCount = Number(globalCoverage[item.code] || 0);
       const count = currentSchools.filter((school) => getSchoolFocusTags(school).includes(item.code)).length;
-      const suffix = count === 0
-        ? "（当前数据将自动扩展到相近方向）"
-        : count === 1
-          ? "（当前数据较少）"
-          : "";
-      return `<option value="${item.code}">${item.label}${suffix}</option>`;
+      const suffix = globalCount === 0
+        ? "（全国数据暂未覆盖）"
+        : count === 0
+          ? "（当前数据将自动扩展到相近方向）"
+          : count === 1
+            ? "（当前数据较少）"
+            : "";
+      const disabled = globalCount === 0 ? " disabled" : "";
+      return `<option value="${item.code}"${disabled}>${item.label}${suffix}</option>`;
     })
   ].join("");
   focusSelect.disabled = false;
 
-  if (selectedSub && options.some((item) => item.code === selectedSub)) {
+  if (
+    selectedSub &&
+    options.some((item) => item.code === selectedSub) &&
+    Number(globalCoverage[selectedSub] || 0) > 0
+  ) {
     focusSelect.value = selectedSub;
   }
 }
@@ -440,6 +449,23 @@ function getFocusDisplayLabel() {
   const subLabel = focusSelect?.options?.[focusSelect.selectedIndex]?.text || "";
   if (groupLabel && subCode && subLabel) return `${groupLabel} / ${subLabel}`;
   return groupLabel || subLabel || "未指定";
+}
+
+function getAllSchools() {
+  return (gaokaoData.provinces || []).flatMap((province) =>
+    (province.tracks || []).flatMap((track) => track.schools || [])
+  );
+}
+
+function getFocusGlobalCoverage() {
+  const allSchools = getAllSchools();
+  const coverage = {};
+  Object.values(FOCUS_GROUPS).forEach((group) => {
+    (group.children || []).forEach((child) => {
+      coverage[child.code] = allSchools.filter((school) => getSchoolFocusTags(school).includes(child.code)).length;
+    });
+  });
+  return coverage;
 }
 
 function getFallbackFocusCodes(focusCode) {
