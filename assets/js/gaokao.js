@@ -429,6 +429,21 @@ function getFocusDisplayLabel() {
   return groupLabel || subLabel || "未指定";
 }
 
+function getFallbackFocusCodes(focusCode) {
+  const code = String(focusCode || "").trim();
+  if (!code) return [];
+
+  const matchedGroup = Object.entries(FOCUS_GROUPS).find(([, group]) =>
+    group.children.some((item) => item.code === code)
+  );
+  if (!matchedGroup) return [code];
+
+  const [groupCode, group] = matchedGroup;
+  const childCodes = (group.children || []).map((item) => item.code).filter(Boolean);
+  const uniqueCodes = Array.from(new Set([code, groupCode, ...childCodes]));
+  return uniqueCodes;
+}
+
 function escapeHtml(text) {
   return String(text || "")
     .replace(/&/g, "&amp;")
@@ -934,7 +949,7 @@ function rankSchools() {
     return renderError("请至少填写分数或全省位次中的一项，建议优先填写全省位次。");
   }
 
-  const ranked = (track.schools || [])
+  const candidates = (track.schools || [])
     .map((entry) => {
       const directBucket = getBucket(entry, studentRank, studentScore);
       const bucket = directBucket === "out" ? getFallbackBucket(entry, studentRank, studentScore) : directBucket;
@@ -954,8 +969,27 @@ function rankSchools() {
     .filter((entry) => entry.bucket !== "out")
     .filter((entry) => !cityKeyword || String(entry.city || "").toLowerCase().includes(cityKeyword))
     .filter((entry) => !tierFilter || String(entry.tier || "") === tierFilter)
-    .filter((entry) => !focusFilter || entry.focusTags.includes(focusFilter))
     .sort((a, b) => a.bucketMeta.order - b.bucketMeta.order || a.rankGap - b.rankGap || a.scoreGap - b.scoreGap);
+
+  let ranked = candidates;
+  let appliedFocusMode = "direct";
+
+  if (focusFilter) {
+    const exactMatches = candidates.filter((entry) => entry.focusTags.includes(focusFilter));
+    if (exactMatches.length) {
+      ranked = exactMatches;
+    } else {
+      const fallbackCodes = getFallbackFocusCodes(focusFilter);
+      const relaxedMatches = candidates.filter((entry) => entry.focusTags.some((tag) => fallbackCodes.includes(tag)));
+      if (relaxedMatches.length) {
+        ranked = relaxedMatches;
+        appliedFocusMode = "fallback";
+      } else {
+        ranked = candidates;
+        appliedFocusMode = "none";
+      }
+    }
+  }
 
   if (!ranked.length) {
     return renderError("当前筛选条件下暂无合适院校。建议放宽城市偏好、院校层级，或优先使用全省位次重新匹配。");
@@ -963,6 +997,19 @@ function rankSchools() {
 
   const topMajorDirections = summarizeMajorDirections(ranked, focusFilter, track.code);
   renderResults(province, track, studentScore, studentRank, ranked);
+
+  if (resultPanel.querySelector(".gaokao-result-head") && focusFilter && appliedFocusMode !== "direct") {
+    const note = document.createElement("div");
+    note.className = "gaokao-note-card";
+    note.innerHTML = appliedFocusMode === "fallback"
+      ? `<h3>方向匹配说明</h3><ul><li>当前数据中，所选细分方向暂无足够的精准命中院校。</li><li>系统已自动回退到同一大类下的相近方向，为你保留可参考的院校范围。</li></ul>`
+      : `<h3>方向匹配说明</h3><ul><li>当前数据中，所选方向暂无明确命中院校。</li><li>系统已先按位次与院校区间给出首轮学校范围，建议后续重点核查具体专业组。</li></ul>`;
+    const firstGroup = resultPanel.querySelector(".gaokao-group");
+    if (firstGroup) {
+      firstGroup.parentNode.insertBefore(note, firstGroup);
+    }
+  }
+
   void syncGaokaoQueryRecord({
     id: `gaokao_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     submittedAt: new Date().toISOString(),
