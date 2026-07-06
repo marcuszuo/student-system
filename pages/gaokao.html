@@ -11,7 +11,7 @@
       location.replace("https://" + location.host + location.pathname + location.search + location.hash);
     }
   </script>
-  <link rel="stylesheet" href="../assets/css/styles.css?v=20260706-gaokao-v10">
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260706-gaokao-v11">
 </head>
 <body>
   <main class="page">
@@ -19,6 +19,7 @@
       <p class="tag">MajorNavi · 高考志愿参考</p>
       <h1>国内大学志愿参考系统</h1>
       <p class="subtitle">输入省份、科类、分数与全省位次，系统将结合上一年院校投档区间，给出可重点关注的国内大学参考名单。</p>
+      <p class="subtitle gaokao-version-badge">当前页面版本：20260706-gaokao-v11</p>
       <p id="gaokao-coverage" class="subtitle brand-subtitle">当前正在加载数据覆盖范围…</p>
       <div class="tool-back-row">
         <a class="btn btn-ghost" href="../index.html">返回专业评估首页</a>
@@ -89,7 +90,7 @@
         </div>
 
         <div class="gaokao-form-actions">
-          <button type="button" id="gaokao-search-btn" class="btn btn-primary">开始匹配院校</button>
+          <button type="button" id="gaokao-search-btn" class="btn btn-primary" disabled aria-disabled="true">开始匹配院校</button>
           <button type="button" id="gaokao-reset-btn" class="btn btn-ghost">清空重填</button>
         </div>
         <p id="gaokao-required-hint" class="field-hint">请至少填写高考/模考分数或全省位次中的一项，建议优先填写全省位次。</p>
@@ -123,7 +124,7 @@
     window.GAOKAO_QUERY_API_BASE_URL = "https://api.majornavi.cn";
     window.GAOKAO_QUERY_INGEST_KEY = "3ee938df43c042796300cd54cc40cd19";
   </script>
-  <script src="../assets/js/gaokao_data.js?v=20260706-gaokao-v10"></script>
-  <script src="../assets/js/gaokao.js?v=20260706-gaokao-v10"></script>
+  <script src="../assets/js/gaokao_data.js?v=20260706-gaokao-v11"></script>
+  <script src="../assets/js/gaokao.js?v=20260706-gaokao-v11"></script>
 </body>
 </html>
