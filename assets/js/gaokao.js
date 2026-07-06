@@ -5,6 +5,7 @@ const scoreInput = document.getElementById("gaokao-score");
 const rankInput = document.getElementById("gaokao-rank");
 const cityInput = document.getElementById("gaokao-city");
 const tierSelect = document.getElementById("gaokao-tier");
+const focusGroupSelect = document.getElementById("gaokao-focus-group");
 const focusSelect = document.getElementById("gaokao-focus");
 const resultPanel = document.getElementById("gaokao-result");
 const searchBtn = document.getElementById("gaokao-search-btn");
@@ -12,6 +13,69 @@ const resetBtn = document.getElementById("gaokao-reset-btn");
 const coverageEl = document.getElementById("gaokao-coverage");
 const GAOKAO_QUERY_API_BASE_URL = String(window.GAOKAO_QUERY_API_BASE_URL || "").trim().replace(/\/+$/, "");
 const GAOKAO_QUERY_INGEST_KEY = String(window.GAOKAO_QUERY_INGEST_KEY || "").trim();
+
+const FOCUS_GROUPS = {
+  hydroenergy: {
+    label: "水利水电与能源",
+    children: [
+      { code: "hydroenergy", label: "水利水电与能源（综合）" },
+      { code: "hydropower", label: "水利水电工程" },
+      { code: "energypower", label: "能源动力与电力" }
+    ]
+  },
+  engineering: {
+    label: "工科技术",
+    children: [
+      { code: "engineering", label: "工科技术（综合）" },
+      { code: "computer", label: "计算机与人工智能" },
+      { code: "electronic", label: "电子信息与自动化" },
+      { code: "mechanical", label: "机械制造与材料" },
+      { code: "architecture", label: "建筑土木与环境" }
+    ]
+  },
+  medicine: {
+    label: "医学健康",
+    children: [
+      { code: "medicine", label: "医学健康（综合）" },
+      { code: "clinicalmedicine", label: "临床与口腔医学" },
+      { code: "pharmacy", label: "药学与医学技术" },
+      { code: "bioscience", label: "生物科学与农学" }
+    ]
+  },
+  business: {
+    label: "经管财经",
+    children: [
+      { code: "business", label: "经管财经（综合）" },
+      { code: "finance", label: "金融投资与经济学" },
+      { code: "accounting", label: "会计审计与财税" },
+      { code: "law", label: "法学与公共治理" }
+    ]
+  },
+  humanities: {
+    label: "人文社科",
+    children: [
+      { code: "humanities", label: "人文社科（综合）" },
+      { code: "language", label: "外语与国际传播" },
+      { code: "socialscience", label: "新闻传播与社会学" }
+    ]
+  },
+  education: {
+    label: "教育师范与心理",
+    children: [
+      { code: "education", label: "教育师范与心理（综合）" },
+      { code: "teacher", label: "师范教育" },
+      { code: "psychology", label: "心理学与应用心理" }
+    ]
+  },
+  media: {
+    label: "传媒设计与艺术",
+    children: [
+      { code: "media", label: "传媒设计与艺术（综合）" },
+      { code: "designart", label: "设计与数字媒体" },
+      { code: "broadcast", label: "新闻传播与影视表达" }
+    ]
+  }
+};
 
 const FOCUS_PROFILES = {
   engineering: {
@@ -49,6 +113,18 @@ const FOCUS_PROFILES = {
     reason: "当前更建议优先比较水利水电、能源动力与电力相关方向，再结合工程实践平台、行业区域资源和职业路径判断。",
     avoid: ["传媒设计艺术类", "人文语言类"],
     risk: "水利水电与能源方向建议重点核查行业区域性、工程实践强度、读研衔接和就业去向，避免只凭专业名称判断。"
+  },
+  hydropower: {
+    matcher: /(水利水电工程|水电工程|水工|水文与水资源|农业水利|港口航道)/,
+    reason: "当前更建议优先比较水利水电工程、水资源与工程治理相关方向，再结合区域行业资源、工程实践和项目平台判断。",
+    avoid: ["传媒设计艺术类", "人文语言类"],
+    risk: "水利水电工程方向具有明显行业和区域属性，建议重点核查工程实践平台、就业区域和后续深造路径。"
+  },
+  energypower: {
+    matcher: /(能源与动力|新能源|储能|电力|电气工程及其自动化|热能|核工程)/,
+    reason: "当前更建议优先比较能源动力、电力和新能源相关方向，再结合实验条件、行业景气度与就业去向判断。",
+    avoid: ["传媒设计艺术类", "人文语言类"],
+    risk: "能源动力与电力方向建议重点核查课程强度、工程训练要求和行业周期，不要只凭名字判断冷热。"
   },
   medicine: {
     matcher: /(医学|临床|护理|药学|健康|口腔|生物医|预防医学|中医学|医学技术)/,
@@ -97,6 +173,60 @@ const FOCUS_PROFILES = {
     reason: "当前更建议优先比较传媒、设计与艺术表达方向，再结合作品训练、项目机会和表达输出方式筛选。",
     avoid: ["工科技术类", "医学健康类"],
     risk: "传媒设计与艺术方向建议优先比较作品训练环境、行业资源和项目实践强度。"
+  },
+  clinicalmedicine: {
+    matcher: /(临床医学|口腔医学|儿科学|麻醉学|医学影像|预防医学|中医学)/,
+    reason: "当前更建议优先比较临床、口腔与核心医学培养方向，再结合培养年限、实习体系和职业资格要求判断。",
+    avoid: ["经管财经类", "传媒设计艺术类"],
+    risk: "临床与口腔医学培养周期长、职业门槛高，建议提前确认是否接受长期投入与执业路径。"
+  },
+  pharmacy: {
+    matcher: /(药学|药物制剂|医学检验|医学技术|康复治疗|护理学|生物医)/,
+    reason: "当前更建议优先比较药学、护理与医学技术类方向，再结合实习体系、就业场景和升学衔接判断。",
+    avoid: ["经管财经类", "传媒设计艺术类"],
+    risk: "药学与医学技术方向建议重点核查实习体系、执业要求和就业岗位差异。"
+  },
+  finance: {
+    matcher: /(金融|投资|经济学|国际经济与贸易|保险|统计|精算)/,
+    reason: "当前更建议优先比较金融、经济与投资相关方向，再结合数学要求、实习资源和就业路径筛选。",
+    avoid: ["建筑土木环境类", "医学健康类"],
+    risk: "金融投资与经济学方向建议继续区分偏研究、偏应用还是偏就业导向，避免笼统报考。"
+  },
+  accounting: {
+    matcher: /(会计|审计|财务管理|税务|财政学|资产评估)/,
+    reason: "当前更建议优先比较会计、审计与财税方向，再结合证书路径、实习资源和行业稳定性判断。",
+    avoid: ["建筑土木环境类", "医学健康类"],
+    risk: "会计审计与财税方向建议提前判断是否接受证书导向、细致规则训练和偏稳定的职业路径。"
+  },
+  socialscience: {
+    matcher: /(新闻|传播|社会学|政治学|哲学|历史|文化产业|国际传播)/,
+    reason: "当前更建议优先比较新闻传播与社会科学方向，再结合表达训练、平台资源和升学路径判断。",
+    avoid: ["工科技术类", "医学健康类"],
+    risk: "新闻传播与社会学方向需要继续核查院系平台、实践资源和升学去向，不能只看学校名称。"
+  },
+  teacher: {
+    matcher: /(师范|教育学|小学教育|学前教育|特殊教育|课程与教学)/,
+    reason: "当前更建议优先比较师范教育相关方向，再结合是否接受教师培养路径、实习要求与职业稳定性判断。",
+    avoid: ["工科技术类", "经管财经类"],
+    risk: "师范教育方向建议提前确认是否真正接受教师培养路径、实习安排与职业定位。"
+  },
+  psychology: {
+    matcher: /(心理学|应用心理|心理咨询)/,
+    reason: "当前更建议优先比较心理学与应用心理方向，再结合培养路径、读研要求和职业场景判断。",
+    avoid: ["工科技术类", "经管财经类"],
+    risk: "心理学方向通常对深造要求较高，建议提前确认是否接受较长培养周期和实践训练。"
+  },
+  designart: {
+    matcher: /(设计|数字媒体|视觉传达|环境设计|产品设计|动画|美术)/,
+    reason: "当前更建议优先比较设计、数字媒体与视觉表达方向，再结合作品训练环境和项目资源筛选。",
+    avoid: ["工科技术类", "医学健康类"],
+    risk: "设计与数字媒体方向建议重点比较作品训练环境、跨学科资源和行业项目机会。"
+  },
+  broadcast: {
+    matcher: /(新闻|传播|广播|电视|影视|戏剧|播音|主持|广告)/,
+    reason: "当前更建议优先比较新闻传播、影视表达与品牌传播方向，再结合实践平台和表达训练方式判断。",
+    avoid: ["工科技术类", "医学健康类"],
+    risk: "新闻传播与影视表达方向建议重点核查实践平台、项目资源和行业对口度。"
   }
 };
 
@@ -262,6 +392,42 @@ const SCHOOL_MAJOR_HINTS = {
     caution: "如果学生只是看中学校名气而非传播内容方向，后续匹配可能下降。"
   }
 };
+
+function populateFocusSubOptions() {
+  const groupCode = String(focusGroupSelect?.value || "").trim();
+  const selectedSub = String(focusSelect?.value || "").trim();
+  if (!focusSelect) return;
+
+  if (!groupCode || !FOCUS_GROUPS[groupCode]) {
+    focusSelect.innerHTML = '<option value="">请先选择大类</option>';
+    focusSelect.disabled = true;
+    return;
+  }
+
+  const options = FOCUS_GROUPS[groupCode].children || [];
+  focusSelect.innerHTML = [
+    '<option value="">全部细分方向</option>',
+    ...options.map((item) => `<option value="${item.code}">${item.label}</option>`)
+  ].join("");
+  focusSelect.disabled = false;
+
+  if (selectedSub && options.some((item) => item.code === selectedSub)) {
+    focusSelect.value = selectedSub;
+  }
+}
+
+function getEffectiveFocusCode() {
+  return String(focusSelect?.value || focusGroupSelect?.value || "").trim();
+}
+
+function getFocusDisplayLabel() {
+  const groupCode = String(focusGroupSelect?.value || "").trim();
+  const subCode = String(focusSelect?.value || "").trim();
+  const groupLabel = FOCUS_GROUPS[groupCode]?.label || "";
+  const subLabel = focusSelect?.options?.[focusSelect.selectedIndex]?.text || "";
+  if (groupLabel && subCode && subLabel) return `${groupLabel} / ${subLabel}`;
+  return groupLabel || subLabel || "未指定";
+}
 
 function escapeHtml(text) {
   return String(text || "")
@@ -663,7 +829,7 @@ function renderResults(province, track, studentScore, studentRank, ranked) {
 
   const cityKeyword = String(cityInput.value || "").trim();
   const tierFilter = String(tierSelect.value || "").trim();
-  const focusFilter = String(focusSelect.value || "").trim();
+  const focusFilter = getEffectiveFocusCode();
   const topMajorDirections = summarizeMajorDirections(ranked, focusFilter, track.code);
   const portfolioRisks = summarizePortfolioRisks(ranked, focusFilter, track.code);
   const portfolioCategoryAdvice = buildPortfolioCategoryAdvice(ranked, focusFilter, track.code);
@@ -685,7 +851,7 @@ function renderResults(province, track, studentScore, studentRank, ranked) {
         <span>位次：${studentRank ? escapeHtml(formatRank(studentRank)) : "未填"}</span>
         ${cityKeyword ? `<span>城市偏好：${escapeHtml(cityKeyword)}</span>` : ""}
         ${tierFilter ? `<span>层级筛选：${escapeHtml(tierFilter)}</span>` : ""}
-        ${focusFilter ? `<span>方向偏好：${escapeHtml(focusSelect.options[focusSelect.selectedIndex]?.text || "")}</span>` : ""}
+        ${focusFilter ? `<span>方向偏好：${escapeHtml(getFocusDisplayLabel())}</span>` : ""}
         <span>参考逻辑：上一年位次带估算</span>
       </div>
     </div>
@@ -760,7 +926,7 @@ function rankSchools() {
   const studentRank = Number(rankInput.value || 0);
   const cityKeyword = String(cityInput.value || "").trim().toLowerCase();
   const tierFilter = String(tierSelect.value || "").trim();
-  const focusFilter = String(focusSelect.value || "").trim();
+  const focusFilter = getEffectiveFocusCode();
 
   if (!province) return renderError("请先选择所在省份。");
   if (!track) return renderError("请先选择科类 / 选科方向。");
@@ -809,6 +975,9 @@ function rankSchools() {
     cityKeyword: cityInput.value.trim(),
     tierFilter,
     focusFilter,
+    focusGroup: String(focusGroupSelect?.value || "").trim(),
+    focusSub: String(focusSelect?.value || "").trim(),
+    focusLabel: getFocusDisplayLabel(),
     topMajorDirections,
     resultCount: ranked.length,
     reachCount: ranked.filter((item) => item.bucket === "reach").length,
@@ -832,7 +1001,9 @@ function resetForm() {
   rankInput.value = "";
   cityInput.value = "";
   tierSelect.value = "";
+  focusGroupSelect.value = "";
   focusSelect.value = "";
+  populateFocusSubOptions();
   resultPanel.innerHTML = `
     <div class="empty-state">
       <h2>等待生成结果</h2>
@@ -849,6 +1020,7 @@ function applyPreviewParams() {
   const rank = String(params.get("rank") || "").trim();
   const city = String(params.get("city") || "").trim();
   const tier = String(params.get("tier") || "").trim();
+  const focusGroup = String(params.get("focusGroup") || "").trim();
   const focus = String(params.get("focus") || "").trim();
 
   if (province && getProvince(province)) {
@@ -865,9 +1037,16 @@ function applyPreviewParams() {
   if (rank) rankInput.value = rank;
   if (city) cityInput.value = city;
   if (tier) tierSelect.value = tier;
+  if (focusGroup && FOCUS_GROUPS[focusGroup]) {
+    focusGroupSelect.value = focusGroup;
+  } else if (focus) {
+    const matchedGroup = Object.entries(FOCUS_GROUPS).find(([, group]) => group.children.some((item) => item.code === focus));
+    if (matchedGroup) focusGroupSelect.value = matchedGroup[0];
+  }
+  populateFocusSubOptions();
   if (focus) focusSelect.value = focus;
 
-  if (province || track || score || rank || city || tier || focus) {
+  if (province || track || score || rank || city || tier || focusGroup || focus) {
     rankSchools();
   }
 }
@@ -895,8 +1074,19 @@ resetBtn.addEventListener("click", resetForm);
   });
 });
 
+if (focusGroupSelect) {
+  focusGroupSelect.addEventListener("change", () => {
+    focusSelect.value = "";
+    populateFocusSubOptions();
+    if (resultPanel.querySelector(".gaokao-result-head")) {
+      rankSchools();
+    }
+  });
+}
+
 populateProvinceOptions();
 populateTrackOptions();
+populateFocusSubOptions();
 applyPreviewParams();
 
 if (coverageEl) {

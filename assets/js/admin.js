@@ -175,13 +175,38 @@ function normalizeTrackLabel(query) {
 function getFocusLabel(code) {
   const map = {
     engineering: "工科技术",
+    computer: "计算机与人工智能",
+    electronic: "电子信息与自动化",
+    mechanical: "机械制造与材料",
+    architecture: "建筑土木与环境",
+    hydroenergy: "水利水电与能源",
+    hydropower: "水利水电工程",
+    energypower: "能源动力与电力",
     medicine: "医学健康",
+    clinicalmedicine: "临床与口腔医学",
+    pharmacy: "药学与医学技术",
+    bioscience: "生物科学与农学",
     business: "经管财经",
+    finance: "金融投资与经济学",
+    accounting: "会计审计与财税",
+    law: "法学与公共治理",
     humanities: "人文社科",
-    education: "教育师范",
-    media: "传媒艺术"
+    language: "外语与国际传播",
+    socialscience: "新闻传播与社会学",
+    education: "教育师范与心理",
+    teacher: "师范教育",
+    psychology: "心理学与应用心理",
+    media: "传媒设计与艺术",
+    designart: "设计与数字媒体",
+    broadcast: "新闻传播与影视表达"
   };
   return map[String(code || "").trim()] || "未指定";
+}
+
+function getFocusDisplayText(item) {
+  const focusLabel = String(item?.focusLabel || "").trim();
+  if (focusLabel) return focusLabel;
+  return getFocusLabel(item?.focusFilter);
 }
 
 function countTopValues(items, selector, limit = 5) {
@@ -270,7 +295,7 @@ function renderGaokaoOverview() {
   const todayCount = items.filter((item) => String(item.submittedAt || "").startsWith(today)).length;
   const physicsCount = items.filter((item) => /(physics|理科|物理)/i.test(String(item.trackCode || item.track || ""))).length;
   const historyCount = items.filter((item) => /(history|文科|历史)/i.test(String(item.trackCode || item.track || ""))).length;
-  const engineeringCount = items.filter((item) => String(item.focusFilter || "") === "engineering").length;
+  const engineeringCount = items.filter((item) => String(item.focusGroup || item.focusFilter || "") === "engineering").length;
   const sevenDayStart = getDaysAgoStart(7);
   const thirtyDayStart = getDaysAgoStart(30);
   const sevenDayCount = items.filter((item) => new Date(item.submittedAt || 0) >= sevenDayStart).length;
@@ -287,7 +312,7 @@ function renderGaokaoOverview() {
   const topProvinces = countTopValues(items, (item) => item.province, 6);
   const topFocuses = countTopValues(
     items.filter((item) => String(item.focusFilter || "").trim()),
-    (item) => getFocusLabel(item.focusFilter),
+    (item) => getFocusDisplayText(item),
     6
   );
   const topSchools = countTopValues(flattenTopResults(items), (item) => item.name, 8);
@@ -333,7 +358,7 @@ function renderGaokaoList() {
             <span>${escapeHtml(formatDateTime(item.submittedAt))}</span>
           </div>
           <p>分数 ${escapeHtml(String(item.score || "-"))}，位次 ${escapeHtml(String(item.rank || "-"))}，结果 ${escapeHtml(String(item.resultCount || 0))} 所</p>
-          <p>筛选条件：${escapeHtml(item.cityKeyword || "不限城市")} / ${escapeHtml(item.tierFilter || "不限层级")} / ${escapeHtml(getFocusLabel(item.focusFilter))}</p>
+          <p>筛选条件：${escapeHtml(item.cityKeyword || "不限城市")} / ${escapeHtml(item.tierFilter || "不限层级")} / ${escapeHtml(getFocusDisplayText(item))}</p>
           <p>结果分布：冲 ${escapeHtml(String(item.reachCount || 0))}，稳 ${escapeHtml(String(item.steadyCount || 0))}，保 ${escapeHtml(String(item.safeCount || 0))}</p>
           ${Array.isArray(item.topResults) && item.topResults.length ? `
             <div class="advisor-tags advisor-tags-list">
@@ -888,7 +913,7 @@ function exportGaokaoQueries() {
       item.rank || "",
       item.cityKeyword || "",
       item.tierFilter || "",
-      getFocusLabel(item.focusFilter),
+      getFocusDisplayText(item),
       item.resultCount || 0,
       item.reachCount || 0,
       item.steadyCount || 0,

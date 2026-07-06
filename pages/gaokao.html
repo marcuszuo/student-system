@@ -11,7 +11,7 @@
       location.replace("https://" + location.host + location.pathname + location.search + location.hash);
     }
   </script>
-  <link rel="stylesheet" href="../assets/css/styles.css?v=20260706-gaokao-v9">
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260706-gaokao-v10">
 </head>
 <body>
   <main class="page">
@@ -68,23 +68,22 @@
             </select>
           </label>
           <label class="single-field">
-            <span>专业方向偏好（可选）</span>
-            <select id="gaokao-focus">
+            <span>专业方向大类（可选）</span>
+            <select id="gaokao-focus-group">
               <option value="">全部</option>
-              <option value="engineering">工科技术（综合）</option>
-              <option value="computer">计算机与人工智能</option>
-              <option value="electronic">电子信息与自动化</option>
-              <option value="mechanical">机械制造与材料</option>
-              <option value="architecture">建筑土木与环境</option>
               <option value="hydroenergy">水利水电与能源</option>
+              <option value="engineering">工科技术</option>
               <option value="medicine">医学健康</option>
-              <option value="bioscience">生物科学与农学</option>
               <option value="business">经管财经</option>
-              <option value="law">法学与公共治理</option>
               <option value="humanities">人文社科</option>
-              <option value="language">外语与国际传播</option>
               <option value="education">教育师范与心理</option>
               <option value="media">传媒设计与艺术</option>
+            </select>
+          </label>
+          <label class="single-field">
+            <span>细分方向（可选）</span>
+            <select id="gaokao-focus">
+              <option value="">请先选择大类</option>
             </select>
           </label>
         </div>
@@ -123,7 +122,7 @@
     window.GAOKAO_QUERY_API_BASE_URL = "https://api.majornavi.cn";
     window.GAOKAO_QUERY_INGEST_KEY = "3ee938df43c042796300cd54cc40cd19";
   </script>
-  <script src="../assets/js/gaokao_data.js?v=20260706-gaokao-v9"></script>
-  <script src="../assets/js/gaokao.js?v=20260706-gaokao-v9"></script>
+  <script src="../assets/js/gaokao_data.js?v=20260706-gaokao-v10"></script>
+  <script src="../assets/js/gaokao.js?v=20260706-gaokao-v10"></script>
 </body>
 </html>
