@@ -298,6 +298,16 @@ body {
   border-color: #d6b496;
 }
 
+.field-hint {
+  margin: -2px 0 16px;
+  color: #6f7f77;
+  font-size: 0.9rem;
+}
+
+.field-hint[data-tone="error"] {
+  color: #b15c3b;
+}
+
 .tool-back-row {
   margin-top: 18px;
 }
@@ -769,6 +779,14 @@ body {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: #fff;
   box-shadow: 0 12px 24px rgba(63, 108, 93, 0.2);
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .btn-ghost {

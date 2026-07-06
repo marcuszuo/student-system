@@ -11,6 +11,7 @@ const resultPanel = document.getElementById("gaokao-result");
 const searchBtn = document.getElementById("gaokao-search-btn");
 const resetBtn = document.getElementById("gaokao-reset-btn");
 const coverageEl = document.getElementById("gaokao-coverage");
+const requiredHintEl = document.getElementById("gaokao-required-hint");
 const GAOKAO_QUERY_API_BASE_URL = String(window.GAOKAO_QUERY_API_BASE_URL || "").trim().replace(/\/+$/, "");
 const GAOKAO_QUERY_INGEST_KEY = String(window.GAOKAO_QUERY_INGEST_KEY || "").trim();
 
@@ -796,6 +797,28 @@ function renderError(message) {
   `;
 }
 
+function hasRequiredAcademicInput() {
+  return Boolean(String(scoreInput?.value || "").trim() || String(rankInput?.value || "").trim());
+}
+
+function updateAcademicHint(tone = "neutral") {
+  if (!requiredHintEl) return;
+  requiredHintEl.dataset.tone = tone === "error" ? "error" : "neutral";
+  requiredHintEl.textContent = tone === "error"
+    ? "请先填写高考/模考分数或全省位次中的一项后，再开始匹配院校。"
+    : "请至少填写高考/模考分数或全省位次中的一项，建议优先填写全省位次。";
+}
+
+function updateSearchButtonState() {
+  const enabled = hasRequiredAcademicInput();
+  if (searchBtn) {
+    searchBtn.disabled = !enabled;
+    searchBtn.setAttribute("aria-disabled", enabled ? "false" : "true");
+    searchBtn.title = enabled ? "" : "请先填写分数或全省位次";
+  }
+  if (enabled) updateAcademicHint("neutral");
+}
+
 function renderGroup(title, intro, items, focusCode, trackCode) {
   if (!items.length) {
     return `
@@ -985,7 +1008,9 @@ function rankSchools() {
   if (!province) return renderError("请先选择所在省份。");
   if (!track) return renderError("请先选择科类 / 选科方向。");
   if (!studentScore && !studentRank) {
-    return renderError("请至少填写分数或全省位次中的一项，建议优先填写全省位次。");
+    updateAcademicHint("error");
+    scoreInput?.focus();
+    return;
   }
 
   const candidates = (track.schools || [])
@@ -1090,6 +1115,8 @@ function resetForm() {
   focusGroupSelect.value = "";
   focusSelect.value = "";
   populateFocusSubOptions();
+  updateAcademicHint("neutral");
+  updateSearchButtonState();
   resultPanel.innerHTML = `
     <div class="empty-state">
       <h2>等待生成结果</h2>
@@ -1149,7 +1176,18 @@ resetBtn.addEventListener("click", resetForm);
   input.addEventListener("keydown", (event) => {
     if (event.key !== "Enter") return;
     event.preventDefault();
+    if (!hasRequiredAcademicInput()) {
+      updateAcademicHint("error");
+      scoreInput?.focus();
+      return;
+    }
     rankSchools();
+  });
+});
+
+[scoreInput, rankInput].forEach((input) => {
+  input.addEventListener("input", () => {
+    updateSearchButtonState();
   });
 });
 
@@ -1184,6 +1222,7 @@ populateProvinceOptions();
 populateTrackOptions();
 populateFocusSubOptions();
 applyPreviewParams();
+updateSearchButtonState();
 
 if (coverageEl) {
   const coverage = getCoverageStats();
