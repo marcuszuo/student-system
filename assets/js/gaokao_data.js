@@ -175,12 +175,12 @@ window.GAOKAO_REFERENCE_DATA = {
           schools: [
             { name: "南昌大学", city: "南昌", tier: "211", year: 2025, minScore: 604, minRank: 18400, note: "本省综合类头部院校，医学与工科都可关注" },
             { name: "江西财经大学", city: "南昌", tier: "省属重点", year: 2025, minScore: 588, minRank: 32100, note: "财经管理方向热度较高" },
-            { name: "华东交通大学", city: "南昌", tier: "省属重点", year: 2025, minScore: 576, minRank: 45200, note: "交通、土木、自动化等工程方向较强" },
+            { name: "华东交通大学", city: "南昌", tier: "省属重点", year: 2025, minScore: 576, minRank: 45200, note: "交通、土木、电气与工程方向较强，可关注轨道与电力应用培养" },
             { name: "江西师范大学", city: "南昌", tier: "省属重点", year: 2025, minScore: 571, minRank: 51100, note: "教育、人文与综合培养兼顾" },
             { name: "江西理工大学", city: "赣州", tier: "省属重点", year: 2025, minScore: 565, minRank: 60200, note: "材料、冶金、机械与工程应用方向可关注" },
-            { name: "南昌航空大学", city: "南昌", tier: "省属重点", year: 2025, minScore: 559, minRank: 68100, note: "航空、电子、测控与工科训练较强" },
-            { name: "东华理工大学", city: "南昌", tier: "省属重点", year: 2025, minScore: 552, minRank: 78600, note: "核技术、地学与工程应用方向可关注" },
-            { name: "南昌工程学院", city: "南昌", tier: "省属重点", year: 2025, minScore: 545, minRank: 90200, note: "适合作为稳妥与保底结合参考院校" }
+            { name: "南昌航空大学", city: "南昌", tier: "省属重点", year: 2025, minScore: 559, minRank: 68100, note: "航空、电子、测控、电气与工科训练较强" },
+            { name: "东华理工大学", city: "南昌", tier: "省属重点", year: 2025, minScore: 552, minRank: 78600, note: "核技术、地学、水资源与工程应用方向可关注" },
+            { name: "南昌工程学院", city: "南昌", tier: "省属重点", year: 2025, minScore: 545, minRank: 90200, note: "水利水电、电气工程与工程管理方向可重点关注" }
           ]
         },
         {

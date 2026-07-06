@@ -405,9 +405,22 @@ function populateFocusSubOptions() {
   }
 
   const options = FOCUS_GROUPS[groupCode].children || [];
+  const currentSchools = (() => {
+    const province = getProvince(provinceSelect?.value);
+    const track = getTrack(province, trackSelect?.value);
+    return track?.schools || [];
+  })();
   focusSelect.innerHTML = [
     '<option value="">全部细分方向</option>',
-    ...options.map((item) => `<option value="${item.code}">${item.label}</option>`)
+    ...options.map((item) => {
+      const count = currentSchools.filter((school) => getSchoolFocusTags(school).includes(item.code)).length;
+      const suffix = count === 0
+        ? "（当前数据将自动扩展到相近方向）"
+        : count === 1
+          ? "（当前数据较少）"
+          : "";
+      return `<option value="${item.code}">${item.label}${suffix}</option>`;
+    })
   ].join("");
   focusSelect.disabled = false;
 
@@ -1100,6 +1113,7 @@ function applyPreviewParams() {
 
 provinceSelect.addEventListener("change", () => {
   populateTrackOptions();
+  populateFocusSubOptions();
   resetForm();
 });
 
@@ -1113,13 +1127,22 @@ resetBtn.addEventListener("click", resetForm);
   });
 });
 
-[tierSelect, trackSelect, focusSelect].forEach((input) => {
+[tierSelect, focusSelect].forEach((input) => {
   input.addEventListener("change", () => {
     if (resultPanel.querySelector(".gaokao-result-head")) {
       rankSchools();
     }
   });
 });
+
+if (trackSelect) {
+  trackSelect.addEventListener("change", () => {
+    populateFocusSubOptions();
+    if (resultPanel.querySelector(".gaokao-result-head")) {
+      rankSchools();
+    }
+  });
+}
 
 if (focusGroupSelect) {
   focusGroupSelect.addEventListener("change", () => {
