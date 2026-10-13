@@ -91,7 +91,7 @@ body {
 }
 
 .tool-entry-card h2 {
-  margin: 12px 0 10px;
+  margin: 0 0 10px;
   font-size: 1.35rem;
 }
 
@@ -1732,6 +1732,38 @@ body {
   line-height: 1.7;
 }
 
+.career-depth-panel {
+  display: grid;
+  grid-template-columns: 1.2fr 0.9fr 1.1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.career-depth-card {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(128, 156, 136, 0.18);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 10px 24px rgba(86, 117, 97, 0.05);
+}
+
+.career-depth-card-primary {
+  background: linear-gradient(180deg, #eaf6ef 0%, #fffdf8 100%);
+}
+
+.career-depth-card strong {
+  display: block;
+  color: var(--ink);
+  font-size: 1.04rem;
+  line-height: 1.5;
+}
+
+.career-depth-card p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.68;
+}
+
 .career-highlight-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2254,6 +2286,7 @@ body {
   .parent-brief-card,
   .report-overview-card,
   .report-note-card,
+  .career-depth-card,
   .career-axis-item,
   .career-analysis-card,
   .development-insight-card,
@@ -2327,6 +2360,7 @@ body {
   }
 
   .tool-hub,
+  .career-depth-panel,
   .gaokao-form-grid,
   .gaokao-summary-grid,
   .gaokao-explain-grid,

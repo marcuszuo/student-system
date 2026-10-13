@@ -23,7 +23,15 @@ const OFFICIAL_DATA = {
     "value.wealth",
     "value.influence",
     "value.responsibility",
-    "value.security"
+    "value.security",
+    "skill.data",
+    "skill.making",
+    "skill.expression",
+    "skill.coordination",
+    "value.autonomy",
+    "value.creativity",
+    "value.service",
+    "env.structure"
   ],
   "questions": [
     {
@@ -3527,6 +3535,286 @@ const OFFICIAL_DATA = {
           "dim": "value.influence"
         }
       ]
+    },
+    {
+      "id": "F01",
+      "module": "F",
+      "text": "如果现在给你一个真实项目，你最有信心先承担哪类任务：",
+      "tags": ["skill-confidence", "scenario"],
+      "options": [
+        {
+          "key": "A",
+          "text": "整理数据、找规律，并用结果支持判断",
+          "dim": "skill.data"
+        },
+        {
+          "key": "B",
+          "text": "动手搭建、调试或把方案做成可运行的东西",
+          "dim": "skill.making"
+        },
+        {
+          "key": "C",
+          "text": "写清楚观点、做展示或把复杂内容讲明白",
+          "dim": "skill.expression"
+        },
+        {
+          "key": "D",
+          "text": "协调分工、推进进度并处理沟通问题",
+          "dim": "skill.coordination"
+        }
+      ]
+    },
+    {
+      "id": "F02",
+      "module": "F",
+      "text": "面对一个开放问题，你更愿意用哪种方式证明自己能做好：",
+      "tags": ["skill-confidence"],
+      "options": [
+        {
+          "key": "A",
+          "text": "用数据、图表或证据把判断讲清楚",
+          "dim": "skill.data"
+        },
+        {
+          "key": "B",
+          "text": "做出原型、样品或可验证的小成果",
+          "dim": "skill.making"
+        },
+        {
+          "key": "C",
+          "text": "写一份有说服力的方案或说明",
+          "dim": "skill.expression"
+        },
+        {
+          "key": "D",
+          "text": "组织讨论，让不同角色形成一致行动",
+          "dim": "skill.coordination"
+        }
+      ]
+    },
+    {
+      "id": "F03",
+      "module": "F",
+      "text": "如果未来工作每天都要重复一种能力，你更能接受：",
+      "tags": ["skill-confidence", "work-values"],
+      "options": [
+        {
+          "key": "A",
+          "text": "持续分析数字、资料和趋势",
+          "dim": "skill.data"
+        },
+        {
+          "key": "B",
+          "text": "持续解决设备、系统、工具或流程问题",
+          "dim": "skill.making"
+        },
+        {
+          "key": "C",
+          "text": "持续表达观点、写作、汇报或沟通方案",
+          "dim": "skill.expression"
+        },
+        {
+          "key": "D",
+          "text": "持续连接人、资源和任务，推动事情完成",
+          "dim": "skill.coordination"
+        }
+      ]
+    },
+    {
+      "id": "F04",
+      "module": "F",
+      "text": "你更希望未来工作给你的成就感来自：",
+      "tags": ["work-values"],
+      "options": [
+        {
+          "key": "A",
+          "text": "有较大自主空间，可以自己决定方法和节奏",
+          "dim": "value.autonomy"
+        },
+        {
+          "key": "B",
+          "text": "能持续产生新想法、新作品或新方案",
+          "dim": "value.creativity"
+        },
+        {
+          "key": "C",
+          "text": "能实际帮助别人，改善某类人的处境",
+          "dim": "value.service"
+        },
+        {
+          "key": "D",
+          "text": "有清晰标准、稳定路径和可预期成长",
+          "dim": "env.structure"
+        }
+      ]
+    },
+    {
+      "id": "F05",
+      "module": "F",
+      "text": "如果一个专业未来出路不错，但学习方式与你偏好不同，你最在意：",
+      "tags": ["work-values", "scenario"],
+      "options": [
+        {
+          "key": "A",
+          "text": "是否保留足够自主选择和探索空间",
+          "dim": "value.autonomy"
+        },
+        {
+          "key": "B",
+          "text": "是否允许创意表达和个性化产出",
+          "dim": "value.creativity"
+        },
+        {
+          "key": "C",
+          "text": "是否能看到明确的社会价值或助人意义",
+          "dim": "value.service"
+        },
+        {
+          "key": "D",
+          "text": "是否有清晰课程路径、评价标准和职业通道",
+          "dim": "env.structure"
+        }
+      ]
+    },
+    {
+      "id": "F06",
+      "module": "F",
+      "text": "你更容易长期投入的培养环境是：",
+      "tags": ["environment-fit"],
+      "options": [
+        {
+          "key": "A",
+          "text": "可以自己设定研究问题或项目方向",
+          "dim": "value.autonomy"
+        },
+        {
+          "key": "B",
+          "text": "鼓励创新表达、作品产出和多方案尝试",
+          "dim": "value.creativity"
+        },
+        {
+          "key": "C",
+          "text": "强调服务对象、真实需求和长期责任",
+          "dim": "value.service"
+        },
+        {
+          "key": "D",
+          "text": "课程安排明确、训练步骤清楚、反馈稳定",
+          "dim": "env.structure"
+        }
+      ]
+    },
+    {
+      "id": "F07",
+      "module": "F",
+      "text": "如果需要补强一个短板，你最愿意优先训练：",
+      "tags": ["skill-confidence"],
+      "options": [
+        {
+          "key": "A",
+          "text": "数据处理、量化分析和证据判断",
+          "dim": "skill.data"
+        },
+        {
+          "key": "B",
+          "text": "动手实践、系统调试和工具使用",
+          "dim": "skill.making"
+        },
+        {
+          "key": "C",
+          "text": "写作表达、展示汇报和观点说服",
+          "dim": "skill.expression"
+        },
+        {
+          "key": "D",
+          "text": "组织协调、团队推进和资源整合",
+          "dim": "skill.coordination"
+        }
+      ]
+    },
+    {
+      "id": "F08",
+      "module": "F",
+      "text": "你判断一个方向是否“适合自己”时，最想确认：",
+      "tags": ["work-values", "scenario"],
+      "options": [
+        {
+          "key": "A",
+          "text": "未来是否能拥有独立判断和自主发展空间",
+          "dim": "value.autonomy"
+        },
+        {
+          "key": "B",
+          "text": "未来是否能持续创造新内容、新方案或新体验",
+          "dim": "value.creativity"
+        },
+        {
+          "key": "C",
+          "text": "未来是否能对具体的人或社会问题产生帮助",
+          "dim": "value.service"
+        },
+        {
+          "key": "D",
+          "text": "未来是否有清楚的训练路径和稳定成长预期",
+          "dim": "env.structure"
+        }
+      ]
+    },
+    {
+      "id": "F09",
+      "module": "F",
+      "text": "如果你要用一周完成一个成果，你更愿意交付：",
+      "tags": ["skill-confidence", "scenario"],
+      "options": [
+        {
+          "key": "A",
+          "text": "一份数据分析或调研结论",
+          "dim": "skill.data"
+        },
+        {
+          "key": "B",
+          "text": "一个可操作的模型、装置、程序或流程",
+          "dim": "skill.making"
+        },
+        {
+          "key": "C",
+          "text": "一篇文章、一份演示或一套传播内容",
+          "dim": "skill.expression"
+        },
+        {
+          "key": "D",
+          "text": "一个被团队认可并推进起来的执行方案",
+          "dim": "skill.coordination"
+        }
+      ]
+    },
+    {
+      "id": "F10",
+      "module": "F",
+      "text": "当一个任务没有标准答案时，你更希望：",
+      "tags": ["environment-fit", "work-values"],
+      "options": [
+        {
+          "key": "A",
+          "text": "给我足够空间，让我自己找到路径",
+          "dim": "value.autonomy"
+        },
+        {
+          "key": "B",
+          "text": "允许大胆尝试，把新想法做出来",
+          "dim": "value.creativity"
+        },
+        {
+          "key": "C",
+          "text": "先明确真实对象和实际需求，再决定怎么做",
+          "dim": "value.service"
+        },
+        {
+          "key": "D",
+          "text": "提供基本框架、评价标准和阶段反馈",
+          "dim": "env.structure"
+        }
+      ]
     }
   ],
   "dimensions": [
@@ -3673,6 +3961,54 @@ const OFFICIAL_DATA = {
       "name": "安全感偏好",
       "strengthText": "安全感与确定性需求较强，适合稳定行业与清晰路径。",
       "riskText": "对确定性需求偏低，稳定路径可能不够刺激。"
+    },
+    {
+      "key": "skill.data",
+      "name": "数据分析信心",
+      "strengthText": "对数据、证据和量化判断较有信心，适合分析密集型任务。",
+      "riskText": "数据分析信心偏弱，量化要求高的专业需要提前补强。"
+    },
+    {
+      "key": "skill.making",
+      "name": "实作交付信心",
+      "strengthText": "对动手搭建、调试和交付成果较有信心，适合项目实践型训练。",
+      "riskText": "实作交付信心偏弱，工程、实验或产品型路径需要更多体验验证。"
+    },
+    {
+      "key": "skill.expression",
+      "name": "表达呈现信心",
+      "strengthText": "对写作、展示和观点表达较有信心，适合表达与传播密集型任务。",
+      "riskText": "表达呈现信心偏弱，强写作、强展示或强说服场景可能更消耗。"
+    },
+    {
+      "key": "skill.coordination",
+      "name": "组织协调信心",
+      "strengthText": "对团队推进、资源协调和沟通连接较有信心，适合协作密集型任务。",
+      "riskText": "组织协调信心偏弱，强协作、强推进岗位需要逐步训练。"
+    },
+    {
+      "key": "value.autonomy",
+      "name": "自主发展偏好",
+      "strengthText": "重视自主空间和独立判断，适合保留探索余地的发展路径。",
+      "riskText": "自主发展偏好偏低，过度开放和边界模糊的环境可能带来压力。"
+    },
+    {
+      "key": "value.creativity",
+      "name": "创造产出偏好",
+      "strengthText": "重视新想法、新作品和创造性产出，适合创新表达和方案生成场景。",
+      "riskText": "创造产出偏好偏低，强创意驱动路径可能缺少长期兴奋感。"
+    },
+    {
+      "key": "value.service",
+      "name": "服务助人偏好",
+      "strengthText": "重视帮助具体对象和解决真实需求，适合教育、医学、心理与公共服务相关方向。",
+      "riskText": "服务助人偏好偏低，强助人导向路径可能更难获得稳定认同。"
+    },
+    {
+      "key": "env.structure",
+      "name": "结构化环境偏好",
+      "strengthText": "偏好清晰路径、明确标准和稳定反馈，适合训练体系成熟的专业环境。",
+      "riskText": "结构化环境偏好偏低，过度规范和流程固定的环境可能限制投入感。"
     }
   ],
   "majors": [

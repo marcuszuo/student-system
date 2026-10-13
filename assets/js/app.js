@@ -3,7 +3,8 @@ const MODULE_META = {
   B: { order: 2, label: "兴趣驱动", tags: ["motivation", "interest-drive"], intent: "兴趣来源与行动驱动力" },
   C: { order: 3, label: "认知风格", tags: ["cognition", "thinking-style"], intent: "信息处理与问题判断方式" },
   D: { order: 4, label: "抗压韧性", tags: ["resilience", "stress-response"], intent: "压力反应与恢复方式" },
-  E: { order: 5, label: "价值偏好", tags: ["values", "decision-bias"], intent: "结果取向与决策偏好" }
+  E: { order: 5, label: "价值偏好", tags: ["values", "decision-bias"], intent: "结果取向与决策偏好" },
+  F: { order: 6, label: "职业倾向深化", tags: ["career-depth", "skill-confidence", "work-values"], intent: "技能信心、工作价值观与任务环境偏好" }
 };
 
 function normalizeQuestion(question) {
@@ -89,12 +90,46 @@ const REPORT_API_BASE_URL = String(window.REPORT_API_BASE_URL || "").trim().repl
 const REPORT_INGEST_KEY = String(window.REPORT_INGEST_KEY || "").trim();
 const ADMIN_DASHBOARD_PATH = String(window.ADMIN_DASHBOARD_PATH || "./pages/admin.html").trim() || "./pages/admin.html";
 const DEFAULT_MODE = "full";
-const STANDARD_CORE_LIMITS = { A: 12, B: 12, C: 12, D: 10, E: 8 };
+const STANDARD_CORE_LIMITS = { A: 12, B: 12, C: 12, D: 10, E: 8, F: 6 };
 const STANDARD_CALIBRATION_COUNT = 12;
-const FULL_CORE_LIMITS = { A: 18, B: 18, C: 18, D: 14, E: 12 };
+const FULL_CORE_LIMITS = { A: 18, B: 18, C: 18, D: 14, E: 12, F: 10 };
 const FULL_CALIBRATION_COUNT = 18;
 const FOLLOW_UP_QUESTION_COUNT = 4;
 const FOLLOW_UP_GAP_THRESHOLD = 3;
+
+const CAREER_DEPTH_DIMS = [
+  "skill.data",
+  "skill.making",
+  "skill.expression",
+  "skill.coordination",
+  "value.autonomy",
+  "value.creativity",
+  "value.service",
+  "env.structure"
+];
+
+const MATCH_DIMENSION_WEIGHTS = Object.fromEntries(
+  CAREER_DEPTH_DIMS.map((dim) => [dim, 0.62])
+);
+const CAREER_DEPTH_DEFAULTED_FLAG = "__careerDepthDefaulted";
+
+function withCareerDepthDefaults(score = {}) {
+  const normalized = { ...score };
+  let defaulted = false;
+  CAREER_DEPTH_DIMS.forEach((dim) => {
+    if (typeof normalized[dim] !== "number") {
+      normalized[dim] = 0.45;
+      defaulted = true;
+    }
+  });
+  if (defaulted) {
+    Object.defineProperty(normalized, CAREER_DEPTH_DEFAULTED_FLAG, {
+      value: true,
+      enumerable: false
+    });
+  }
+  return normalized;
+}
 
 const MODE_CONFIG = {
   standard: { label: "快速预评估" },
@@ -1226,10 +1261,13 @@ function applySubjectWeight(baseScore) {
   studentProfile = readStudentProfile();
   publicSubjectScores = readPublicSubjectScores();
   internationalProfile = readInternationalProfile();
-  if (studentProfile.type === "international") {
-    return applyInternationalSubjectWeight(baseScore, internationalProfile);
-  }
-  return applyPublicSubjectWeight(baseScore, publicSubjectScores);
+  const weighted = studentProfile.type === "international"
+    ? applyInternationalSubjectWeight(baseScore, internationalProfile)
+    : applyPublicSubjectWeight(baseScore, publicSubjectScores);
+  return {
+    ...weighted,
+    score: withCareerDepthDefaults(weighted.score)
+  };
 }
 
 function getStudentTypeLabel(type) {
@@ -1278,20 +1316,112 @@ function calculateStudentVector(answerMap) {
   if (possibleCount["risk.stability"] === 0) {
     score["risk.stability"] = score["value.security"];
   }
+  let careerDepthDefaulted = false;
+  CAREER_DEPTH_DIMS.forEach((dim) => {
+    if (possibleCount[dim] === 0) {
+      score[dim] = 0.45;
+      careerDepthDefaulted = true;
+    }
+  });
+  if (careerDepthDefaulted) {
+    Object.defineProperty(score, CAREER_DEPTH_DEFAULTED_FLAG, {
+      value: true,
+      enumerable: false
+    });
+  }
 
   return { score, hitCount, possibleCount };
 }
 
-function squaredDistance(studentScore, majorVector) {
+function inferCareerDepthTarget(major, dim) {
+  const category = major?.category || "";
+  const name = major?.name || "";
+  const isEngineering = category.includes("工学") || /计算机|软件|电子|电气|自动化|机械/.test(name);
+  const isScience = category.includes("理学") || /数据|数学|统计|生物/.test(name);
+  const isBusiness = category.includes("经济") || category.includes("管理") || /金融|财务|市场|工商|人力/.test(name);
+  const isHumanities = category.includes("文学") || category.includes("法学") || /新闻|传播|法学/.test(name);
+  const isService = category.includes("教育") || category.includes("医学") || /心理|教育|临床|医学|公共/.test(name);
+
+  const base = {
+    "skill.data": 0.45,
+    "skill.making": 0.45,
+    "skill.expression": 0.45,
+    "skill.coordination": 0.45,
+    "value.autonomy": 0.45,
+    "value.creativity": 0.45,
+    "value.service": 0.45,
+    "env.structure": 0.45
+  };
+
+  if (isEngineering) {
+    Object.assign(base, {
+      "skill.data": 0.72,
+      "skill.making": 0.78,
+      "skill.coordination": 0.58,
+      "env.structure": 0.68
+    });
+  }
+  if (isScience) {
+    Object.assign(base, {
+      "skill.data": 0.78,
+      "skill.making": Math.max(base["skill.making"], 0.58),
+      "value.autonomy": 0.62,
+      "env.structure": 0.62
+    });
+  }
+  if (isBusiness) {
+    Object.assign(base, {
+      "skill.data": 0.68,
+      "skill.expression": 0.58,
+      "skill.coordination": 0.72,
+      "value.autonomy": 0.62,
+      "env.structure": 0.58
+    });
+  }
+  if (isHumanities) {
+    Object.assign(base, {
+      "skill.expression": 0.78,
+      "skill.coordination": 0.58,
+      "value.creativity": 0.66,
+      "value.autonomy": 0.58
+    });
+  }
+  if (isService) {
+    Object.assign(base, {
+      "skill.expression": Math.max(base["skill.expression"], 0.58),
+      "skill.coordination": 0.76,
+      "value.service": 0.82,
+      "env.structure": 0.66
+    });
+  }
+
+  return base[dim] ?? 0.45;
+}
+
+function getMajorVectorValue(major, dim) {
+  if (typeof major?.vector?.[dim] === "number") {
+    return major.vector[dim];
+  }
+  if (CAREER_DEPTH_DIMS.includes(dim)) {
+    return inferCareerDepthTarget(major, dim);
+  }
+  return 0;
+}
+
+function squaredDistance(studentScore, major) {
   return dimensionKeys.reduce((sum, dim) => {
-    const diff = (studentScore[dim] || 0) - (majorVector[dim] || 0);
-    return sum + diff * diff;
+    if (studentScore?.[CAREER_DEPTH_DEFAULTED_FLAG] && CAREER_DEPTH_DIMS.includes(dim)) {
+      return sum;
+    }
+    const diff = (studentScore[dim] || 0) - getMajorVectorValue(major, dim);
+    const weight = MATCH_DIMENSION_WEIGHTS[dim] || 1;
+    return sum + diff * diff * weight;
   }, 0);
 }
 
 function rankMajors(studentScore) {
   const withDistance = majors.map((major, idx) => {
-    const dist = squaredDistance(studentScore, major.vector);
+    const dist = squaredDistance(studentScore, major);
     return { ...major, _dist: dist, _idx: idx };
   });
 
@@ -1406,7 +1536,7 @@ function rankSchoolMajors(studentScore, rawText) {
     return { inputCount: names.length, names, matchedCount: 0, unmatchedCount: names.length, ranked: [] };
   }
   const ranked = profiles.map((major, idx) => {
-    const dist = squaredDistance(studentScore, major.vector);
+    const dist = squaredDistance(studentScore, major);
     return { ...major, _dist: dist, _idx: idx };
   });
   const distances = ranked.map((x) => x._dist);
@@ -1684,6 +1814,7 @@ function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoo
   const directionRecommendations = buildDirectionRecommendations(rankedMajors, studentVector.score);
   const topTraits = getTopDimensions(studentVector.score, 5);
   const careerAnalysis = buildCareerDevelopmentAnalysis(studentVector.score, rankedMajors);
+  const careerDepthProfile = buildCareerDepthProfile(studentVector.score, rankedMajors);
   const developmentInsights = buildDevelopmentInsights(rankedMajors, studentVector.score);
   const advisorTags = buildAdvisorTags(studentVector.score, rankedMajors);
   const primaryDirection = directionRecommendations[0];
@@ -1715,6 +1846,7 @@ function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoo
     },
     careerAnalysis: {
       ...careerAnalysis,
+      depthProfile: careerDepthProfile,
       axes: buildCareerStyleAxes(studentVector.score)
     },
     advisorTags,
@@ -1975,6 +2107,65 @@ function buildCareerDevelopmentAnalysis(studentScore, rankedMajors = []) {
   };
 }
 
+function getCareerDepthHighlights(studentScore) {
+  return CAREER_DEPTH_DIMS
+    .map((dim) => ({
+      dim,
+      label: dimensionNameMap[dim] || dim,
+      score: Math.round((studentScore[dim] || 0) * 100)
+    }))
+    .sort((a, b) => b.score - a.score);
+}
+
+function buildCareerDepthProfile(studentScore, rankedMajors = []) {
+  const highlights = getCareerDepthHighlights(studentScore);
+  const topHighlights = highlights.slice(0, 3);
+  const lowHighlights = highlights.slice(-2).reverse();
+  const topMajor = rankedMajors[0];
+  const majorTargets = CAREER_DEPTH_DIMS
+    .map((dim) => ({
+      dim,
+      label: dimensionNameMap[dim] || dim,
+      student: Math.round((studentScore[dim] || 0) * 100),
+      target: Math.round(getMajorVectorValue(topMajor, dim) * 100)
+    }))
+    .sort((a, b) => Math.max(0, b.target - b.student) - Math.max(0, a.target - a.student));
+  const biggestGap = majorTargets[0];
+  const skillConfidence = Math.round(average([
+    studentScore["skill.data"] || 0,
+    studentScore["skill.making"] || 0,
+    studentScore["skill.expression"] || 0,
+    studentScore["skill.coordination"] || 0
+  ]) * 100);
+  const workValueClarity = Math.round(average([
+    studentScore["value.autonomy"] || 0,
+    studentScore["value.creativity"] || 0,
+    studentScore["value.service"] || 0,
+    studentScore["env.structure"] || 0
+  ]) * 100);
+  const interestTop = getHollandCode(studentScore);
+  const topText = topHighlights.map((item) => `${item.label}${item.score}分`).join("、") || "暂未形成明显优势";
+  const lowText = lowHighlights.map((item) => `${item.label}${item.score}分`).join("、") || "暂无明显短板";
+  const gapText = biggestGap && biggestGap.target >= 58 && biggestGap.target - biggestGap.student >= 8
+    ? `${topMajor?.name || "首选方向"} 对 ${biggestGap.label} 的要求约为 ${biggestGap.target} 分，当前画像为 ${biggestGap.student} 分，建议通过课程、项目或真实任务继续验证。`
+    : `${topMajor?.name || "首选方向"} 与当前技能信心和价值偏好整体未见明显缺口，后续可通过真实课程和项目体验继续确认稳定性。`;
+
+  return {
+    topText,
+    lowText,
+    gapText,
+    skillConfidence,
+    workValueClarity,
+    interestTop,
+    consistencyLabel: skillConfidence >= 62 && workValueClarity >= 62
+      ? "兴趣、技能信心与价值偏好较为一致"
+      : "建议继续验证兴趣与真实任务承受度",
+    consistencySummary: skillConfidence >= 62 && workValueClarity >= 62
+      ? "学生不仅表现出方向偏好，也具备一定任务信心与价值认同，后续可进入更具体的专业/课程比较。"
+      : "当前兴趣方向仍需通过任务体验、作品产出或项目训练来验证，避免只凭喜欢或外部印象做决定。"
+  };
+}
+
 function buildDevelopmentInsights(rankedMajors, studentScore) {
   const direction = buildDirectionRecommendations(rankedMajors, studentScore)[0];
   const insights = getReportDirectionInsights(rankedMajors, studentScore);
@@ -2106,6 +2297,14 @@ function buildPersonaPreviewVector(base = {}) {
     "value.influence": 0.45,
     "value.responsibility": 0.45,
     "value.security": 0.45,
+    "skill.data": 0.45,
+    "skill.making": 0.45,
+    "skill.expression": 0.45,
+    "skill.coordination": 0.45,
+    "value.autonomy": 0.45,
+    "value.creativity": 0.45,
+    "value.service": 0.45,
+    "env.structure": 0.45,
     ...base
   };
 }
@@ -2125,7 +2324,16 @@ function getPreviewPersona() {
         "cognition.system": 0.84,
         "ability.math": 0.88,
         "ability.focus": 0.8,
-        "risk.pressure": 0.72
+        "risk.pressure": 0.72,
+        "value.wealth": 0.68,
+        "skill.data": 0.74,
+        "skill.making": 0.76,
+        "skill.expression": 0.48,
+        "skill.coordination": 0.56,
+        "value.autonomy": 0.62,
+        "value.creativity": 0.5,
+        "value.service": 0.42,
+        "env.structure": 0.66
       })
     },
     creative: {
@@ -2140,7 +2348,12 @@ function getPreviewPersona() {
         "cognition.verbal": 0.84,
         "ability.writing": 0.88,
         "ability.comm": 0.8,
-        "value.influence": 0.76
+        "value.influence": 0.76,
+        "skill.expression": 0.82,
+        "skill.coordination": 0.68,
+        "value.creativity": 0.86,
+        "value.autonomy": 0.64,
+        "env.structure": 0.42
       })
     }
   };
@@ -2306,6 +2519,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
   const radarProfile = buildRadarProfile(studentVector.score);
   const hollandCode = getHollandCode(studentVector.score);
   const careerAnalysis = buildCareerDevelopmentAnalysis(studentVector.score, rankedMajors);
+  const careerDepthProfile = buildCareerDepthProfile(studentVector.score, rankedMajors);
   const careerAxes = buildCareerStyleAxes(studentVector.score);
   const developmentInsights = buildDevelopmentInsights(rankedMajors, studentVector.score);
   const advisorTags = buildAdvisorTags(studentVector.score, rankedMajors);
@@ -2601,6 +2815,23 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
         <p class="career-analysis-holland">Holland 辅助代码：${hollandCode}</p>
       </div>
       <p class="career-analysis-summary">${careerAnalysis.summary}</p>
+      <div class="career-depth-panel">
+        <article class="career-depth-card career-depth-card-primary">
+          <span class="career-highlight-label">职业倾向深化判断</span>
+          <strong>${careerDepthProfile.consistencyLabel}</strong>
+          <p>${careerDepthProfile.consistencySummary}</p>
+        </article>
+        <article class="career-depth-card">
+          <span class="career-highlight-label">技能信心</span>
+          <strong>${careerDepthProfile.skillConfidence} / 100</strong>
+          <p>${careerDepthProfile.topText}</p>
+        </article>
+        <article class="career-depth-card">
+          <span class="career-highlight-label">价值与环境偏好</span>
+          <strong>${careerDepthProfile.workValueClarity} / 100</strong>
+          <p>${careerDepthProfile.gapText}</p>
+        </article>
+      </div>
       <div class="career-highlight-grid">
         <article class="career-highlight-card career-highlight-card-primary">
           <span class="career-highlight-label">发展定位摘要</span>
@@ -2652,7 +2883,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
           </article>
         `).join("")}
       </div>
-      <p class="career-analysis-disclaimer">说明：本部分借鉴职业性格测评的阅读方式，结合 Holland 兴趣类型与本系统的学习方式、认知风格、能力特征、韧性稳定性与价值偏好生成，主要用于帮助理解学生未来在学习、工作与发展选择中的优势特征、潜在盲点与适配环境，不等同于单独的 MBTI 或 Holland 标准量表结论。</p>
+      <p class="career-analysis-disclaimer">说明：本部分借鉴职业发展测评的阅读方式，结合 Holland 兴趣类型与本系统的学习方式、认知风格、能力特征、技能信心、工作价值观、韧性稳定性与任务环境偏好生成，主要用于帮助理解学生未来在学习、工作与发展选择中的优势特征、潜在盲点与适配环境，不等同于单独的 MBTI、Holland 或其他外部标准量表结论。</p>
     </section>
   `;
 
@@ -2761,7 +2992,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
       </div>
       ${advisorTagsHTML}
       ${directionSummary ? `<p class="result-meta">${directionSummary}</p>` : ""}
-      <p class="result-meta">综合画像采用 8 维模型：6维兴趣（Holland）+ 2维能力与韧性维度，用于提升专业判断的实用性与可解释性。建议先阅读综合摘要，再进入职业性格分析与专业建议部分。</p>
+      <p class="result-meta">综合画像结合 Holland 兴趣结构、认知方式、能力特征、技能信心、工作价值观、韧性稳定性与任务环境偏好，用于提升专业判断的实用性与可解释性。建议先阅读综合摘要，再进入职业性格分析与专业建议部分。</p>
     </div>
     <div class="result-tools">
       <button type="button" id="export-pdf-btn" class="btn btn-ghost">导出 PDF（打印版）</button>
