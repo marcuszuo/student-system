@@ -1,0 +1,45 @@
+/* Report-only additions; keep the shared site and gaokao styling intact. */
+#result .rank-card .score small {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 500;
+  white-space: normal;
+}
+#result .additional-major-options { grid-column: 1 / -1; }
+#result > .rank-details { margin: 1.25rem 0; }
+#result .rank-details > summary { cursor: pointer; line-height: 1.6; }
+#result .rank-details li { margin: 0.7rem 0; line-height: 1.7; }
+#result .rank-card { overflow-wrap: anywhere; }
+@media print {
+  #result .rank-details > summary { font-weight: 700; }
+  #report-recovery-status { display: none; }
+}
+
+.tool-hub.assessment-entry { grid-template-columns: 1fr; }
+
+#result .report-feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+#result .report-feature-card { padding: 16px; background: #f6f8f4; border: 1px solid #e0e6dd; border-radius: 12px; }
+#result .report-feature-card h4 { margin: 0 0 10px; }
+#result .report-example { font-size: .88rem; color: #59655c; }
+#result .report-student-line { color: #59655c; }
+#result .report-table-wrap { overflow-x: auto; margin-top: 18px; }
+#result .report-comparison-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+#result .report-comparison-table th, #result .report-comparison-table td { padding: 14px; border: 1px solid #dfe5dd; text-align: left; vertical-align: top; overflow-wrap: anywhere; line-height: 1.7; }
+#result .report-comparison-table thead { background: #eef3e9; }
+#result .report-comparison-table th:first-child { width: 17%; }
+#result .report-learning-condition { padding: 16px; background: #f7f4ec; border-radius: 10px; }
+@media (max-width: 820px) { #result .report-feature-grid { grid-template-columns: 1fr; } #result .report-comparison-table { min-width: 660px; } }
+@media print { #result .report-comparison-table { min-width: 0; font-size: 9pt; } #result .report-table-wrap { overflow: visible; } }
+
+@media screen and (max-width: 820px) {
+  #result .report-comparison-table { min-width: 0; }
+  #result .report-comparison-table, #result .report-comparison-table tbody, #result .report-comparison-table tr, #result .report-comparison-table th, #result .report-comparison-table td { display: block; width: auto; }
+  #result .report-comparison-table thead { display: none; }
+  #result .report-comparison-table tr { margin-bottom: 18px; border: 1px solid #dfe5dd; border-radius: 12px; overflow: hidden; }
+  #result .report-comparison-table th, #result .report-comparison-table td { border: 0; border-bottom: 1px solid #e7ece4; }
+  #result .report-comparison-table th { background: #eef3e9; }
+  #result .report-comparison-table td::before { content: attr(data-label); display: block; font-weight: 700; margin-bottom: 6px; }
+}
+@media screen and (max-width: 820px) {
+  #result .report-comparison-table th:first-child { width: auto; }
+}

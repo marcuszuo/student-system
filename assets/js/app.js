@@ -21,7 +21,13 @@ function normalizeQuestion(question) {
   };
 }
 
-const allQuestions = OFFICIAL_DATA.questions.map(normalizeQuestion);
+Object.assign(MODULE_META, {
+  G: {order:7,label:"活动兴趣",tags:["interest"],intent:"分别评价六类活动的兴趣"},
+  H: {order:8,label:"技能信心",tags:["confidence"],intent:"独立评价任务信心，可选择缺少经验"},
+  I: {order:9,label:"工作价值观",tags:["value"],intent:"分别评价未来发展条件的重要性"},
+  J: {order:10,label:"实践经历",tags:["experience"],intent:"自述实际经历，与能力表现区分"}
+});
+const allQuestions = [...OFFICIAL_DATA.questions, ...(typeof INTEGRATED_QUESTIONS !== "undefined" ? INTEGRATED_QUESTIONS : [])].map(normalizeQuestion);
 const dimensions = OFFICIAL_DATA.dimensions;
 const baseMajors = OFFICIAL_DATA.majors;
 const actions = OFFICIAL_DATA.actions;
@@ -90,9 +96,9 @@ const REPORT_API_BASE_URL = String(window.REPORT_API_BASE_URL || "").trim().repl
 const REPORT_INGEST_KEY = String(window.REPORT_INGEST_KEY || "").trim();
 const ADMIN_DASHBOARD_PATH = String(window.ADMIN_DASHBOARD_PATH || "./pages/admin.html").trim() || "./pages/admin.html";
 const DEFAULT_MODE = "full";
-const STANDARD_CORE_LIMITS = { A: 12, B: 12, C: 12, D: 10, E: 8, F: 6 };
+const STANDARD_CORE_LIMITS = { A: 12, B: 12, C: 12, D: 10, E: 8, F: 6, G: 6, H: 4, I: 6, J: 4 };
 const STANDARD_CALIBRATION_COUNT = 12;
-const FULL_CORE_LIMITS = { A: 18, B: 18, C: 18, D: 14, E: 12, F: 10 };
+const FULL_CORE_LIMITS = { A: 18, B: 18, C: 18, D: 14, E: 12, F: 10, G: 12, H: 8, I: 6, J: 4 };
 const FULL_CALIBRATION_COUNT = 18;
 const FOLLOW_UP_QUESTION_COUNT = 4;
 const FOLLOW_UP_GAP_THRESHOLD = 3;
@@ -414,10 +420,13 @@ function loadAuthSession() {
 }
 
 function renderAuthState() {
+  resultBox.innerHTML = "";
+  resultBox.classList.add("hidden");
   if (!AUTH_ENABLED) {
     authGate.classList.add("hidden");
     assessmentShell.classList.remove("hidden");
     authSessionBar.classList.add("hidden");
+    restoreSavedReport();
     return;
   }
 
@@ -426,6 +435,7 @@ function renderAuthState() {
   assessmentShell.classList.toggle("hidden", !authed);
   authSessionBar.classList.remove("hidden");
   if (authed) {
+    restoreSavedReport();
     authSessionText.textContent = `已登录账号：${authSession.username}`;
   }
 }
@@ -487,8 +497,7 @@ function saveDraft() {
   setSaveStatus(`评估草稿已保存 ${formatTime(new Date())}`);
 }
 
-function buildQuestionOrder(mode, savedOrder = []) {
-  const selected = buildSelectedQuestions(mode);
+function buildQuestionOrder(mode, savedOrder = [], selected = buildSelectedQuestions(mode)) {
   const selectedIds = new Set(selected.map((q) => q.id));
   const savedValid = Array.isArray(savedOrder)
     && savedOrder.length === selected.length
@@ -664,7 +673,7 @@ function selectFollowUpQuestions(pool, boundaryDims, count) {
 
 function appendBoundaryFollowUpQuestions() {
   if (!calibrationContext?.boundaryDims?.length || followUpAdded) return false;
-  const reservePool = reserveQuestionIds
+  const reservePool = [...new Set(reserveQuestionIds)].filter((id) => !activeQuestions.some((q) => q.id === id))
     .map((id) => allQuestions.find((question) => question.id === id))
     .filter(Boolean);
   if (!reservePool.length) return false;
@@ -678,7 +687,7 @@ function appendBoundaryFollowUpQuestions() {
   reserveQuestionIds = reserveQuestionIds.filter((id) => !selectedIds.has(id));
   followUpAdded = true;
   totalPages = Math.max(1, Math.ceil(activeQuestions.length / ITEMS_PER_PAGE));
-  currentPage = Math.min(totalPages, currentPage + 1);
+  currentPage = getFirstUnansweredPage();
   setSaveStatus("首选与次选仍较接近，已追加分流追问题。");
   return true;
 }
@@ -703,7 +712,9 @@ function applyMode(mode, draftState = {}) {
     calibrationContext = draftState.calibrationContext || null;
     followUpAdded = Boolean(draftState.followUpAdded);
     reserveQuestionIds = Array.isArray(draftState.reserveQuestionIds) ? draftState.reserveQuestionIds.slice() : reservePool.map((question) => question.id);
-    questionOrder = Array.isArray(draftState.questionOrder) && draftState.questionOrder.length ? draftState.questionOrder.slice() : buildQuestionOrder(selectedMode, []);
+    questionOrder = Array.isArray(draftState.questionOrder) && draftState.questionOrder.length ? draftState.questionOrder.slice() : buildQuestionOrder(selectedMode, [], coreQuestions);
+    questionOrder = [...new Set(questionOrder)];
+    reserveQuestionIds = [...new Set(reserveQuestionIds)].filter((id) => !questionOrder.includes(id));
     const activeIds = new Set(questionOrder);
     activeQuestions = allQuestions.filter((question) => activeIds.has(question.id))
       .slice()
@@ -1264,6 +1275,10 @@ function applySubjectWeight(baseScore) {
   const weighted = studentProfile.type === "international"
     ? applyInternationalSubjectWeight(baseScore, internationalProfile)
     : applyPublicSubjectWeight(baseScore, publicSubjectScores);
+  // Academic preparation supplements the profile without rewriting independent self-ratings.
+  getIntegratedMeasurements(answers).filter((m) => m.kind !== "experience").forEach((m) => {
+    weighted.score[m.dim] = baseScore[m.dim];
+  });
   return {
     ...weighted,
     score: withCareerDepthDefaults(weighted.score)
@@ -1284,11 +1299,32 @@ function getCurriculumSummary() {
   return filled.length ? `已录入公立成绩 ${filled.slice(0, 3).join(" / ")}` : "公立成绩信息未填写";
 }
 
+function getIntegratedLabel(dim) {
+  return ({"interest.r":"动手实践","interest.i":"研究分析","interest.a":"创意表达","interest.s":"助人与合作","interest.e":"组织与影响","interest.c":"规则与秩序",
+    "skill.data":"数据分析","skill.making":"搭建与调试","skill.expression":"写作与展示","skill.coordination":"组织协调",
+    "value.autonomy":"自主安排","value.creativity":"创造新成果","value.service":"助人贡献","value.security":"稳定性","value.wealth":"收入回报","value.influence":"组织影响"})[dim] || dimensionNameMap[dim] || dim;
+}
+
+function getIntegratedMeasurements(answerMap = answers) {
+  const groups = new Map();
+  activeQuestions.filter((q) => q.measurement === "independent-rating").forEach((q) => {
+    const key = `${q.kind}:${q.dimension}`;
+    if (!groups.has(key)) groups.set(key,{kind:q.kind,dim:q.dimension,values:[],asked:0,answered:0,examples:[]});
+    const group = groups.get(key); group.asked++;
+    const selected = q.options.find((o) => o.key === answerMap[q.id]);
+    if (selected) { group.answered++; group.examples.push({questionId:q.id,question:q.text,answer:selected.text}); }
+    if (selected && typeof selected.rating === "number") group.values.push(selected.rating);
+  });
+  return [...groups.values()].map((g) => ({kind:g.kind,dim:g.dim,asked:g.asked,answered:g.answered,count:g.values.length,
+    value:g.values.length ? average(g.values) : null,examples:g.examples}));
+}
+
 function calculateStudentVector(answerMap) {
   const hitCount = Object.fromEntries(dimensionKeys.map((key) => [key, 0]));
   const possibleCount = Object.fromEntries(dimensionKeys.map((key) => [key, 0]));
 
   activeQuestions.forEach((q) => {
+    if (q.measurement === "independent-rating") return;
     q.options.forEach((option) => {
       if (possibleCount[option.dim] !== undefined) {
         possibleCount[option.dim] += 1;
@@ -1316,6 +1352,10 @@ function calculateStudentVector(answerMap) {
   if (possibleCount["risk.stability"] === 0) {
     score["risk.stability"] = score["value.security"];
   }
+  const measurements = getIntegratedMeasurements(answerMap);
+  measurements.filter((m) => m.kind !== "experience").forEach((m) => {
+    score[m.dim] = m.count ? m.value : 0.45;
+  });
   let careerDepthDefaulted = false;
   CAREER_DEPTH_DIMS.forEach((dim) => {
     if (possibleCount[dim] === 0) {
@@ -1409,12 +1449,14 @@ function getMajorVectorValue(major, dim) {
 }
 
 function squaredDistance(studentScore, major) {
+  const measurements = getIntegratedMeasurements(answers);
+  const unknown = new Set(measurements.filter((m) => m.kind !== "experience" && !m.count).map((m) => m.dim));
   return dimensionKeys.reduce((sum, dim) => {
-    if (studentScore?.[CAREER_DEPTH_DEFAULTED_FLAG] && CAREER_DEPTH_DIMS.includes(dim)) {
-      return sum;
-    }
+    // Personality, learning style and resilience describe support needs, not eligibility.
+    const weight = dim.startsWith("interest.") ? 1 : dim.startsWith("skill.") ? 0.7
+      : dim.startsWith("value.") ? 0.45 : ["ability.math","ability.stat"].includes(dim) ? 0.35 : 0;
+    if (!weight || unknown.has(dim) || (studentScore?.[CAREER_DEPTH_DEFAULTED_FLAG] && CAREER_DEPTH_DIMS.includes(dim))) return sum;
     const diff = (studentScore[dim] || 0) - getMajorVectorValue(major, dim);
-    const weight = MATCH_DIMENSION_WEIGHTS[dim] || 1;
     return sum + diff * diff * weight;
   }, 0);
 }
@@ -1589,6 +1631,9 @@ function getMajorCoreDims(major, topN = 4) {
 }
 
 const DIRECTION_GROUP_RULES = [
+  { key: "systems", label: "工业工程与系统优化方向", patterns: [/工业工程/],
+    summary: "关注运筹、流程效率、人因与供应链的系统优化。",
+    training: "结合数据分析、流程建模和真实场景中的优化实验。" },
   {
     key: "cs",
     label: "计算机与信息技术方向",
@@ -1800,17 +1845,27 @@ function buildDirectionRecommendations(rankedMajors, studentScore) {
 }
 
 function getCareerDirectionGuidance(rankedMajors, studentScore) {
+  if (/工业工程/.test(rankedMajors[0]?.name || "")) return {
+    focus: "通过排队观察、流程建模或供应链小实验，验证对数据和系统优化的持续兴趣。",
+    blindspot: "工业工程涉及运筹、流程与人因，不能仅凭工程名称将其理解为机械装配或设备制造。"
+  };
   const direction = buildDirectionRecommendations(rankedMajors, studentScore)[0];
   return CAREER_DIRECTION_GUIDANCE[direction?.key || "general"] || CAREER_DIRECTION_GUIDANCE.general;
 }
 
 function getReportDirectionInsights(rankedMajors, studentScore) {
+  if (/工业工程/.test(rankedMajors[0]?.name || "")) return {
+    learningStyle: "结合运筹基础、统计分析、流程建模与真实场景优化实验，观察从数据到改进方案的学习投入。",
+    unsuitableEnvironment: "若培养方案与个人预期不同，先核对数学、统计、运筹和人因课程，再做选择。",
+    parentAdvice: "关注学生是否愿意收集数据、比较方案并验证改进，而非只凭理工成绩或专业名称判断。",
+    selectionReminder: "与工程管理比较项目协调与预算排期；与软件工程比较编码、调试和系统交付。"
+  };
   const direction = buildDirectionRecommendations(rankedMajors, studentScore)[0];
   return REPORT_DIRECTION_INSIGHTS[direction?.key || "general"] || REPORT_DIRECTION_INSIGHTS.general;
 }
 
 function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoolRecommendation) {
-  const top3 = rankedMajors.slice(0, 3);
+  const top3 = getReportMajors(rankedMajors);
   const directionRecommendations = buildDirectionRecommendations(rankedMajors, studentVector.score);
   const topTraits = getTopDimensions(studentVector.score, 5);
   const careerAnalysis = buildCareerDevelopmentAnalysis(studentVector.score, rankedMajors);
@@ -1823,7 +1878,9 @@ function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoo
   return {
     id: createRecordId(),
     submittedAt: new Date().toISOString(),
-    siteVersion: "2026-03-report-admin-v1",
+    siteVersion: "2026-10-independent-measurement-v8",
+    scoreMeaning: "候选专业内相对匹配指数，不是能力分、录取概率或成功概率",
+    jointPriorityMajors: getJointPriorityMajors(rankedMajors).map((major) => major.name),
     studentProfile: {
       type: studentProfile.type,
       typeLabel: getStudentTypeLabel(studentProfile.type),
@@ -1833,6 +1890,8 @@ function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoo
       modeLabel: MODE_CONFIG[selectedMode]?.label || selectedMode
     },
     scoring: {
+      integratedMeasurements: getIntegratedMeasurements(answers),
+      recommendationPolicy: "兴趣1、技能信心0.7、价值观0.45、学科准备0.35；自建产品规则，待样本验证。学习性格偏好不直接参与推荐排序。",
       weightingSummary,
       hollandCode: getHollandCode(studentVector.score),
       topTraits: topTraits.map((item) => ({
@@ -1865,7 +1924,7 @@ function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoo
       const narrative = buildMajorNarrative(major, studentVector.score);
       return {
         rank: index + 1,
-        label: index === 0 ? "优先方向一" : index === 1 ? "优先方向二" : "补充参考方向",
+        label: getJointPriorityMajors(top3).some((item) => item.name === major.name) && hasJointPriority(top3) ? "同组优先推荐" : index === 0 ? "优先方向一" : index === 1 ? "优先方向二" : "补充参考方向",
         name: major.name,
         matchIndex: major.matchIndex,
         category: major.category,
@@ -1875,6 +1934,9 @@ function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoo
         edge: narrative.edge,
         caution: narrative.caution,
         evidence: evidence.positives,
+        answerEvidence: buildAnswerEvidence(major),
+        explorationTask: buildExplorationTask(major),
+        jointPriority: getJointPriorityMajors(top3).some((item) => item.name === major.name) && hasJointPriority(top3),
         risks: evidence.risks
       };
     }),
@@ -1882,7 +1944,7 @@ function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoo
       advisorConclusion: buildAdvisorConclusion(top3, rankedMajors, studentVector.score),
       primaryVsSecondary: buildChoiceComparison(top3, studentVector.score),
       reverseAdvice: buildReverseAdvice(rankedMajors, studentVector.score),
-      directionSummary: primaryDirection
+      directionSummary: hasJointPriority(top3) ? `${getJointPriorityMajors(top3).map((major) => major.name).join("、")}同组优先推荐` : primaryDirection
         ? `优先考虑${primaryDirection.label}${secondaryDirection ? `；其次关注${secondaryDirection.label}` : ""}`
         : ""
     },
@@ -1928,50 +1990,173 @@ async function syncReportRecord(payload) {
   return response.json().catch(() => ({ ok: true }));
 }
 
+// Keep the same report ID for retries; cache before attempting network delivery.
+const REPORT_CACHE_PREFIX = "majornavi_report_v2:";
+let reportSyncInFlight = false;
+function reportCacheKey() {
+  return REPORT_CACHE_PREFIX + (authSession?.username || "local");
+}
+function escapeReportText(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+}
+function hasJointPriority(ranked) {
+  return getJointPriorityMajors(ranked).length > 1;
+}
+function getJointPriorityMajors(ranked) {
+  if (!ranked.length) return [];
+  const value = (major) => typeof major.score01 === "number" ? major.score01 * 100 : major.matchIndex;
+  return ranked.filter((major) => value(ranked[0]) - value(major) <= 3.0000001);
+}
+function getReportMajors(ranked) {
+  const joint = getJointPriorityMajors(ranked);
+  return ranked.slice(0, Math.max(3, joint.length));
+}
+function getDimensionSignal(dim, score) {
+  const related = activeQuestions.filter((q) => q.options.some((o) => o.dim === dim));
+  const selected = related.filter((q) => q.options.some((o) => o.dim === dim && answers[q.id] === o.key)).length;
+  return { covered: related.length, selected, value: Math.round((score[dim] || 0) * 100) };
+}
+function buildAnswerEvidence(major) {
+  const core = getMajorCoreDims(major);
+  const measured = new Map(getIntegratedMeasurements(answers).filter((m) => m.kind !== "experience").map((m) => [m.dim,m]));
+  const records = activeQuestions.flatMap((q) => {
+    const selected = q.options.find((o) => o.key === answers[q.id]);
+    if (!selected || !q.options.some((o) => core.includes(o.dim))) return [];
+    const independentlySupported = !measured.has(selected.dim) || (measured.get(selected.dim).count && measured.get(selected.dim).value >= 0.75);
+    const relevant = core.includes(selected.dim) && independentlySupported && (q.measurement !== "independent-rating" || (q.kind !== "experience" && typeof selected.rating === "number" && selected.rating >= 0.75));
+    const dimension = dimensionNameMap[selected.dim] || selected.dim;
+    return [{ questionId: q.id, question: q.text, answer: selected.text, dimension: selected.dim,
+      supports: relevant, relevance: q.measurement === "independent-rating" ? 3 : (q.tags || []).includes("scenario") ? 2 : 1,
+      explanation: relevant
+        ? `这条自述体现了「${dimension}」偏好，与${major.name}的相关特征有联系；仍需用课程或作品验证。`
+        : `这条回答补充了「${dimension}」信息，不能据此判断你与${major.name}冲突或能力不足。` }];
+  }).sort((a, b) => b.relevance - a.relevance);
+  const supporting = [];
+  const seen = new Set();
+  for (const record of records.filter((r) => r.supports)) {
+    if (!seen.has(record.dimension)) { supporting.push(record); seen.add(record.dimension); }
+    if (supporting.length === 3) break;
+  }
+  return { supporting, toVerify: records.filter((r) => !r.supports).slice(0, 2),
+    missing: core.filter((dim) => !records.some((r) => r.supports && r.dimension === dim)) };
+}
+function buildExplorationTask(major) {
+  const name = major.name;
+  let task;
+  if (/工业工程/.test(name)) task = "观察一次食堂排队或校园物资领取流程，记录至少10次等待时间，画出流程图，提出一个改进方案并比较改进前后的数据。交付：一页流程图、原始数据和改进说明";
+  else if (/工程管理|项目管理|工程造价/.test(name)) task = "为一次校园活动制定项目计划，列出预算、任务依赖、负责人、里程碑及3项风险，再用一项临时变更检验计划。交付：预算表、排期表和风险清单";
+  else if (/软件|计算机|人工智能|数据科学|网络工程/.test(name)) task = "编写一个学习任务清单或成绩统计小程序，完成至少3个测试用例，请一位同学试用并修正一个问题。交付：可运行程序、测试记录和一段复盘";
+  else if (/电子|通信|电气|自动化|物联网|测控/.test(name)) task = "使用安全的电路或控制仿真工具，搭建一个传感器触发指示灯的系统，改变3组输入并记录响应。交付：电路或逻辑图、测试表和调试记录";
+  else if (/机械|车辆|制造|飞行器/.test(name)) task = "观察一个日常机械装置，用草图或建模工具说明结构、运动关系与一个可改进点。交付：结构图、约束说明和改进草案";
+  else if (/金融|财务|经济|会计/.test(name)) task = "为一个虚拟校园项目制作收支表，比较乐观、基准与保守3种情景，解释现金不足的风险。交付：计算表及一页判断说明";
+  else if (/心理|教育|社会|人力|公共/.test(name)) task = "阅读一个公开案例，区分事实、推测和待核实信息，提出支持方案并请老师反馈。交付：案例分析和修订记录；不收集同学的隐私信息";
+  else if (/设计|艺术|新闻|传播|中文|语言/.test(name)) task = "围绕一个校园主题制作一份作品或说明内容，请两位同学反馈，再完成一次修改。交付：初稿、反馈和修改稿";
+  else task = `从「${major.courses}」中选一个主题，完成一节入门课和一个对应练习，并请老师对照课程要求反馈。交付：练习成果、困难记录和复盘`;
+  return `一周内投入3小时：${task}。各方向使用相同时间预算，记录实际完成情况、遇阻反应、继续投入意愿（1—5分）和外部反馈；体验结果用于补充证据。`;
+}
+function renderAnswerEvidence(major) {
+  const evidence = buildAnswerEvidence(major);
+  const rows = (items) => items.map((r) => `<li>题目 ${escapeReportText(r.questionId)}：${escapeReportText(r.question)}<br>你的选择：${escapeReportText(r.answer)}<br>关联说明：${escapeReportText(r.explanation)}</li>`).join("");
+  return `<details class="rank-details"><summary>查看实际作答依据</summary>
+    <p>以下为相关作答示例；专业排序仍综合全部维度和已填写的成绩，并非由单题决定。</p>
+    <p><strong>支持该方向的回答</strong></p><ul>${rows(evidence.supporting) || "<li>暂无直接支持回答，需要实践补充证据。</li>"}</ul>
+    <p><strong>其他相关回答</strong>（补充信息，不作为冲突证据）</p><ul>${rows(evidence.toVerify) || "<li>这些题目中暂无其他相关回答。</li>"}</ul>
+    <p>${evidence.missing.length ? `尚缺直接选择证据：${escapeReportText(evidence.missing.map((d) => dimensionNameMap[d] || d).join("、"))}。缺少选择不代表能力不足。` : "相关核心维度均有选择记录，仍需实际表现验证。"}</p></details>
+    <p class="evidence"><strong>一周验证任务：</strong>${escapeReportText(buildExplorationTask(major))}</p>`;
+}
+function showReportRecoveryStatus(record, message) {
+  let panel = document.getElementById("report-recovery-status");
+  if (!panel) {
+    panel = document.createElement("div");
+    panel.id = "report-recovery-status";
+    panel.setAttribute("role", "status");
+    resultBox.prepend(panel);
+  }
+  panel.textContent = message;
+  if (REPORT_API_BASE_URL && !record.synced) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = reportSyncInFlight ? "正在同步…" : "重试同步报告";
+    button.disabled = reportSyncInFlight;
+    button.addEventListener("click", () => deliverCachedReport(record));
+    panel.append(" ", button);
+  }
+}
+async function deliverCachedReport(record) {
+  if (reportSyncInFlight || !REPORT_API_BASE_URL || record.synced) return;
+  const cacheKey = reportCacheKey();
+  reportSyncInFlight = true;
+  showReportRecoveryStatus(record, "报告已保留，正在同步。 ");
+  try {
+    await syncReportRecord(record.payload);
+    record.synced = true;
+    // Do not overwrite a newer assessment while this request was in flight.
+    const current = JSON.parse(localStorage.getItem(cacheKey) || "null");
+    if (current?.payload.id === record.payload.id) localStorage.setItem(cacheKey, JSON.stringify(record));
+    if (cacheKey === reportCacheKey() && current?.payload.id === record.payload.id) showReportRecoveryStatus(record, "报告已同步至后台，并保留本机副本。");
+  } catch (error) {
+    const latest = JSON.parse(localStorage.getItem(cacheKey) || "null");
+    if (cacheKey === reportCacheKey() && latest?.payload.id === record.payload.id) showReportRecoveryStatus(record, "同步未完成，报告仍保留在本机，可重试。");
+  } finally {
+    reportSyncInFlight = false;
+    const retry = document.querySelector("#report-recovery-status button");
+    if (retry) { retry.disabled = false; retry.textContent = "重试同步报告"; }
+  }
+}
+function restoreSavedReport() {
+  try {
+    const record = JSON.parse(localStorage.getItem(reportCacheKey()) || "null");
+    if (!record?.view || !record?.payload) return;
+    const view = record.view;
+    const previousAnswers = answers, previousQuestions = activeQuestions;
+    const previousContext = { studentProfile, selectedMode, publicSubjectScores, internationalProfile, schoolMajorText, calibrationContext, calibrationAdded, followUpAdded };
+    if (view.context) ({ studentProfile, selectedMode, publicSubjectScores, internationalProfile, schoolMajorText, calibrationContext, calibrationAdded, followUpAdded } = view.context);
+    answers = view.answers || {};
+    activeQuestions = allQuestions.filter((q) => (view.questionIds || []).includes(q.id));
+    try { renderResult(view.studentVector, view.rankedMajors, view.weightingSummary, view.schoolRecommendation); }
+    finally {
+      answers = previousAnswers; activeQuestions = previousQuestions;
+      ({ studentProfile, selectedMode, publicSubjectScores, internationalProfile, schoolMajorText, calibrationContext, calibrationAdded, followUpAdded } = previousContext);
+    }
+    resultBox.classList.remove("hidden");
+    showReportRecoveryStatus(record, record.synced ? "已恢复本机保存的报告（已同步）。" : "已恢复本机保存的报告，可继续查看或重试同步。");
+  } catch (error) { setSaveStatus("本机报告暂时无法恢复，请保留草稿重新生成。"); }
+}
+
 function buildEvidence(major, studentScore) {
   const core = getMajorCoreDims(major);
-  const positives = core
-    .map((dim) => ({ dim, value: Math.round((studentScore[dim] || 0) * 100) }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 3)
-    .map((x) => `${dimensionNameMap[x.dim] || x.dim}${x.value}分`);
-  const risks = core
-    .map((dim) => ({ dim, value: Math.round((studentScore[dim] || 0) * 100) }))
-    .sort((a, b) => a.value - b.value)
-    .filter((x) => x.value < 45)
-    .slice(0, 2)
-    .map((x) => `${dimensionNameMap[x.dim] || x.dim}${x.value}分`);
-  return { positives, risks };
+  const sorted = core.slice().sort((a, b) => (studentScore[b] || 0) - (studentScore[a] || 0));
+  return {
+    positives: sorted.filter((dim) => (studentScore[dim] || 0) >= 0.5 && getDimensionSignal(dim, studentScore).selected).slice(0, 3).map((dim) => formatDimensionScore(dim, studentScore)),
+    risks: sorted.filter((dim) => (studentScore[dim] || 0) < 0.5 || !getDimensionSignal(dim, studentScore).selected).reverse().slice(0, 2).map((dim) => formatDimensionScore(dim, studentScore))
+  };
 }
 
 function formatDimensionScore(dim, studentScore) {
-  return `${dimensionNameMap[dim] || dim}${Math.round((studentScore[dim] || 0) * 100)}分`;
+  const label = dimensionNameMap[dim] || dim;
+  const signal = getDimensionSignal(dim, studentScore);
+  if (!signal.covered) return `${label}：缺少直接题目覆盖，待验证`;
+  if (!signal.selected) return `${label}：作答较少体现，待验证`;
+  return `${label}：作答倾向指数${signal.value}`;
 }
 
 function buildMajorNarrative(major, studentScore) {
-  const core = getMajorCoreDims(major);
-  const rankedCore = core
-    .map((dim) => ({ dim, value: Math.round((studentScore[dim] || 0) * 100) }))
-    .sort((a, b) => b.value - a.value);
-  const topCore = rankedCore.slice(0, 2);
-  const weakCore = rankedCore.filter((item) => item.value < 50).slice(0, 1);
-  const topText = topCore.map((item) => formatDimensionScore(item.dim, studentScore)).join("、");
-  const weakText = weakCore.map((item) => formatDimensionScore(item.dim, studentScore)).join("、");
-  const topMeta = topCore.map((item) => dimensionMetaMap[item.dim]?.strengthText).filter(Boolean);
-  const weakMeta = weakCore.map((item) => dimensionMetaMap[item.dim]?.riskText).filter(Boolean);
-
+  const evidence = buildEvidence(major, studentScore);
   return {
-    fit: `${major.name} 与当前画像中的 ${topText} 具有较高一致性，这与该方向所要求的 ${major.courses} 特征较为契合。`,
-    edge: topMeta[0] || `${major.name} 可作为当前阶段的优先评估方向。`,
-    caution: weakText
-      ? `如继续深入该方向，建议重点核验 ${weakText} 相关表现。${weakMeta[0] || ""}`.trim()
-      : "当前未见明显核心短板，后续重点观察持续投入意愿与稳定性表现。"
+    fit: evidence.positives.length
+      ? `当前作答中可参考的偏好为${evidence.positives.join("；")}。它们与${major.name}的部分学习任务相关，不能单独证明学业能力。`
+      : `当前缺少足够的直接选择证据，${major.name}仅作为候选专业中的相对比较方向。`,
+    edge: `结合「${major.courses}」的课程与任务特点，优先核对下方实际回答及关联说明。`,
+    caution: evidence.risks.length
+      ? `建议补充验证：${evidence.risks.join("；")}。这些信息来自作答偏好与成绩辅助调整，不是客观能力测试结论。`
+      : "当前作答的相关特征较集中，仍需通过课程体验、作品与老师反馈验证。"
   };
 }
 
 function buildChoiceComparison(topMajors, studentScore) {
   if (!topMajors[1]) return "";
   const [first, second] = topMajors;
+  if (hasJointPriority(topMajors)) return `${getJointPriorityMajors(topMajors).map((major) => major.name).join("、")}同组优先推荐。当前差距在3个相对指数点以内，这是展示分组规则，不是统计置信区间；请用相同时间预算比较体验任务、持续兴趣和外部反馈。`;
   const boundaryTags = getBoundaryTags(first, second);
   const boundaryDims = getBoundaryDims(first, second, 4);
   const firstCore = getMajorCoreDims(first);
@@ -1995,7 +2180,7 @@ function buildChoiceComparison(topMajors, studentScore) {
     return `${first.name} 与 ${second.name} 在整体方向上较为接近，建议重点比较培养方案、课程结构与未来岗位场景。${boundaryIntro}${boundaryText ? ` 当前更值得重点复核的边界维度为 ${boundaryText}。` : ""}`;
   }
   if (firstLead && secondLead) {
-    return `${first.name} 与 ${second.name} 的主要差异，体现在 ${dimensionNameMap[firstLead.dim] || firstLead.dim} 与 ${dimensionNameMap[secondLead.dim] || secondLead.dim} 两类要求上。${boundaryIntro}${first.name} 更强调 ${formatDimensionScore(firstLead.dim, studentScore)} 所代表的匹配特征，而 ${second.name} 更强调 ${formatDimensionScore(secondLead.dim, studentScore)} 所对应的发展要求；基于当前画像，前者更适合作为优先考察方向。`;
+    return `${first.name} 与 ${second.name} 的主要差异，体现在 ${dimensionNameMap[firstLead.dim] || firstLead.dim} 与 ${dimensionNameMap[secondLead.dim] || secondLead.dim} 两类要求上。${boundaryIntro}${first.name} 更强调 ${formatDimensionScore(firstLead.dim, studentScore)} 所代表的匹配特征，而 ${second.name} 更强调 ${formatDimensionScore(secondLead.dim, studentScore)} 所对应的发展要求；这是当前排序的参考因素，仍需用相同投入的体验结果核验。`;
   }
   const lead = firstLead || secondLead;
   const leadMajor = firstLead ? first.name : second.name;
@@ -2003,32 +2188,8 @@ function buildChoiceComparison(topMajors, studentScore) {
 }
 
 function buildReverseAdvice(rankedMajors, studentScore) {
-  const lowDims = dimensionKeys
-    .map((dim) => ({ dim, value: studentScore[dim] || 0 }))
-    .sort((a, b) => a.value - b.value)
-    .slice(0, 3);
-  const cautionMajors = rankedMajors
-    .slice(-3)
-    .reverse()
-    .map((major) => {
-      const weakMatches = getMajorCoreDims(major)
-        .map((dim) => ({ dim, value: studentScore[dim] || 0 }))
-        .sort((a, b) => a.value - b.value)
-        .slice(0, 2)
-        .filter((item) => item.value < 0.5);
-      return { major, weakMatches };
-    })
-    .filter((item) => item.weakMatches.length);
-
-  if (!cautionMajors.length) return "";
-
-  const dimText = lowDims.map((item) => dimensionNameMap[item.dim] || item.dim).join("、");
-  const majorText = cautionMajors
-    .slice(0, 2)
-    .map(({ major, weakMatches }) => `${major.name}（对 ${weakMatches.map((x) => dimensionNameMap[x.dim] || x.dim).join(" / ")} 要求更高）`)
-    .join("；");
-
-  return `基于当前画像，不建议将强依赖 ${dimText} 的方向作为现阶段第一志愿的优先方案，例如 ${majorText}。如后续仍希望考虑此类路径，建议先通过课程体验、项目实践或阶段性训练，进一步评估相关能力是否具备稳定提升空间。`;
+  const candidates = rankedMajors.slice(-2).map((major) => `${major.name}：${getMajorCoreDims(major).filter((dim) => (studentScore[dim] || 0) < 0.5).slice(0, 2).map((dim) => dimensionNameMap[dim] || dim).join("、") || "课程投入方式"}`);
+  return `以下方向在本次候选比较中支持证据较少，仍可在有兴趣时体验验证：${candidates.join("；")}。低选择频率不代表能力不足，也不能据此排除志愿。`;
 }
 
 function buildAdvisorConclusion(topMajors, rankedMajors, studentScore) {
@@ -2043,6 +2204,7 @@ function buildAdvisorConclusion(topMajors, rankedMajors, studentScore) {
     return `${first.name} 与当前学生画像的适配关系最为明确，可作为优先进入课程体验与实践验证的方向。现阶段建议围绕 ${primaryDirection?.label || first.name} 继续收集学科表现、项目投入与真实反馈，再逐步细化到院校与具体专业层面。`;
   }
 
+  if (hasJointPriority(topMajors)) return buildChoiceComparison(topMajors, studentScore);
   const gap = Math.abs((first.matchIndex || 0) - (second.matchIndex || 0));
   const boundaryDims = getBoundaryDims(first, second, 3)
     .map((dim) => dimensionNameMap[dim] || dim)
@@ -2083,7 +2245,14 @@ function getLowDimensions(studentScore, count = 3) {
 }
 
 function getCareerStyleArchetype(studentScore) {
-  return CAREER_STYLE_ARCHETYPES.find((item) => item.test(studentScore)) || CAREER_STYLE_ARCHETYPES[0];
+  return CAREER_STYLE_ARCHETYPES.find((item) => item.test(studentScore)) || {
+    label: "混合倾向，待进一步探索",
+    summary: "本次作答尚未满足任一类型的完整判定条件，先保留各项相对偏好，不强制归入单一类型。",
+    strengths: ["可参考实际作答中较常体现的偏好，并用具体课程或项目补充证据。"],
+    blindspots: ["单次偏好选择不能证明能力水平，也不宜据此固定职业身份。"],
+    environment: "先比较两种任务环境，在相同时间投入下观察完成情况、持续兴趣和反馈。",
+    advice: "保留探索空间，结合近期学科表现和实践结果，再逐步收敛方向。"
+  };
 }
 
 function buildCareerDevelopmentAnalysis(studentScore, rankedMajors = []) {
@@ -2091,8 +2260,8 @@ function buildCareerDevelopmentAnalysis(studentScore, rankedMajors = []) {
   const topDims = getTopDimensions(studentScore, 4);
   const lowDims = getLowDimensions(studentScore, 3);
   const directionGuidance = getCareerDirectionGuidance(rankedMajors, studentScore);
-  const topText = topDims.map((item) => `${item.label}${item.score}分`).join("、");
-  const lowText = lowDims.map((item) => `${dimensionNameMap[item.dim] || item.dim}${Math.round(item.value * 100)}分`).join("、");
+  const topText = topDims.map((item) => formatDimensionScore(item.dim, studentScore)).join("、");
+  const lowText = lowDims.map((item) => formatDimensionScore(item.dim, studentScore)).join("、");
 
   return {
     label: archetype.label,
@@ -2144,11 +2313,11 @@ function buildCareerDepthProfile(studentScore, rankedMajors = []) {
     studentScore["env.structure"] || 0
   ]) * 100);
   const interestTop = getHollandCode(studentScore);
-  const topText = topHighlights.map((item) => `${item.label}${item.score}分`).join("、") || "暂未形成明显优势";
-  const lowText = lowHighlights.map((item) => `${item.label}${item.score}分`).join("、") || "暂无明显短板";
-  const gapText = biggestGap && biggestGap.target >= 58 && biggestGap.target - biggestGap.student >= 8
-    ? `${topMajor?.name || "首选方向"} 对 ${biggestGap.label} 的要求约为 ${biggestGap.target} 分，当前画像为 ${biggestGap.student} 分，建议通过课程、项目或真实任务继续验证。`
-    : `${topMajor?.name || "首选方向"} 与当前技能信心和价值偏好整体未见明显缺口，后续可通过真实课程和项目体验继续确认稳定性。`;
+  const topText = topHighlights.map((item) => formatDimensionScore(item.dim, studentScore)).join("、") || "暂未形成明显优势";
+  const lowText = lowHighlights.map((item) => formatDimensionScore(item.dim, studentScore)).join("、") || "暂无明显短板";
+  const gapText = biggestGap
+    ? `${topMajor?.name || "当前探索方向"}的相关任务可用于验证「${biggestGap.label}」。${formatDimensionScore(biggestGap.dim, studentScore)}；专业参照向量来自模型设定，不代表经过实证验证的能力门槛。`
+    : "建议用课程、作品和实际反馈补充自评证据。";
 
   return {
     topText,
@@ -2157,12 +2326,8 @@ function buildCareerDepthProfile(studentScore, rankedMajors = []) {
     skillConfidence,
     workValueClarity,
     interestTop,
-    consistencyLabel: skillConfidence >= 62 && workValueClarity >= 62
-      ? "兴趣、技能信心与价值偏好较为一致"
-      : "建议继续验证兴趣与真实任务承受度",
-    consistencySummary: skillConfidence >= 62 && workValueClarity >= 62
-      ? "学生不仅表现出方向偏好，也具备一定任务信心与价值认同，后续可进入更具体的专业/课程比较。"
-      : "当前兴趣方向仍需通过任务体验、作品产出或项目训练来验证，避免只凭喜欢或外部印象做决定。"
+    consistencyLabel: "偏好分布需结合真实表现验证",
+    consistencySummary: "本部分比较不同任务的自述偏好；选择实作较多、选择数据分析较少并不矛盾，也不能据此认定数据分析能力不足。"
   };
 }
 
@@ -2362,8 +2527,13 @@ function getPreviewPersona() {
   return personas[key] || personas.engineering;
 }
 
+function getFirstUnansweredPage() {
+  const index = activeQuestions.findIndex((q) => !answers[q.id]);
+  return index < 0 ? totalPages : Math.floor(index / ITEMS_PER_PAGE) + 1;
+}
+
 function appendCalibrationQuestions() {
-  const reservePool = reserveQuestionIds
+  const reservePool = [...new Set(reserveQuestionIds)].filter((id) => !activeQuestions.some((q) => q.id === id))
     .map((id) => allQuestions.find((question) => question.id === id))
     .filter(Boolean);
   if (!reservePool.length) return false;
@@ -2389,7 +2559,7 @@ function appendCalibrationQuestions() {
   };
   followUpAdded = false;
   totalPages = Math.max(1, Math.ceil(activeQuestions.length / ITEMS_PER_PAGE));
-  currentPage = Math.min(totalPages, currentPage + 1);
+  currentPage = getFirstUnansweredPage();
   setSaveStatus("核心评估已完成，已进入自动校准题。");
   return true;
 }
@@ -2513,536 +2683,157 @@ function drawRadarChart(canvasId, profile) {
   }
 }
 
+function describeReportTrait(dim) {
+  return ({
+    "skill.making": "自述更有信心完成搭建、调试和成果交付。",
+    "cognition.abstract": "倾向先理解原理，再分析问题的逻辑与结构。",
+    "cognition.system": "关注任务之间的联系，习惯从整体流程理解问题。",
+    "interest.c": "偏好清晰规则、明确步骤和有序推进。",
+    "interest.i": "重视理解原理，愿意围绕问题深入研究。",
+    "value.wealth": "关注学习投入与未来回报之间的关系。",
+    "env.structure": "偏好要求清晰、反馈稳定的学习环境。",
+    "skill.data": "自述更有信心处理数据、寻找规律并形成判断。"
+  })[dim] || `在本次作答中，较常选择与「${dimensionNameMap[dim] || dim}」相关的回答。`;
+}
+
+function getMajorComparison(major) {
+  if (/工业工程/.test(major.name)) return {
+    study: "运筹、流程优化、统计分析与供应链",
+    focus: "是否喜欢收集数据、分析流程，并检验改进方案的效果。",
+    task: "观察一次校园排队，记录等待时间，画流程图并提出一个改进方案。"
+  };
+  if (/工程管理|工程造价/.test(major.name)) return {
+    study: "工程经济、项目计划、预算与管理",
+    focus: "是否愿意处理预算、任务依赖、进度协调与执行问题。",
+    task: "为一次校园活动制作预算、排期和风险清单，并处理一次计划变更。"
+  };
+  if (/通信|电子|电气|自动化|物联网/.test(major.name)) return {
+    study: major.courses,
+    focus: "是否愿意深入学习数理原理，并持续处理系统调试和技术问题。",
+    task: "用安全的仿真工具搭建一个简单电路或控制系统，记录三组输入与响应。"
+  };
+  if (/软件|计算机|人工智能|数据科学/.test(major.name)) return {
+    study: major.courses,
+    focus: "是否享受编程与逻辑构建，并愿意持续测试、定位问题和修改程序。",
+    task: "编写一个任务清单小程序，完成三个测试，请同学试用后修正一个问题。"
+  };
+  return { study: major.courses, focus: `结合「${major.courses}」的课程任务，观察持续兴趣、完成情况与遇阻后的投入。`,
+    task: `选择「${major.courses}」中的一个入门主题，完成一个练习或作品并请老师反馈。` };
+}
+
 function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecommendation) {
-  const topTraits = getTopDimensions(studentVector.score, 3);
-  const traitText = topTraits.map((t) => `${t.label} ${t.score}分`).join("、");
-  const radarProfile = buildRadarProfile(studentVector.score);
-  const hollandCode = getHollandCode(studentVector.score);
-  const careerAnalysis = buildCareerDevelopmentAnalysis(studentVector.score, rankedMajors);
-  const careerDepthProfile = buildCareerDepthProfile(studentVector.score, rankedMajors);
-  const careerAxes = buildCareerStyleAxes(studentVector.score);
-  const developmentInsights = buildDevelopmentInsights(rankedMajors, studentVector.score);
-  const advisorTags = buildAdvisorTags(studentVector.score, rankedMajors);
-  const top3 = rankedMajors.slice(0, 3);
-  const directionRecommendations = buildDirectionRecommendations(rankedMajors, studentVector.score);
-  const primaryDirection = directionRecommendations[0];
-  const secondaryDirection = directionRecommendations[1];
-  const choiceComparison = buildChoiceComparison(top3, studentVector.score);
-  const reverseAdvice = buildReverseAdvice(rankedMajors, studentVector.score);
-  const advisorConclusion = buildAdvisorConclusion(top3, rankedMajors, studentVector.score);
-  const tieTop = (top3[0].matchIndex - top3[1].matchIndex) <= 3;
-
-  const rankNames = tieTop
-    ? ["优先方向一", "优先方向二", "补充参考方向"]
-    : ["建议优先方向", "建议次优方向", "补充参考方向"];
-
-  const cards = top3
-    .map((major, index) => {
-      const ev = buildEvidence(major, studentVector.score);
-      const narrative = buildMajorNarrative(major, studentVector.score);
-      const scoreTone = major.matchIndex >= 96 ? "strong" : major.matchIndex >= 90 ? "steady" : "watch";
-      const scoreToneLabel = scoreTone === "strong"
-        ? "优先建议"
-        : scoreTone === "steady"
-          ? "重点比较"
-          : "建议审慎验证";
-      const verdictTitle = index === 0
-        ? "当前可优先进入筛选阶段"
-        : index === 1
-          ? "适合作为重点比较对象保留"
-          : "可作为补充方向继续观察";
-      const headline =
-        index === 0 && tieTop
-          ? `${major.name} 与另一优先方向的匹配度较为接近，建议结合学科成绩、课程承受度与实践经历做进一步判断。`
-          : `${major.name} 与当前学生画像的匹配度较高，可纳入优先考虑范围。`;
-      return `
-      <article class="rank-card">
-        <div class="rank-verdict-row">
-          <span class="fit-badge fit-${scoreTone}">${scoreToneLabel}</span>
-          <span class="rank-verdict-title">${verdictTitle}</span>
-        </div>
-        <div class="rank-card-top">
-          <div>
-            <p class="rank-label">${rankNames[index]}</p>
-            <h3>${major.name}</h3>
-          </div>
-          <p class="score">${major.matchIndex} / 100</p>
-        </div>
-        <p class="rank-summary">${headline}</p>
-        <div class="rank-meta-grid">
-          <span>学科门类：${major.category}</span>
-          <span>课程关键词：${major.courses}</span>
-          <span>典型去向：${major.careers}</span>
-        </div>
-        <div class="rank-insight-block">
-          <p class="evidence"><strong>核心判断：</strong>${narrative.fit}</p>
-          <p class="evidence"><strong>优先推荐理由：</strong>${narrative.edge}</p>
-        </div>
-        <div class="rank-evidence-list">
-          ${(ev.positives.length ? ev.positives : ["综合匹配度较高"]).map((item) => `<span>${item}</span>`).join("")}
-        </div>
-        <details class="rank-details">
-          <summary>查看详细解释</summary>
-          <p class="risk"><strong>下一步验证重点：</strong>${narrative.caution}</p>
-          <p class="risk"><strong>潜在风险提醒：</strong>${ev.risks.join("、") || "当前未见明显核心短板，可持续观察学业压力承受度"}</p>
-        </details>
-      </article>
-    `;
-    })
-    .join("");
-
-  const summaryTitle = tieTop
-    ? `建议重点比较：${primaryDirection?.label || top3[0].name} 与 ${secondaryDirection?.label || top3[1].name}`
-    : `建议优先关注：${primaryDirection?.label || top3[0].name}`;
-  const summaryText = tieTop
-    ? "两类方向当前均具备较强匹配性，建议结合学科基础、培养方案、课程强度与未来发展路径做进一步比较判断。"
-    : `${primaryDirection?.label || top3[0].name} 与当前学生画像的整体匹配度最高，可作为优先评估方向；具体专业建议应在该方向内部进一步筛选。`;
-  const directionSummary = directionRecommendations.length
-    ? `方向判断：建议优先考察 ${primaryDirection?.label || "当前优先方向"}${secondaryDirection ? `，并同步关注 ${secondaryDirection.label}` : ""}。`
-    : "";
-  const topMatch = Number(top3[0]?.matchIndex || 0);
-  const secondMatch = Number(top3[1]?.matchIndex || 0);
-  const topGap = Math.max(0, topMatch - secondMatch);
-  const decisionStage = tieTop
-    ? {
-        label: "需重点比较筛选",
-        text: `当前前两类方向的综合匹配度接近，建议避免仅凭单一专业名称做决定，而应进一步比较课程结构、大学培养方式与学科成绩支撑。`
-      }
-    : topMatch >= 96 && topGap >= 5
-      ? {
-        label: "方向相对清晰",
-        text: `当前优先方向的匹配度已形成相对领先优势，可先将咨询重点放在该方向内部的专业筛选、学校层次与培养差异上。`
-      }
-      : {
-          label: "建议继续验证",
-          text: `当前已形成优先方向，但仍建议结合成绩表现、实践经历与未来可接受的学习强度做进一步确认。`
-        };
-  const nextVerificationFocus = top3[0]
-    ? buildMajorNarrative(top3[0], studentVector.score).caution
-    : "建议继续核对学科基础、学习投入方式与未来发展环境偏好。";
-  const parentReadGuide = tieTop
-    ? "建议优先阅读“综合评估摘要”和“顾问判断与补充说明”，重点比较两类优先方向之间的关键差异。"
-    : "建议优先阅读“综合评估摘要”和“专业建议与匹配依据”，先确认首选方向是否与学生的真实学业状态一致。";
-  const coverDecisionLabel = tieTop
-    ? "当前属于重点比较型结论"
-    : topMatch >= 96 && topGap >= 5
-      ? "当前属于相对清晰型结论"
-      : "当前属于建议继续验证型结论";
-  const coverActionText = tieTop
-    ? "下一阶段建议优先比较前两类方向的课程结构、学科门槛与培养差异。"
-    : `下一阶段建议围绕 ${top3[0]?.name || primaryDirection?.label || "当前优先方向"} 深入筛选学校与专业。`;
-  const coverMetricsHTML = `
-    <div class="report-cover-metrics">
-      <article class="report-cover-metric">
-        <span>首选匹配度</span>
-        <strong>${topMatch} / 100</strong>
-      </article>
-      <article class="report-cover-metric">
-        <span>方向差距</span>
-        <strong>${topGap} 分</strong>
-      </article>
-      <article class="report-cover-metric">
-        <span>兴趣辅助参照</span>
-        <strong>${hollandCode}</strong>
-      </article>
-    </div>
-  `;
-  const coverChecklistHTML = `
-    <div class="report-cover-checklist">
-      <p><strong>结论状态：</strong>${coverDecisionLabel}</p>
-      <p><strong>当前重点：</strong>${coverActionText}</p>
-      <p><strong>家长阅读顺序：</strong>${parentReadGuide}</p>
-    </div>
-  `;
-  const comparisonCardHTML = choiceComparison
-    ? `
-      <article class="report-note-card">
-        <p class="report-note-kicker">比较说明</p>
-        <h4>优先方向之间的关键差异</h4>
-        <p>${choiceComparison}</p>
-      </article>
-    `
-    : "";
-  const reverseAdviceCardHTML = reverseAdvice
-    ? `
-      <article class="report-note-card report-note-card-caution">
-        <p class="report-note-kicker">风险提醒</p>
-        <h4>当前不建议优先考虑的方向</h4>
-        <p>${reverseAdvice}</p>
-      </article>
-    `
-    : "";
-  const advisorConclusionCardHTML = advisorConclusion
-    ? `
-      <article class="report-note-card report-note-card-primary">
-        <p class="report-note-kicker">顾问结论</p>
-        <h4>顾问判断</h4>
-        <p>${advisorConclusion}</p>
-      </article>
-    `
-    : "";
-  const calibrationCardHTML = isAdaptiveMode(selectedMode) && calibrationContext?.boundaryDims?.length
-    ? `
-      <article class="report-note-card">
-        <p class="report-note-kicker">评估机制说明</p>
-        <h4>完整评估自适应校准说明</h4>
-        <p>本次正式完整评估在核心评估完成后，围绕 ${calibrationContext.topMajor || "当前优先方向"}${calibrationContext.compareMajor ? ` 与 ${calibrationContext.compareMajor}` : ""} 的关键分流维度，追加了针对性校准题。重点校准维度包括：${calibrationContext.boundaryDims.map((dim) => dimensionNameMap[dim] || dim).join("、")}；同时补充关注了当前相对薄弱的维度：${(calibrationContext.lowDims || []).map((dim) => dimensionNameMap[dim] || dim).join("、")}。系统会优先抽取更贴近真实学习、项目与选择场景的问题，以提高相近方向之间的判别力。${followUpAdded ? "由于校准后优先方向仍然接近，系统已进一步追加分流追问题，以增强排序判别力。" : ""}</p>
-      </article>
-    `
-    : "";
-  const reportNotesHTML = [advisorConclusionCardHTML, comparisonCardHTML, reverseAdviceCardHTML, calibrationCardHTML]
-    .filter(Boolean)
-    .join("");
-  const reportNotesSummaryHTML = `
-    <div class="report-notes-summary">
-      <article class="report-notes-summary-card report-notes-summary-card-primary">
-        <span>顾问判断重点</span>
-        <strong>${top3[0]?.name || primaryDirection?.label || "当前优先方向"}</strong>
-        <p>${advisorConclusion || summaryText}</p>
-      </article>
-      <article class="report-notes-summary-card">
-        <span>需要继续比较的关键点</span>
-        <strong>${secondaryDirection ? `${primaryDirection?.label || top3[0]?.name} vs ${secondaryDirection.label}` : "当前优先方向的后续验证"}</strong>
-        <p>${choiceComparison || nextVerificationFocus}</p>
-      </article>
-    </div>
-  `;
-  const studentSummaryCards = `
-    <div class="student-summary-grid">
-      <article class="student-summary-card">
-        <span class="student-summary-label">学生类型</span>
-        <strong>${getStudentTypeLabel(studentProfile.type)}</strong>
-      </article>
-      <article class="student-summary-card">
-        <span class="student-summary-label">当前年级</span>
-        <strong>${studentProfile.grade || "未填写"}</strong>
-      </article>
-      <article class="student-summary-card">
-        <span class="student-summary-label">课程背景</span>
-        <strong>${getCurriculumSummary()}</strong>
-      </article>
-      <article class="student-summary-card">
-        <span class="student-summary-label">评估版本</span>
-        <strong>${MODE_CONFIG[selectedMode].label}</strong>
-      </article>
-    </div>
-  `;
-  const advisorTagsHTML = advisorTags.length
-    ? `
-      <div class="advisor-tags">
-        ${advisorTags.map((tag) => `<span>${tag}</span>`).join("")}
-      </div>
-    `
-    : "";
-
-  const reportOverviewHTML = `
-    <section class="report-section report-overview-section">
-      <div class="report-section-heading">
-        <p class="report-section-index">Section 01</p>
-        <div>
-          <h3>综合评估摘要</h3>
-          <p>本页用于概括学生当前的核心发展方向、主要优势依据与报告阅读重点。</p>
-        </div>
-      </div>
-      <div class="report-overview-grid">
-        <article class="report-overview-card report-overview-card-primary">
-          <span class="report-overview-label">综合结论</span>
-          <strong>${summaryTitle}</strong>
-          <p>${summaryText}</p>
-        </article>
-        <article class="report-overview-card">
-          <span class="report-overview-label">方向判断</span>
-          <strong>${directionSummary || "当前已形成清晰优先方向。"}</strong>
-          <p>本结论用于帮助学生和家长先缩小方向，再在方向内部比较具体专业。</p>
-        </article>
-        <article class="report-overview-card">
-          <span class="report-overview-label">核心优势依据</span>
-          <strong>${traitText}</strong>
-          <p>${weightingSummary}</p>
-        </article>
-        <article class="report-overview-card">
-          <span class="report-overview-label">兴趣辅助参照</span>
-          <strong>Holland：${hollandCode}</strong>
-          <p>用于辅助理解兴趣结构，不单独作为专业选择结论。</p>
-        </article>
-      </div>
-    </section>
-  `;
-
-  const parentBriefHTML = `
-    <section class="report-section parent-brief-section">
-      <div class="report-section-heading">
-        <p class="report-section-index">Parent First</p>
-        <div>
-          <h3>家长优先阅读摘要</h3>
-          <p>如需先快速把握报告结论，建议优先阅读本部分。它会先说明当前方向判断是否清晰、这份报告应如何使用，以及后续最值得继续验证的重点。</p>
-        </div>
-      </div>
-      <div class="parent-brief-grid">
-        <article class="parent-brief-card parent-brief-card-primary">
-          <span class="parent-brief-label">当前方向结论</span>
-          <strong>${decisionStage.label}</strong>
-          <p>${decisionStage.text}</p>
-        </article>
-        <article class="parent-brief-card">
-          <span class="parent-brief-label">建议先怎么用这份报告</span>
-          <strong>${summaryTitle}</strong>
-          <p>${parentReadGuide}</p>
-        </article>
-        <article class="parent-brief-card">
-          <span class="parent-brief-label">下一步最值得验证的重点</span>
-          <strong>${top3[0]?.name || primaryDirection?.label || "当前优先方向"}</strong>
-          <p>${nextVerificationFocus}</p>
-        </article>
-      </div>
-    </section>
-  `;
-
-  const careerAnalysisHTML = `
-    <section class="report-section career-analysis-section">
-      <div class="report-section-heading">
-        <p class="report-section-index">Section 02</p>
-        <div>
-          <h3>职业性格与发展分析</h3>
-          <p>结合职业兴趣、认知方式、能力特征、韧性稳定性与价值偏好，判断学生未来更适合的发展方式与工作环境。</p>
-        </div>
-      </div>
-      <div class="career-analysis-header">
-        <div>
-          <p class="career-analysis-kicker">职业性格与发展分析</p>
-          <h3>${careerAnalysis.label}</h3>
-        </div>
-        <p class="career-analysis-holland">Holland 辅助代码：${hollandCode}</p>
-      </div>
-      <p class="career-analysis-summary">${careerAnalysis.summary}</p>
-      <div class="career-depth-panel">
-        <article class="career-depth-card career-depth-card-primary">
-          <span class="career-highlight-label">职业倾向深化判断</span>
-          <strong>${careerDepthProfile.consistencyLabel}</strong>
-          <p>${careerDepthProfile.consistencySummary}</p>
-        </article>
-        <article class="career-depth-card">
-          <span class="career-highlight-label">技能信心</span>
-          <strong>${careerDepthProfile.skillConfidence} / 100</strong>
-          <p>${careerDepthProfile.topText}</p>
-        </article>
-        <article class="career-depth-card">
-          <span class="career-highlight-label">价值与环境偏好</span>
-          <strong>${careerDepthProfile.workValueClarity} / 100</strong>
-          <p>${careerDepthProfile.gapText}</p>
-        </article>
-      </div>
-      <div class="career-highlight-grid">
-        <article class="career-highlight-card career-highlight-card-primary">
-          <span class="career-highlight-label">发展定位摘要</span>
-          <strong>${careerAnalysis.label}</strong>
-          <p>${careerAnalysis.advice}</p>
-        </article>
-        <article class="career-highlight-card">
-          <span class="career-highlight-label">更适合的任务环境</span>
-          <strong>建议优先选择与当前优势一致的培养方式</strong>
-          <p>${careerAnalysis.environment}</p>
-        </article>
-        <article class="career-highlight-card">
-          <span class="career-highlight-label">需要警惕的判断偏差</span>
-          <strong>避免仅凭兴趣印象做方向决定</strong>
-          <p>${careerAnalysis.directionBlindspot || "建议结合真实学科投入、项目体验与长期稳定性综合判断，而不是只根据单次偏好做决定。"}</p>
-        </article>
-      </div>
-      <div class="career-analysis-grid">
-        <article class="career-analysis-card">
-          <h4>未来工作中的核心优势</h4>
-          <ul>
-            ${careerAnalysis.strengths.map((item) => `<li>${item}</li>`).join("")}
-          </ul>
-          <p class="career-analysis-note"><strong>当前优势维度：</strong>${careerAnalysis.topText}</p>
-        </article>
-        <article class="career-analysis-card">
-          <h4>可能出现的职业盲点</h4>
-          <ul>
-            ${careerAnalysis.blindspots.map((item) => `<li>${item}</li>`).join("")}
-          </ul>
-          <p class="career-analysis-note"><strong>当前相对薄弱维度：</strong>${careerAnalysis.lowText}</p>
-          ${careerAnalysis.directionBlindspot ? `<p class="career-analysis-note"><strong>方向判断提醒：</strong>${careerAnalysis.directionBlindspot}</p>` : ""}
-        </article>
-        <article class="career-analysis-card">
-          <h4>更适合的发展环境</h4>
-          <p>${careerAnalysis.environment}</p>
-        </article>
-        <article class="career-analysis-card">
-          <h4>发展建议</h4>
-          <p>${careerAnalysis.advice}</p>
-        </article>
-      </div>
-      <div class="career-axis-list">
-        ${careerAxes.map((axis) => `
-          <article class="career-axis-item">
-            <p class="career-axis-label">${axis.label}</p>
-            <strong>${axis.orientation}</strong>
-            <p>${axis.summary}</p>
-          </article>
-        `).join("")}
-      </div>
-      <p class="career-analysis-disclaimer">说明：本部分借鉴职业发展测评的阅读方式，结合 Holland 兴趣类型与本系统的学习方式、认知风格、能力特征、技能信心、工作价值观、韧性稳定性与任务环境偏好生成，主要用于帮助理解学生未来在学习、工作与发展选择中的优势特征、潜在盲点与适配环境，不等同于单独的 MBTI、Holland 或其他外部标准量表结论。</p>
-    </section>
-  `;
-
-  const developmentInsightsHTML = `
-    <section class="report-section development-insights-section">
-      <div class="report-section-heading">
-        <p class="report-section-index">Section 03</p>
-        <div>
-          <h3>大学学习方式与培养提醒</h3>
-          <p>帮助家长和学生理解：若优先考虑当前方向，大学阶段更适合怎样的学习节奏、培养环境与沟通方式。</p>
-        </div>
-      </div>
-      <div class="development-insights-header">
-        <div>
-          <p class="career-analysis-kicker">大学学习方式与培养提醒</p>
-          <h3>${developmentInsights.directionLabel}</h3>
-        </div>
-      </div>
-      <div class="development-insights-grid">
-        <article class="development-insight-card">
-          <h4>更适合的大学学习方式</h4>
-          <p>${developmentInsights.learningStyle}</p>
-        </article>
-        <article class="development-insight-card">
-          <h4>当前不太适合的培养环境</h4>
-          <p>${developmentInsights.unsuitableEnvironment}</p>
-        </article>
-        <article class="development-insight-card">
-          <h4>家长沟通建议</h4>
-          <p>${developmentInsights.parentAdvice}</p>
-        </article>
-        <article class="development-insight-card">
-          <h4>相近方向选择提醒</h4>
-          <p>${developmentInsights.selectionReminder}</p>
-        </article>
-      </div>
-    </section>
-  `;
-
-  const schoolRestrictedHTML = schoolRecommendation?.ranked?.length
-    ? `
-    <section class="restricted-section">
-      <h3>目标学校范围内的替代建议</h3>
-      <p class="restricted-note">理想专业用于判断学生的总体适配方向；以下结果用于回答“如果仅在目标学校现有专业中选择，哪些方向与学生画像更接近”。</p>
-      <p class="restricted-source">已识别目标学校专业 ${schoolRecommendation.matchedCount} 个${schoolRecommendation.unmatchedCount ? `，另有 ${schoolRecommendation.unmatchedCount} 个名称暂未完成匹配` : ""}。</p>
-      <div class="rank-grid">
-        ${schoolRecommendation.ranked.slice(0, 3).map((major, index) => {
-          const fit = getFitTone(major.matchIndex);
-          const ev = buildEvidence(major, studentVector.score);
-          return `
-            <article class="rank-card">
-              <div class="rank-card-top">
-                <div>
-                  <p class="rank-label">${index === 0 ? "校内优先建议" : index === 1 ? "校内次优建议" : "校内补充参考"}</p>
-                  <h3>${major.name}</h3>
-                </div>
-                <div>
-                  <p class="score">${major.matchIndex} / 100</p>
-                  <span class="fit-badge fit-${fit.tone}">${fit.label}</span>
-                </div>
-              </div>
-              <p class="rank-summary">在目标学校可报范围内，${major.name} 是当前与学生画像相对更接近的替代方向。</p>
-              <div class="rank-meta-grid">
-                <span>校内替代类型：${major.category}</span>
-                <span>课程关键词：${major.courses}</span>
-                <span>典型去向：${major.careers}</span>
-              </div>
-              <p class="evidence"><strong>替代依据：</strong>${ev.positives.join("、") || "与学生画像的相对距离较近"}</p>
-              <p class="mapping-note"><strong>匹配参照：</strong>${major.sourceRef || "关键词映射"}</p>
-            </article>
-          `;
-        }).join("")}
-      </div>
-      <p class="mapping-note"><strong>使用建议：</strong>如果理想方向与校内可报专业差异较大，建议优先考虑偏管理、偏服务、偏应用协同的专业；不建议仅为进入学校而优先选择与学生画像明显不一致的高强度技术研发方向。</p>
-    </section>
-  `
-    : schoolMajorText
-      ? `
-      <section class="restricted-section">
-        <h3>目标学校范围内的替代建议</h3>
-        <p class="restricted-note">系统已检测到目标学校专业名单，但当前完成识别的专业名称仍然较少。建议按“一行一个专业名称”的方式重新粘贴，例如：工程造价、建筑工程技术、电气自动化技术。</p>
-      </section>
-    `
-      : "";
-
+  const esc = escapeReportText;
+  const score = studentVector.score;
+  const candidates = getReportMajors(rankedMajors);
+  const joint = getJointPriorityMajors(rankedMajors);
+  const tied = joint.length > 1;
+  const recommended = tied ? joint : candidates.slice(0, 1);
+  const names = recommended.slice(0, 3).map((m) => m.name).join("、") + (recommended.length > 3 ? `等${recommended.length}个专业` : "");
+  const traits = getTopDimensions(score, 3);
+  const summaryTitle = `${tied ? "同组优先推荐" : "优先推荐"}：${names}`;
+  const integrated = getIntegratedMeasurements(answers);
+  const labels = {interest:"职业兴趣",confidence:"技能信心",value:"工作价值观",experience:"实践经历"};
+  const integratedCards = ["interest","confidence","value","experience"].map((kind) => {
+    const group = integrated.filter((m) => m.kind === kind);
+    const sorted = group.filter((m) => m.count).sort((a,b) => b.value-a.value);
+    const strong = sorted.filter((m) => m.value >= 0.75);
+    const text = !group.length ? "本次记录尚未包含独立测量题，需补充测评。"
+      : !sorted.length ? (group.every((m) => m.answered === m.asked) ? "已选择缺少相关经历，暂不据此判断信心水平。" : "本模块尚未完成有效评价，需补充回答。")
+      : kind === "experience" ? sorted.map((m) => `${getIntegratedLabel(m.dim)}：${m.examples[0]?.answer || "待补充"}`).join("；")
+      : strong.length ? `${kind === "interest" ? "较喜欢的活动领域" : kind === "confidence" ? "较有信心的任务" : "较重视的发展条件"}：${strong.map((m) => getIntegratedLabel(m.dim)).join("、")}。`
+      : "已分别评价各项，本次没有明显的高评价项，详见附录记录。";
+    return `<article class="report-feature-card"><h4>${labels[kind]}</h4><p>${esc(text)}</p></article>`;
+  }).join("");
+  const skillForInterest = {"interest.r":"skill.making","interest.i":"skill.data","interest.a":"skill.expression","interest.s":"skill.coordination","interest.e":"skill.coordination","interest.c":"skill.data"};
+  const interpretation = integrated.filter((m) => m.kind === "interest" && m.count && m.value >= 0.75).slice(0, 3).map((interest) => {
+    const skill = skillForInterest[interest.dim];
+    const confidence = integrated.find((m) => m.kind === "confidence" && m.dim === skill);
+    const experience = integrated.find((m) => m.kind === "experience" && m.dim === skill);
+    const message = !confidence?.count ? "兴趣较强，相关任务信心信息不足。"
+      : confidence.value < 0.5 ? "兴趣较强，相关任务信心较低，可从入门练习积累经验。"
+      : confidence.value >= 0.75 && (!experience?.count || experience.value <= 0.5) ? "兴趣和自述信心较强，独立实践经历仍需补充。"
+      : confidence.value >= 0.75 ? "兴趣、任务信心和自述实践经历相互支持。"
+      : "兴趣较强，相关任务信心一般，适合用实际成果进一步比较。";
+    return `<li><strong>${esc(getIntegratedLabel(interest.dim))}：</strong>${message}</li>`;
+  }).join("");
+  const highInterests = integrated.filter((m) => m.kind === "interest" && m.count && m.value >= 0.75);
+  const highConfidence = integrated.filter((m) => m.kind === "confidence" && m.count && m.value >= 0.75);
+  const highValues = integrated.filter((m) => m.kind === "value" && m.count && m.value >= 0.75);
+  const academicText = studentProfile.type === "international" ? internationalProfile.scoreText
+    : Object.entries(publicSubjectScores).filter(([,value]) => typeof value === "number").map(([key,value]) => `${({cn:"语文",math:"数学",en:"英语",phy:"物理",chem:"化学",bio:"生物"})[key] || key} ${value}`).join("；");
+  const basis = integrated.length ? `${highValues.length ? `较重视${highValues.map((m)=>getIntegratedLabel(m.dim)).join("、")}。` : ""}兴趣、技能信心和价值观分别评价后综合比较。${highInterests.length ? `兴趣较强的领域为${highInterests.map((m)=>getIntegratedLabel(m.dim)).join("、")}。` : ""}${highConfidence.length ? `较有信心的任务为${highConfidence.map((m)=>getIntegratedLabel(m.dim)).join("、")}。` : ""}` : traits.map((t) => describeReportTrait(t.dim)).join("");
+  const learningTraits = getTopDimensions(score, dimensionKeys.length).filter((t) => t.dim.startsWith("cognition.") || t.dim === "ability.focus").slice(0, 3);
+  const featureCards = learningTraits.map((trait) => {
+    const evidence = buildAnswerEvidence({ coreDims: [trait.dim] }).supporting[0];
+    return `<article class="report-feature-card"><h4>${esc(trait.label)}</h4><p>${esc(describeReportTrait(trait.dim))}</p>
+      ${evidence ? `<p class="report-example">作答例证：「${esc(evidence.question)}」选择了「${esc(evidence.answer)}」。</p>` : "<p class=report-example>当前相关信息来自综合画像，详细来源见附录。</p>"}</article>`;
+  }).join("");
+  const conditions = [...new Set(recommended.flatMap((major) => getMajorCoreDims(major)))].filter((dim) => (score[dim] || 0) < 0.5).slice(0, 3);
+  const rows = candidates.map((major) => {
+    const ev = buildAnswerEvidence(major);
+    const comparison = getMajorComparison(major);
+    const role = tied && joint.some((m) => m.name === major.name) ? "同组优先推荐" : major === candidates[0] ? "优先推荐" : "补充比较";
+    const supportingDims = [...new Set(ev.supporting.map((r) => dimensionNameMap[r.dimension] || r.dimension))];
+    const integratedSupport = integrated.filter((m) => m.kind !== "experience" && m.count && m.value >= 0.75 && getMajorVectorValue(major,m.dim) >= 0.6).map((m) => `${labels[m.kind]}：${getIntegratedLabel(m.dim)}`).slice(0,4);
+    const rationale = integratedSupport.length ? `综合参照${integratedSupport.join("；")}，与该专业的课程任务比较。` : supportingDims.length
+      ? `作答体现了${supportingDims.join("、")}，与该专业的部分学习任务相关。`
+      : "该专业在本次候选中相对靠前，直接作答证据较少，需结合学业表现理解。";
+    return `<tr><th scope="row"><p class="rank-label">${role}</p>${esc(major.name)}</th>
+      <td data-label="推荐依据">${esc(rationale)}</td><td data-label="大学主要学习内容">${esc(comparison.study)}</td><td data-label="选择时重点观察">${esc(comparison.focus)}</td></tr>`;
+  });
+  const tableHead = "<thead><tr><th>推荐专业</th><th>推荐依据</th><th>大学主要学习内容</th><th>选择时重点观察</th></tr></thead>";
+  const table = (items) => `<div class="report-table-wrap" tabindex="0" role="region" aria-label="专业推荐比较表"><table class="report-comparison-table">${tableHead}<tbody>${items.join("")}</tbody></table></div>`;
+  const extra = rows.length > 3 ? `<details class="rank-details"><summary>展开其余${rows.length - 3}个同组推荐专业</summary>${table(rows.slice(3))}</details>` : "";
+  const evidenceHTML = candidates.map((major) => {
+    const ev = buildAnswerEvidence(major);
+    const items = (records) => records.map((r) => `<li>题目${esc(r.questionId)}：${esc(r.question)}<br>选择：${esc(r.answer)}<br>关联说明：${esc(r.explanation)}</li>`).join("");
+    return `<details class="rank-details"><summary>${esc(major.name)}：查看实际作答依据</summary>
+      <p>支持该方向的回答</p><ul>${items(ev.supporting) || "<li>暂无直接支持回答。</li>"}</ul>
+      <p>其他相关回答（补充信息，不作为冲突证据）</p><ul>${items(ev.toVerify) || "<li>暂无其他相关回答。</li>"}</ul>
+      ${ev.missing.length ? `<p>待补充信息：${esc(ev.missing.map((d) => dimensionNameMap[d] || d).join("、"))}。缺少选择不代表能力不足。</p>` : ""}</details>`;
+  }).join("");
+  const radarProfile = buildRadarProfile(score);
+  const planMajors = candidates.slice(0, 2);
   resultBox.innerHTML = `
-    <div class="result-header report-cover">
-      <div class="report-cover-main">
-        <div>
-          <p class="result-kicker">MajorNavi 学生专业发展评估报告</p>
-          <h2>${summaryTitle}</h2>
-          <p class="result-summary">${summaryText}</p>
-          ${coverMetricsHTML}
-        </div>
-        <div class="report-cover-side">
-          <span class="report-cover-badge">正式完整评估报告</span>
-          <p>适用于学生专业方向判断、家长沟通与后续志愿咨询参考。</p>
-          ${coverChecklistHTML}
-        </div>
-      </div>
-      ${studentSummaryCards}
-      <div class="summary-chips">
-        <span>优势特征：${traitText}</span>
-        <span>${weightingSummary}</span>
-        <span>Holland：${hollandCode}</span>
-      </div>
-      ${advisorTagsHTML}
-      ${directionSummary ? `<p class="result-meta">${directionSummary}</p>` : ""}
-      <p class="result-meta">综合画像结合 Holland 兴趣结构、认知方式、能力特征、技能信心、工作价值观、韧性稳定性与任务环境偏好，用于提升专业判断的实用性与可解释性。建议先阅读综合摘要，再进入职业性格分析与专业建议部分。</p>
-    </div>
-    <div class="result-tools">
-      <button type="button" id="export-pdf-btn" class="btn btn-ghost">导出 PDF（打印版）</button>
-    </div>
-    ${parentBriefHTML}
-    ${reportOverviewHTML}
-    <section class="report-section">
-      <div class="report-section-heading">
-        <p class="report-section-index">Profile</p>
-        <div>
-          <h3>综合画像雷达图</h3>
-          <p>用于查看学生在主要兴趣、能力和韧性维度上的相对分布，帮助理解推荐背后的整体画像结构。</p>
-        </div>
-      </div>
-      <div class="radar-wrap">
-        <canvas id="profile-radar" width="360" height="360"></canvas>
-        <div class="radar-legend">
-          ${radarProfile.map((x) => `<span>${x.label} ${x.value}</span>`).join("")}
-        </div>
+    <section class="result-header report-cover" aria-labelledby="report-conclusion">
+      <p class="result-kicker">MajorNavi 学生专业发展评估报告 · 01 测评结论</p>
+      <h2 id="report-conclusion">${esc(summaryTitle)}</h2>
+      <p class="result-summary">${tied ? "本次测评将这些专业列为同一优先推荐组，后续专业比较以这一组方向为重点。" : "本次测评将该专业列为优先推荐方向，其他候选作为补充比较。"}</p>
+      <p class="report-student-line">${esc(studentProfile.grade || "年级未填写")} · ${esc(getStudentTypeLabel(studentProfile.type))} · ${esc(getCurriculumSummary())}</p>
+      <div class="report-cover-metrics">
+        <article class="report-cover-metric"><span>专业建议</span><strong>${esc(names)}</strong></article>
+        <article class="report-cover-metric"><span>推荐依据</span><p>${esc(basis)}</p></article>
+        <article class="report-cover-metric"><span>选择重点</span><p>重点比较推荐专业的课程任务、持续投入与实际完成情况。具体差异见专业对比表。</p></article>
       </div>
     </section>
-    ${careerAnalysisHTML}
-    ${developmentInsightsHTML}
-    <section class="report-section">
-      <div class="report-section-heading">
-        <p class="report-section-index">Section 04</p>
-        <div>
-          <h3>专业建议与匹配依据</h3>
-          <p>在综合画像基础上，系统给出当前优先方向、次优方向与补充参考方向，并同步说明主要匹配依据与后续观察重点。</p>
-        </div>
-      </div>
-      <div class="rank-grid">${cards}</div>
+    <div class="result-tools"><button type="button" id="export-pdf-btn" class="btn btn-ghost">导出 PDF（打印版）</button></div>
+    <section class="report-section" aria-labelledby="report-features"><h3 id="report-features">02 学生特征分析</h3>
+      <p>兴趣回答“喜欢什么”，信心回答“认为自己能做什么”，价值观回答“未来看重什么”；实践经历提供自述参照，彼此独立计分。</p>
+      <div class="report-feature-grid">${integratedCards}<article class="report-feature-card"><h4>学业参照</h4><p style="white-space:pre-line">${esc(academicText || "未填写成绩")}</p><p>成绩用于辅助比较课程准备，实践经历来自学生自述。</p></article></div>${interpretation ? `<h4>综合解读</h4><ul>${interpretation}</ul><p>兴趣与任务的关联用于辅助解释，不是固定的一对一职业映射。</p>` : ""}
+      <details class="rank-details"><summary>学习与协作偏好：辅助理解学习环境</summary><div class="report-feature-grid">${featureCards}</div><p>这部分不按MBTI类型划分，也不直接决定专业排序。</p></details>
+      <p class="report-learning-condition"><strong>选择时需关注的学习条件：</strong>${conditions.length ? `推荐专业涉及${esc(conditions.map((d) => dimensionNameMap[d] || d).join("、"))}相关任务。请结合近期作业、课程成绩和老师反馈补充判断；本次较少选择相关回答，不代表能力不足。` : "将这些偏好与近期作业、课程成绩和老师反馈对照，重点观察持续投入和实际完成情况。"}</p>
     </section>
-    ${reportNotesHTML ? `
-      <section class="report-section report-notes-section">
-        <div class="report-section-heading">
-          <p class="report-section-index">Section 05</p>
-          <div>
-            <h3>顾问判断与补充说明</h3>
-            <p>用于帮助家长理解：为何当前优先该方向、相近方向之间的关键差异在哪里，以及本次评估如何进一步完成校准。</p>
-          </div>
-        </div>
-        ${reportNotesSummaryHTML}
-        <div class="report-notes-grid">
-          ${reportNotesHTML}
-        </div>
-      </section>
-    ` : ""}
-    ${schoolRestrictedHTML}
-  `;
+    <section class="report-section" aria-labelledby="report-comparison"><h3 id="report-comparison">03 专业推荐与比较</h3>
+      <p>按“推荐依据、主要课程、选择重点”集中比较。${tied ? "同组推荐专业处于同一推荐层级，表内先后不代表确定的优劣。" : "优先推荐专业与补充方向分层呈现。"}</p>
+      ${table(rows.slice(0, 3))}${extra}
+      ${schoolRecommendation?.ranked?.length ? `<details class="rank-details"><summary>目标学校内的专业参照</summary><ul>${schoolRecommendation.ranked.slice(0, 3).map((m) => `<li>${esc(m.name)}：${esc(m.courses)}</li>`).join("")}</ul></details>` : ""}
+    </section>
+    <section class="report-section" aria-labelledby="report-followup"><h3 id="report-followup">04 后续建议</h3>
+      <p>本次重点区分${esc(planMajors.map((m) => m.name).join("与"))}的实际学习投入。选择以下短任务作为补充证据，无需按固定周数完成。</p>
+      <ul>${planMajors.map((m) => `<li><strong>${esc(m.name)}：</strong>${esc(getMajorComparison(m).task)}</li>`).join("")}
+      <li><strong>比较方式：</strong>各投入相同时间，记录成果、困难和继续投入意愿，请学科老师反馈，再对照上表的选择重点进行比较。</li></ul>
+    </section>
+    <details class="rank-details report-methods"><summary>附录：测评方法、兴趣参照与作答明细</summary>
+      <p>相对指数仅比较本次候选专业，最高项按模型归一化为100，不代表完全适合、能力水平、录取或成功概率。各维度来自自述偏好及成绩辅助调整，低值或未选择不代表能力不足。</p>
+      <p>${esc(weightingSummary)}。Holland兴趣辅助代码：${esc(getHollandCode(score))}。R代表动手实践，I代表研究分析，A代表创意表达，S代表助人与合作，E代表组织与影响，C代表规则与秩序；代码不单独决定专业。</p>
+      <h4>综合画像参照</h4><p>展示作答倾向的相对分布，不是客观能力测验或同龄人百分位。</p>
+      <div class="radar-wrap"><canvas id="profile-radar" width="360" height="360"></canvas><div class="radar-legend">${radarProfile.map((x) => `<span>${esc(x.label)} ${x.value}</span>`).join("")}</div></div>
+      <h4>独立测量记录</h4><p>新增题目由MajorNavi自建，采用Holland六类兴趣作为分类参照；不属于MBTI或Kuder正式量表，未继承其常模或信效度。技能信心不等同于客观能力，实践经历为学生自述。</p>
+      <ul>${integrated.map((m) => `<li>${labels[m.kind]} · ${esc(dimensionNameMap[m.dim] || m.dim)}：${m.count ? Math.round(m.value*100) : "缺少经历，未计分"}；有效回答${m.count}/${m.asked}。${esc(m.examples.map((e)=>`${e.question} ${e.answer}`).join("；"))}</li>`).join("")}</ul>
+      <p>推荐采用兴趣、信心、价值观与学科准备的自建加权规则；权重尚需真实样本验证。性格、学习方式和抗压信息用于辅助说明，不直接决定专业排序。</p><h4>候选专业相对指数</h4><ul>${candidates.map((m) => `<li>${esc(m.name)}：${m.matchIndex}</li>`).join("")}</ul>
+      <h4>实际作答明细</h4>${evidenceHTML}
+      <p>题目记录：${new Set(activeQuestions.map((q) => q.id)).size}道独立题目；${calibrationAdded ? "已完成个性化追加题" : "未追加校准题"}${followUpAdded ? "，并完成分流追问" : ""}。追加题用于补充推荐方向之间的区分信息，不代表测评已经具备实证信效度。</p>
+    </details>`;
   drawRadarChart("profile-radar", radarProfile);
 }
 
@@ -3276,7 +3067,11 @@ quizForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const allAnswered = activeQuestions.every((q) => answers[q.id]);
   if (!allAnswered) {
-    alert("仍有题目未完成，请完成全部题目后再生成评估报告。");
+    currentPage = getFirstUnansweredPage();
+    renderCurrentPage();
+    updateProgress();
+    setSaveStatus("已定位到首个未答题所在页，请补答后继续。");
+    window.scrollTo({ top: 0, behavior: "smooth" });
     return;
   }
   if (isAdaptiveMode(selectedMode) && !calibrationAdded) {
@@ -3323,19 +3118,26 @@ quizForm.addEventListener("submit", (event) => {
   const schoolRecommendation = rankSchoolMajors(weighted.score, schoolMajorText);
   renderResult({ ...studentVector, score: weighted.score }, rankedMajors, weighted.summary, schoolRecommendation);
   const reportPayload = buildReportPayload({ ...studentVector, score: weighted.score }, rankedMajors, weighted.summary, schoolRecommendation);
-  localStorage.removeItem(STORAGE_KEY);
-  setSaveStatus(REPORT_API_BASE_URL ? "评估报告已生成，正在同步至后台。" : "已提交并清除本地草稿");
+  const record = { payload: reportPayload, synced: false, view: {
+    studentVector: { ...studentVector, score: weighted.score }, rankedMajors,
+    weightingSummary: weighted.summary, schoolRecommendation,
+    context: { studentProfile, selectedMode, publicSubjectScores, internationalProfile, schoolMajorText, calibrationContext, calibrationAdded, followUpAdded },
+    answers: { ...answers }, questionIds: activeQuestions.map((q) => q.id)
+  } };
+  let cached = false;
+  try {
+    localStorage.setItem(reportCacheKey(), JSON.stringify(record));
+    cached = true;
+    localStorage.removeItem(STORAGE_KEY);
+    setSaveStatus("报告已保存在本机，刷新后可恢复。");
+  } catch (error) {
+    setSaveStatus("本机保存失败，请先导出报告；原有草稿仍保留。");
+  }
   resultBox.classList.remove("hidden");
   resultBox.scrollIntoView({ behavior: "smooth", block: "start" });
-  if (REPORT_API_BASE_URL) {
-    void syncReportRecord(reportPayload)
-      .then(() => {
-        setSaveStatus("评估报告已同步至后台。");
-      })
-      .catch((error) => {
-        console.error(error);
-        setSaveStatus("评估报告已生成，但后台同步失败。");
-      });
+  if (cached) {
+    showReportRecoveryStatus(record, "报告已保存在本机，刷新后可恢复。");
+    if (REPORT_API_BASE_URL) void deliverCachedReport(record);
   }
   emitEvent("complete_assessment", {
     mode: selectedMode,
