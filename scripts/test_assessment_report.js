@@ -1,29 +1,8 @@
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
-const assert = require('assert/strict');
-const root = path.resolve(__dirname, '..');
-const nodes = new Map();
-const noop = () => {};
-const context = new Proxy({}, {get: () => noop, set: () => true});
-function node(id) {
-  if (!nodes.has(id)) nodes.set(id, { value:'', textContent:'', innerHTML:'', style:{},dataset:{},checked:false,
-    classList:{add:noop,remove:noop,toggle:noop}, addEventListener:noop,
-    getContext:()=>context, querySelectorAll:()=>[], querySelector:()=>null, scrollIntoView:noop, setAttribute:noop });
-  return nodes.get(id);
-}
-let seed = 1702026;
-const testMath = Object.create(Math); testMath.random = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
-const sandbox = {HTMLCanvasElement:class {},console,URLSearchParams,Uint32Array,Math:testMath,Date,Set,Map,Object,Array,
-  document:{getElementById:node,querySelector:node,querySelectorAll:selector=>selector.includes("student-type")?[{checked:true,value:"international",addEventListener:noop}]:[],addEventListener:noop},
-  window:{location:{search:''},scrollTo:noop,addEventListener:noop},
-  localStorage:{getItem:()=>null,setItem:noop,removeItem:noop},alert:noop};
-vm.createContext(sandbox);
-for (const file of ['assets/js/official_data.js','assets/js/integrated_questions.js','assets/js/majors_v2.js']) vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),sandbox);
-let source=fs.readFileSync(path.join(root,'assets/js/app.js'),'utf8');
-source=source.slice(0,source.lastIndexOf('\napplyMode(DEFAULT_MODE);'));
-vm.runInContext(source,sandbox);
-const run = code => vm.runInContext(code,sandbox);
+const fs=require('fs');
+const path=require('path');
+const assert=require('assert/strict');
+const {root,source,nodes,sandbox,run}=require('./lib/assessment_harness').createAssessmentHarness();
+const node=id=>nodes.get(id);
 // The real sampling functions, not a parallel reimplementation of the algorithm.
 for (let i=0;i<50;i++) {
   run('answers = {}; applyMode("full");');
@@ -60,6 +39,11 @@ assert.equal(run('applySubjectWeight(calculateStudentVector(answers).score).scor
 run('answers.G1="1";');
 assert.equal(run('calculateStudentVector(answers).score["interest.i"]'),1);
 assert.equal(run('calculateStudentVector(answers).score["interest.r"]'),0.5);
+run('answers={};applyMode("standard");');
+assert.equal(run('activeQuestions.length'),80);
+assert.equal(run('new Set(activeQuestions.filter(q=>q.kind === "domain").map(q=>q.domain)).size'),9);
+assert(run('allQuestions.filter(q=>q.kind === "domain").every(q=>q.options.some(o=>o.key === "U" && o.rating === null))'));
+assert.deepEqual(JSON.parse(run('JSON.stringify(getMajorDomains({name:"人力资源管理"}))')),['people']);
 // Reuse the previous simulated student's choices when available, matching by question text.
 const logPath=path.join(root,'exports/G11-模拟测评-20261017/模拟作答记录.json');
 const prior=fs.existsSync(logPath)?JSON.parse(fs.readFileSync(logPath,'utf8')):[];
@@ -68,7 +52,7 @@ run(`answers={};applyMode("full"); studentProfile={type:"international",grade:"G
 node('student-grade').value='G11（修订后模拟）';
 node('international-curriculum-name').value='IB Diploma';
 node('international-score-text').value='Mathematics AA HL 6\nPhysics HL 6\nComputer Science HL 6\nEnglish B SL 5\nChinese A SL 5\nEconomics SL 5';
-const answerNew = () => run(`for(const q of activeQuestions) { if(answers[q.id]) continue; answers[q.id]=q.measurement === "independent-rating" ? String((q.kind === "interest" ? {"interest.r":4,"interest.i":5,"interest.a":2,"interest.s":2,"interest.e":3,"interest.c":4} : q.kind === "confidence" ? {"skill.data":4,"skill.making":4,"skill.expression":3,"skill.coordination":2} : q.kind === "experience" ? {"skill.data":3,"skill.making":4,"skill.expression":3,"skill.coordination":2} : {"value.autonomy":5,"value.creativity":3,"value.service":3,"value.security":4,"value.wealth":4,"value.influence":3})[q.dimension] || 3) : priorChoices[q.text] || q.options[0].key; }`);
+const answerNew = () => run(`for(const q of activeQuestions) { if(answers[q.id]) continue; answers[q.id]=q.measurement === "independent-rating" ? String((q.kind === "domain" ? {"domain.computing":5,"domain.electronics":4,"domain.engineering":3,"domain.math":4,"domain.chemistry":2,"domain.biology":2,"domain.business":3,"domain.people":2,"domain.creative":2} : q.kind === "interest" ? {"interest.r":4,"interest.i":5,"interest.a":2,"interest.s":2,"interest.e":3,"interest.c":4} : q.kind === "confidence" ? {"skill.data":4,"skill.making":4,"skill.expression":3,"skill.coordination":2} : q.kind === "experience" ? {"skill.data":3,"skill.making":4,"skill.expression":3,"skill.coordination":2} : {"value.autonomy":5,"value.creativity":3,"value.service":3,"value.security":4,"value.wealth":4,"value.influence":3})[q.dimension] || 3) : priorChoices[q.text] || q.options[0].key; }`);
 answerNew();run('currentPage=totalPages;appendCalibrationQuestions();');answerNew();
 run(`var interim=rankMajors(applySubjectWeight(calculateStudentVector(answers).score).score); if(needsBoundaryFollowUp(interim)) { calibrationContext={...calibrationContext,topMajor:interim[0].name,compareMajor:interim[1].name,boundaryDims:getBoundaryDims(interim[0],interim[1],4),boundaryTags:getBoundaryTags(interim[0],interim[1])}; appendBoundaryFollowUpQuestions(); }`);answerNew();
 run(`var simulatedVector=calculateStudentVector(answers);var simulatedWeighted=applySubjectWeight(simulatedVector.score);var simulatedRanked=rankMajors(simulatedWeighted.score);renderResult({...simulatedVector,score:simulatedWeighted.score},simulatedRanked,simulatedWeighted.summary,null);`);
@@ -114,7 +98,7 @@ if(process.argv.includes('--export')) {
   fixture=fixture.replace(/  <script>\s*window.ADMIN_DASHBOARD_PATH[\s\S]*?<\/script>/,'<script>window.REPORT_API_BASE_URL="";</script>');
   fixture=fixture.replace('</body>',`<script>\nconst fixture=${JSON.stringify(record).replace(/</g,'\\u003c')};\n({studentProfile,selectedMode,publicSubjectScores,internationalProfile,schoolMajorText,calibrationContext,calibrationAdded,followUpAdded}=fixture.view.context);\nanswers=fixture.view.answers;activeQuestions=allQuestions.filter(q=>fixture.view.questionIds.includes(q.id));\nrenderResult(fixture.view.studentVector,fixture.view.rankedMajors,fixture.view.weightingSummary,null);\nauthGate.classList.add('hidden');assessmentShell.classList.remove('hidden');intro.classList.add('hidden');quizForm.classList.add('hidden');resultBox.classList.remove('hidden');\ndocument.querySelectorAll('#result details:not(.report-methods)').forEach(d=>d.open=true);\n</script></body>`);
   // Omit auth initialization in this isolated fixture to preserve existing user records.
-  fixture=fixture.replace('assets/js/app.js?v=20261017-independent-v8','exports/G11-修订验证-20261017/app-fixture.js');
+  fixture=fixture.replace('assets/js/app.js?v=20261018-task-v9','exports/G11-修订验证-20261017/app-fixture.js');
   fs.writeFileSync(path.join(dir,'app-fixture.js'),source);
   fs.writeFileSync(path.join(dir,'报告验证.html'),fixture);
 }

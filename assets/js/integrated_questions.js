@@ -37,3 +37,21 @@ const INTEGRATED_QUESTIONS = [
   ...INTEGRATED_VALUES.map(([dim,value],i)=>makeIndependentItem(`I${i+1}`,'I',dim,`选择未来的发展方向时，以下条件对你有多重要：${value}？`,'value')),
   ...INTEGRATED_SKILLS.map(([dim,activity],i)=>makeIndependentItem(`J${i+1}`,'J',dim,`关于「${activity}」，你的实际经历更接近哪种情况？`,'experience'))
 ];
+
+// Domain tasks distinguish majors that share the same broad RIASEC interests.
+const DOMAIN_TASKS = [
+  ['computing','编写程序，并持续定位错误、测试和修改代码','理解算法或数据结构，比较不同程序解决问题的方法'],
+  ['electronics','分析电路或信号，调试传感器和电子系统','改变控制系统的输入，记录并解释输出变化'],
+  ['engineering','分析机械结构、运动关系并改进装配方案','阅读结构图或模型，检验设备设计与加工约束'],
+  ['math','围绕抽象概念完成推导或证明','建立数学模型，解释假设并比较计算方法'],
+  ['chemistry','围绕物质组成、性质和反应设计观察方案','记录化学实验现象，分析反应条件与结果'],
+  ['biology','围绕细胞、生物体或生态过程提出问题','观察生命现象，比较样本并解释实验结果'],
+  ['business','分析预算、成本、收益及资源配置方案','比较项目进度、经营风险和流程效率'],
+  ['people','通过访谈理解个体需要并设计支持方案','分析人与组织之间的协作或公共服务问题'],
+  ['creative','围绕主题制作设计或内容作品并反复修改','比较表达方案，收集受众反馈并调整呈现']
+];
+INTEGRATED_QUESTIONS.push(...DOMAIN_TASKS.flatMap(([domain,...tasks],i)=>tasks.map((task,j)=>({
+  ...makeIndependentItem(`K${i*2+j+1}`,'K',`domain.${domain}`,`如果需要长期学习并反复练习，你有多愿意投入以下任务：${task}？`,'interest'),
+  options:[...['很不愿意','不太愿意','一般','比较愿意','非常愿意'].map((text,index)=>({key:String(index+1),text,dim:`domain.${domain}`,rating:index/4})),{key:'U',text:'尚未了解这类任务，暂时无法判断',dim:`domain.${domain}`,rating:null}],
+  kind:'domain',domain,tags:['independent-rating','domain-task','original-item']
+}))));

@@ -25,7 +25,8 @@ Object.assign(MODULE_META, {
   G: {order:7,label:"活动兴趣",tags:["interest"],intent:"分别评价六类活动的兴趣"},
   H: {order:8,label:"技能信心",tags:["confidence"],intent:"独立评价任务信心，可选择缺少经验"},
   I: {order:9,label:"工作价值观",tags:["value"],intent:"分别评价未来发展条件的重要性"},
-  J: {order:10,label:"实践经历",tags:["experience"],intent:"自述实际经历，与能力表现区分"}
+  J: {order:10,label:"实践经历",tags:["experience"],intent:"自述实际经历，与能力表现区分"},
+  K: {order:11,label:"专业任务偏好",tags:["domain-task"],intent:"区分不同专业的真实学习任务"}
 });
 const allQuestions = [...OFFICIAL_DATA.questions, ...(typeof INTEGRATED_QUESTIONS !== "undefined" ? INTEGRATED_QUESTIONS : [])].map(normalizeQuestion);
 const dimensions = OFFICIAL_DATA.dimensions;
@@ -96,9 +97,9 @@ const REPORT_API_BASE_URL = String(window.REPORT_API_BASE_URL || "").trim().repl
 const REPORT_INGEST_KEY = String(window.REPORT_INGEST_KEY || "").trim();
 const ADMIN_DASHBOARD_PATH = String(window.ADMIN_DASHBOARD_PATH || "./pages/admin.html").trim() || "./pages/admin.html";
 const DEFAULT_MODE = "full";
-const STANDARD_CORE_LIMITS = { A: 12, B: 12, C: 12, D: 10, E: 8, F: 6, G: 6, H: 4, I: 6, J: 4 };
+const STANDARD_CORE_LIMITS = { A: 10, B: 10, C: 10, D: 8, E: 7, F: 6, G: 6, H: 4, I: 6, J: 4, K: 9 };
 const STANDARD_CALIBRATION_COUNT = 12;
-const FULL_CORE_LIMITS = { A: 18, B: 18, C: 18, D: 14, E: 12, F: 10, G: 12, H: 8, I: 6, J: 4 };
+const FULL_CORE_LIMITS = { A: 14, B: 14, C: 14, D: 10, E: 10, F: 10, G: 12, H: 8, I: 6, J: 4, K: 18 };
 const FULL_CALIBRATION_COUNT = 18;
 const FOLLOW_UP_QUESTION_COUNT = 4;
 const FOLLOW_UP_GAP_THRESHOLD = 3;
@@ -1276,7 +1277,7 @@ function applySubjectWeight(baseScore) {
     ? applyInternationalSubjectWeight(baseScore, internationalProfile)
     : applyPublicSubjectWeight(baseScore, publicSubjectScores);
   // Academic preparation supplements the profile without rewriting independent self-ratings.
-  getIntegratedMeasurements(answers).filter((m) => m.kind !== "experience").forEach((m) => {
+  getIntegratedMeasurements(answers).filter((m) => m.kind !== "experience" && m.kind !== "domain").forEach((m) => {
     weighted.score[m.dim] = baseScore[m.dim];
   });
   return {
@@ -1353,7 +1354,7 @@ function calculateStudentVector(answerMap) {
     score["risk.stability"] = score["value.security"];
   }
   const measurements = getIntegratedMeasurements(answerMap);
-  measurements.filter((m) => m.kind !== "experience").forEach((m) => {
+  measurements.filter((m) => m.kind !== "experience" && m.kind !== "domain").forEach((m) => {
     score[m.dim] = m.count ? m.value : 0.45;
   });
   let careerDepthDefaulted = false;
@@ -1448,10 +1449,34 @@ function getMajorVectorValue(major, dim) {
   return 0;
 }
 
+const DOMAIN_LABELS = {computing:"编程与算法",electronics:"电子与控制",engineering:"结构与机械",math:"数学推导与建模",chemistry:"化学与物质",biology:"生命与生物",business:"经营与项目",people:"人与公共服务",creative:"设计与表达"};
+function getMajorDomains(major) {
+  const name=major.name;
+  if (/工业工程/.test(name)) return ["business","math","engineering"];
+  if (/工程管理|工程造价/.test(name)) return ["business","engineering"];
+  if (/物理/.test(name)) return ["math","electronics"];
+  if (/教育|心理|社会工作|社会学|法律|法学|公共管理|人力资源/.test(name)) return ["people"];
+  if (/化学|化工|制药|高分子/.test(name)) return ["chemistry"];
+  if (/生物|生态|农|林|食品|医学|临床|护理|药学/.test(name)) return ["biology"];
+  if (/数学|统计|精算/.test(name)) return ["math"];
+  if (/计算机|软件|人工智能|网络工程|数据科学|信息安全/.test(name)) return ["computing"];
+  if (/电子|电气|通信|自动化|测控|物联网|微电子/.test(name)) return ["electronics","computing"];
+  if (/机械|车辆|制造|土木|建筑|航空|飞行器|材料成型/.test(name)) return ["engineering"];
+  if (/金融|财务|经济|会计|工商|市场|物流|管理/.test(name)) return ["business"];
+  if (/设计|艺术|新闻|传播|语言|中文|文学|媒体/.test(name)) return ["creative"];
+  if (/教育|心理|社会|法律|法学|公共/.test(name)) return ["people"];
+  return [];
+}
+function getDomainSupport(major, answerMap=answers) {
+  const relevant = getMajorDomains(major);
+  const measures = getIntegratedMeasurements(answerMap).filter((m) => m.kind === "domain" && m.count && relevant.includes(m.dim.replace("domain.","")));
+  return { domains:relevant, answered:measures.length, value:measures.length ? average(measures.map((m)=>m.value)) : null, measures };
+}
+
 function squaredDistance(studentScore, major) {
   const measurements = getIntegratedMeasurements(answers);
-  const unknown = new Set(measurements.filter((m) => m.kind !== "experience" && !m.count).map((m) => m.dim));
-  return dimensionKeys.reduce((sum, dim) => {
+  const unknown = new Set(measurements.filter((m) => m.kind !== "experience" && m.kind !== "domain" && !m.count).map((m) => m.dim));
+  const baseDistance = dimensionKeys.reduce((sum, dim) => {
     // Personality, learning style and resilience describe support needs, not eligibility.
     const weight = dim.startsWith("interest.") ? 1 : dim.startsWith("skill.") ? 0.7
       : dim.startsWith("value.") ? 0.45 : ["ability.math","ability.stat"].includes(dim) ? 0.35 : 0;
@@ -1459,6 +1484,8 @@ function squaredDistance(studentScore, major) {
     const diff = (studentScore[dim] || 0) - getMajorVectorValue(major, dim);
     return sum + diff * diff * weight;
   }, 0);
+  const domain = getDomainSupport(major);
+  return baseDistance + (domain.answered ? 0.3 * (0.5-domain.value) : 0);
 }
 
 function rankMajors(studentScore) {
@@ -1878,7 +1905,7 @@ function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoo
   return {
     id: createRecordId(),
     submittedAt: new Date().toISOString(),
-    siteVersion: "2026-10-independent-measurement-v8",
+    siteVersion: "2026-10-task-discrimination-v9",
     scoreMeaning: "候选专业内相对匹配指数，不是能力分、录取概率或成功概率",
     jointPriorityMajors: getJointPriorityMajors(rankedMajors).map((major) => major.name),
     studentProfile: {
@@ -1891,6 +1918,7 @@ function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoo
     },
     scoring: {
       integratedMeasurements: getIntegratedMeasurements(answers),
+      taskPreferencePolicy: "专业任务偏好作为有界补充分流信息，调整范围-0.15至0.15，缺少信息保持中性；未覆盖领域不推断偏好。",
       recommendationPolicy: "兴趣1、技能信心0.7、价值观0.45、学科准备0.35；自建产品规则，待样本验证。学习性格偏好不直接参与推荐排序。",
       weightingSummary,
       hollandCode: getHollandCode(studentVector.score),
@@ -2018,7 +2046,7 @@ function getDimensionSignal(dim, score) {
 }
 function buildAnswerEvidence(major) {
   const core = getMajorCoreDims(major);
-  const measured = new Map(getIntegratedMeasurements(answers).filter((m) => m.kind !== "experience").map((m) => [m.dim,m]));
+  const measured = new Map(getIntegratedMeasurements(answers).filter((m) => m.kind !== "experience" && m.kind !== "domain").map((m) => [m.dim,m]));
   const records = activeQuestions.flatMap((q) => {
     const selected = q.options.find((o) => o.key === answers[q.id]);
     if (!selected || !q.options.some((o) => core.includes(o.dim))) return [];
@@ -2697,6 +2725,18 @@ function describeReportTrait(dim) {
 }
 
 function getMajorComparison(major) {
+  if (/数学|统计/.test(major.name)) return {study:major.courses,
+    focus:"是否喜欢推导、证明和模型假设，愿意反复检验解题思路。",
+    task:"用两种方法解决一个概率或建模问题，说明假设、步骤和各方法的限制。"};
+  if (/物理/.test(major.name)) return {study:major.courses,
+    focus:"是否愿意把数学模型与可观察的现象、测量误差和实验结果联系起来。",
+    task:"用摆长不同的简易摆记录周期，画图并比较观测结果与自己的预测。"};
+  if (/化学|化工/.test(major.name)) return {study:major.courses,
+    focus:"是否愿意分析物质性质与反应条件，整理实验现象并解释结果。",
+    task:"选一份公开化学实验视频或数据，记录变量、现象及结论，区分观察与推测。"};
+  if (/生物|生态/.test(major.name)) return {study:major.courses,
+    focus:"是否喜欢观察生命现象、比较样本，并解释生物过程中的差异。",
+    task:"选一份公开生物观察数据，比较两组样本，解释差异并列出尚需验证的问题。"};
   if (/工业工程/.test(major.name)) return {
     study: "运筹、流程优化、统计分析与供应链",
     focus: "是否喜欢收集数据、分析流程，并检验改进方案的效果。",
@@ -2774,12 +2814,14 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
     const comparison = getMajorComparison(major);
     const role = tied && joint.some((m) => m.name === major.name) ? "同组优先推荐" : major === candidates[0] ? "优先推荐" : "补充比较";
     const supportingDims = [...new Set(ev.supporting.map((r) => dimensionNameMap[r.dimension] || r.dimension))];
-    const integratedSupport = integrated.filter((m) => m.kind !== "experience" && m.count && m.value >= 0.75 && getMajorVectorValue(major,m.dim) >= 0.6).map((m) => `${labels[m.kind]}：${getIntegratedLabel(m.dim)}`).slice(0,4);
+    const integratedSupport = integrated.filter((m) => m.kind !== "experience" && m.kind !== "domain" && m.count && m.value >= 0.75 && getMajorVectorValue(major,m.dim) >= 0.6).map((m) => `${labels[m.kind]}：${getIntegratedLabel(m.dim)}`).slice(0,4);
+    const domain = getDomainSupport(major);
+    const domainText = domain.answered ? `专业任务偏好：${domain.measures.map((m)=>DOMAIN_LABELS[m.dim.replace("domain.","")]).join("、")}（${domain.value >= 0.75 ? "愿意投入" : domain.value <= 0.25 ? "投入意愿较低，需重点核对" : "投入意愿一般"}）。` : "专业任务偏好尚缺信息。";
     const rationale = integratedSupport.length ? `综合参照${integratedSupport.join("；")}，与该专业的课程任务比较。` : supportingDims.length
       ? `作答体现了${supportingDims.join("、")}，与该专业的部分学习任务相关。`
       : "该专业在本次候选中相对靠前，直接作答证据较少，需结合学业表现理解。";
     return `<tr><th scope="row"><p class="rank-label">${role}</p>${esc(major.name)}</th>
-      <td data-label="推荐依据">${esc(rationale)}</td><td data-label="大学主要学习内容">${esc(comparison.study)}</td><td data-label="选择时重点观察">${esc(comparison.focus)}</td></tr>`;
+      <td data-label="推荐依据">${esc(rationale)}<br>${esc(domainText)}</td><td data-label="大学主要学习内容">${esc(comparison.study)}</td><td data-label="选择时重点观察">${esc(comparison.focus)}</td></tr>`;
   });
   const tableHead = "<thead><tr><th>推荐专业</th><th>推荐依据</th><th>大学主要学习内容</th><th>选择时重点观察</th></tr></thead>";
   const table = (items) => `<div class="report-table-wrap" tabindex="0" role="region" aria-label="专业推荐比较表"><table class="report-comparison-table">${tableHead}<tbody>${items.join("")}</tbody></table></div>`;
@@ -2828,8 +2870,8 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
       <p>${esc(weightingSummary)}。Holland兴趣辅助代码：${esc(getHollandCode(score))}。R代表动手实践，I代表研究分析，A代表创意表达，S代表助人与合作，E代表组织与影响，C代表规则与秩序；代码不单独决定专业。</p>
       <h4>综合画像参照</h4><p>展示作答倾向的相对分布，不是客观能力测验或同龄人百分位。</p>
       <div class="radar-wrap"><canvas id="profile-radar" width="360" height="360"></canvas><div class="radar-legend">${radarProfile.map((x) => `<span>${esc(x.label)} ${x.value}</span>`).join("")}</div></div>
-      <h4>独立测量记录</h4><p>新增题目由MajorNavi自建，采用Holland六类兴趣作为分类参照；不属于MBTI或Kuder正式量表，未继承其常模或信效度。技能信心不等同于客观能力，实践经历为学生自述。</p>
-      <ul>${integrated.map((m) => `<li>${labels[m.kind]} · ${esc(dimensionNameMap[m.dim] || m.dim)}：${m.count ? Math.round(m.value*100) : "缺少经历，未计分"}；有效回答${m.count}/${m.asked}。${esc(m.examples.map((e)=>`${e.question} ${e.answer}`).join("；"))}</li>`).join("")}</ul>
+      <p>报告版本：v9 · 2026-10-18；新增专业任务分流，固定作答检查可追溯。</p><h4>独立测量记录</h4><p>新增题目由MajorNavi自建，采用Holland六类兴趣作为分类参照；不属于MBTI或Kuder正式量表，未继承其常模或信效度。技能信心不等同于客观能力，实践经历为学生自述。</p>
+      <ul>${integrated.map((m) => `<li>${labels[m.kind] || "专业任务偏好"} · ${esc(m.kind === "domain" ? DOMAIN_LABELS[m.dim.replace("domain.","")] : dimensionNameMap[m.dim] || m.dim)}：${m.count ? Math.round(m.value*100) : "缺少经历，未计分"}；有效回答${m.count}/${m.asked}。${esc(m.examples.map((e)=>`${e.question} ${e.answer}`).join("；"))}</li>`).join("")}</ul>
       <p>推荐采用兴趣、信心、价值观与学科准备的自建加权规则；权重尚需真实样本验证。性格、学习方式和抗压信息用于辅助说明，不直接决定专业排序。</p><h4>候选专业相对指数</h4><ul>${candidates.map((m) => `<li>${esc(m.name)}：${m.matchIndex}</li>`).join("")}</ul>
       <h4>实际作答明细</h4>${evidenceHTML}
       <p>题目记录：${new Set(activeQuestions.map((q) => q.id)).size}道独立题目；${calibrationAdded ? "已完成个性化追加题" : "未追加校准题"}${followUpAdded ? "，并完成分流追问" : ""}。追加题用于补充推荐方向之间的区分信息，不代表测评已经具备实证信效度。</p>
