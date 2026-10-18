@@ -27,3 +27,10 @@
 #admin-report-dialog::backdrop {background:#16291e80;}
 .admin-report-dialog-toolbar {display:flex;justify-content:flex-end;position:sticky;top:-20px;background:white;padding:10px 0;z-index:1;}
 #admin-report-dialog .admin-detail {border:0;padding:8px;}
+
+.admin-section-nav {display:flex;flex-wrap:wrap;gap:12px;margin-top:20px;}
+.admin-section-nav a {display:inline-block;padding:10px 18px;border:1px solid #bfcec4;border-radius:9px;color:#3b6151;background:#fff;text-decoration:none;}
+.admin-section-nav a[aria-current="page"] {background:#416b59;color:white;border-color:#416b59;}
+body[data-admin-view="assessment"] .admin-gaokao-section {display:none;}
+body[data-admin-view="gaokao"] .admin-overview,body[data-admin-view="gaokao"] .admin-content,body[data-admin-view="gaokao"] #admin-pilot-observations,body[data-admin-view="gaokao"] .admin-toolbar .admin-actions {display:none;}
+.admin-session-tools {display:flex;justify-content:space-between;align-items:center;gap:16px;}

@@ -17,6 +17,11 @@
     host.querySelector('#account-count').textContent=`共 ${data.items.length} 个账号`;
   }
   function manage() {
+    if(document.body.dataset.adminView==='gaokao') {
+      host.innerHTML='<div class="admin-session-tools"><span>管理员已登录</span><button type="button" id="account-logout" class="btn btn-ghost">退出管理登录</button></div>';
+      host.querySelector('#account-logout').addEventListener('click',()=>void api.logoutAdmin(base));
+      return;
+    }
     host.innerHTML=`<h2>一次性测评账号</h2><p>完成一份报告后核销；中途可继续答题，完成后7天内可登录查看原报告。</p>
       <button type="button" id="account-logout" class="btn btn-ghost">退出管理登录</button>
       <form id="account-create" class="account-form"><label>使用者姓名或内部编号<input name="name" maxlength="80" placeholder="单个账号填写姓名，批量可填写班级"></label><label>年级<input name="grade" maxlength="40" placeholder="例如 G11"></label><label>备注<input name="note" maxlength="500"></label><label>生成数量<input name="count" type="number" value="1" min="1" max="100" required></label><label>有效天数<input name="days" type="number" value="30" min="1" max="365" required></label><button type="submit" class="btn btn-primary">生成账号密码</button></form>

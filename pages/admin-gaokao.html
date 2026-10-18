@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>高考查询管理</title>
+  <script>
+    const ADMIN_PAGE_VERSION = "20260703-admin-v5";
+    const isLocalPreviewHost = ["127.0.0.1", "localhost"].includes(location.hostname);
+    const adminUrl = new URL(location.href);
+    if (!isLocalPreviewHost && adminUrl.searchParams.get("v") !== ADMIN_PAGE_VERSION) {
+      adminUrl.searchParams.set("v", ADMIN_PAGE_VERSION);
+      location.replace(adminUrl.toString());
+    }
+    if (location.protocol === "http:" && !isLocalPreviewHost) {
+      location.replace("https://" + location.host + location.pathname + location.search + location.hash);
+    }
+  </script>
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260703-admin-v5">
+  <link rel="stylesheet" href="../assets/css/access.css?v=20261018-nav-v16">
+</head>
+<body data-admin-view="gaokao">
+  <main class="page">
+    <section class="hero">
+      <p class="tag">MajorNavi · 管理后台</p>
+      <h1>高考查询管理</h1>
+      <p class="subtitle">查看高考志愿查询记录、学校关注与方向偏好。</p>
+      <nav class="admin-section-nav" aria-label="后台功能"><a href="admin.html">测评管理</a><a href="admin-gaokao.html" aria-current="page">高考查询管理</a></nav>
+    </section>
+
+    <section class="card admin-shell">
+      <section class="admin-toolbar">
+        <div class="admin-toolbar-head">
+          <p id="admin-status" class="auth-status">系统将自动连接后台并加载最新报告数据。</p>
+          <div class="admin-actions">
+            <button id="admin-reload-btn" type="button" class="btn btn-primary">刷新报告</button>
+            <button id="admin-export-btn" type="button" class="btn btn-ghost">导出 CSV</button>
+            <button id="admin-export-high-intent-btn" type="button" class="btn btn-ghost">导出高意向</button>
+            <button id="admin-clear-smoke-btn" type="button" class="btn btn-ghost">清理测试报告</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-overview">
+        <article class="student-summary-card">
+          <span class="student-summary-label">报告总数</span>
+          <strong id="admin-total-count">0</strong>
+        </article>
+        <article class="student-summary-card">
+          <span class="student-summary-label">今日新增</span>
+          <strong id="admin-today-count">0</strong>
+        </article>
+        <article class="student-summary-card">
+          <span class="student-summary-label">公立学校学生</span>
+          <strong id="admin-public-count">0</strong>
+        </article>
+        <article class="student-summary-card">
+          <span class="student-summary-label">国际学生</span>
+          <strong id="admin-international-count">0</strong>
+        </article>
+        <article class="student-summary-card">
+          <span class="student-summary-label">高意向</span>
+          <strong id="admin-high-intent-count">0</strong>
+        </article>
+      </section>
+
+      <section class="admin-gaokao-section">
+        <div class="admin-list-head">
+          <div>
+            <h2>高考查询概览</h2>
+            <p class="admin-section-subtitle">查看学生在高考志愿参考模块中的查询热度、偏好方向和最近行为。</p>
+          </div>
+          <div class="admin-actions">
+            <button id="admin-gaokao-reload-btn" type="button" class="btn btn-ghost">刷新高考查询</button>
+            <button id="admin-gaokao-export-btn" type="button" class="btn btn-ghost">导出高考查询</button>
+          </div>
+        </div>
+        <div class="admin-gaokao-overview">
+          <article class="student-summary-card">
+            <span class="student-summary-label">查询总数</span>
+            <strong id="admin-gaokao-total-count">0</strong>
+          </article>
+          <article class="student-summary-card">
+            <span class="student-summary-label">今日查询</span>
+            <strong id="admin-gaokao-today-count">0</strong>
+          </article>
+          <article class="student-summary-card">
+            <span class="student-summary-label">物理 / 理科</span>
+            <strong id="admin-gaokao-physics-count">0</strong>
+          </article>
+          <article class="student-summary-card">
+            <span class="student-summary-label">历史 / 文科</span>
+            <strong id="admin-gaokao-history-count">0</strong>
+          </article>
+          <article class="student-summary-card">
+            <span class="student-summary-label">工科方向偏好</span>
+            <strong id="admin-gaokao-engineering-count">0</strong>
+          </article>
+        </div>
+        <div class="admin-gaokao-filters">
+          <label class="single-field">
+            <span>高考省份筛选</span>
+            <select id="admin-gaokao-province-filter">
+              <option value="">全部省份</option>
+            </select>
+          </label>
+          <label class="single-field">
+            <span>高考科类筛选</span>
+            <select id="admin-gaokao-track-filter">
+              <option value="">全部科类</option>
+              <option value="physics">物理 / 理科</option>
+              <option value="history">历史 / 文科</option>
+              <option value="general">综合改革</option>
+            </select>
+          </label>
+          <label class="single-field">
+            <span>趋势观察</span>
+            <div class="admin-gaokao-trend-inline">
+              <span>近 7 天：<strong id="admin-gaokao-7day-count">0</strong></span>
+              <span>近 30 天：<strong id="admin-gaokao-30day-count">0</strong></span>
+            </div>
+          </label>
+          <div class="single-field admin-filter-reset">
+            <span>快速操作</span>
+            <button id="admin-gaokao-reset-filters-btn" type="button" class="btn btn-ghost">重置高考筛选</button>
+          </div>
+        </div>
+        <div class="admin-gaokao-grid">
+          <article class="advice admin-gaokao-card">
+            <h3>高频省份</h3>
+            <div id="admin-gaokao-province-tags" class="advisor-tags advisor-tags-admin"></div>
+          </article>
+          <article class="advice admin-gaokao-card">
+            <h3>高频方向偏好</h3>
+            <div id="admin-gaokao-focus-tags" class="advisor-tags advisor-tags-admin"></div>
+          </article>
+          <article class="advice admin-gaokao-card">
+            <h3>热门学校</h3>
+            <div id="admin-gaokao-school-tags" class="advisor-tags advisor-tags-admin"></div>
+          </article>
+          <article class="advice admin-gaokao-card">
+            <h3>高频专业方向</h3>
+            <div id="admin-gaokao-major-tags" class="advisor-tags advisor-tags-admin"></div>
+          </article>
+        </div>
+        <div id="admin-gaokao-list" class="admin-gaokao-list"></div>
+      </section>
+
+      <section class="admin-content admin-content-list-only">
+        <aside class="admin-list-wrap">
+          <div class="admin-list-head">
+            <h2>报告列表</h2>
+            <span id="admin-count">0</span>
+          </div>
+          <div class="admin-filters">
+            <label class="single-field">
+              <span>排序方式</span>
+              <select id="admin-sort-filter">
+                <option value="submitted_desc">按提交时间倒序</option>
+                <option value="submitted_asc">按提交时间正序</option>
+                <option value="match_desc">按首选匹配度</option>
+                <option value="major_asc">按首选专业名称</option>
+              </select>
+            </label>
+            <label class="single-field">
+              <span>学生类型</span>
+              <select id="admin-type-filter">
+                <option value="">全部</option>
+                <option value="public">公立学校学生</option>
+                <option value="international">国际学生</option>
+              </select>
+            </label>
+            <label class="single-field">
+              <span>跟进状态</span>
+              <select id="admin-followup-filter">
+                <option value="">全部</option>
+                <option value="new">新报告</option>
+                <option value="pending">待跟进</option>
+                <option value="contacted">已沟通</option>
+                <option value="high_intent">高意向</option>
+              </select>
+            </label>
+            <label class="single-field">
+              <span>年级关键词</span>
+              <input id="admin-grade-filter" type="text" placeholder="如 高一 / G10">
+            </label>
+            <label class="single-field">
+              <span>开始日期</span>
+              <input id="admin-date-from" type="date">
+            </label>
+            <label class="single-field">
+              <span>结束日期</span>
+              <input id="admin-date-to" type="date">
+            </label>
+            <label class="single-field">
+              <span>专业或方向搜索</span>
+              <input id="admin-search-filter" type="text" placeholder="如 计算机 / 医学 / 商科">
+            </label>
+            <div class="single-field admin-filter-reset">
+              <span>快速操作</span>
+              <button id="admin-reset-filters-btn" type="button" class="btn btn-ghost">重置筛选</button>
+            </div>
+          </div>
+          <div id="admin-report-list" class="admin-report-list"></div>
+        </aside>
+
+        <dialog id="admin-report-dialog" aria-label="测评报告详情">
+          <div class="admin-report-dialog-toolbar"><button id="admin-close-report" type="button" class="btn btn-ghost">返回报告列表</button></div>
+          <section id="admin-detail" class="admin-detail"></section>
+        </dialog>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    window.ADMIN_DEFAULT_API_BASE = "https://api.majornavi.cn";
+  </script>
+  <script src="../assets/js/access-client.js?v=20261018-logout-v14"></script>
+  <script src="../assets/js/admin.js?v=20261018-nav-v16"></script>
+  <script src="../assets/js/accounts-admin.js?v=20261018-nav-v16"></script>
+</body>
+</html>

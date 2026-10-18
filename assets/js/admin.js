@@ -1,3 +1,4 @@
+const adminView = document.body.dataset.adminView || "assessment";
 const reloadBtn = document.getElementById("admin-reload-btn");
 const exportBtn = document.getElementById("admin-export-btn");
 const exportHighIntentBtn = document.getElementById("admin-export-high-intent-btn");
@@ -678,8 +679,13 @@ async function fetchGaokaoQueries() {
 }
 
 async function fetchAllAdminData() {
-  await Promise.all([fetchReports(), fetchGaokaoQueries()]);
-  setStatus(`已加载 ${reports.length} 份报告，${gaokaoQueries.length} 条高考查询。`, "success");
+  if(adminView === "gaokao") {
+    await fetchGaokaoQueries();
+    setStatus(`已加载 ${gaokaoQueries.length} 条高考查询。`,"success");
+  } else {
+    await fetchReports();
+    setStatus(`已加载 ${reports.length} 份报告。`,"success");
+  }
 }
 
 async function deleteReport(id) {
