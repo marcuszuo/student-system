@@ -15,6 +15,9 @@ const ALLOWED_ORIGINS = String(process.env.ALLOWED_ORIGINS || "")
   .filter(Boolean);
 
 ensureStorage();
+const access = require('./access')({file:path.join(DATA_DIR,'access-store.json'),adminPassword:process.env.ADMIN_LOGIN_PASSWORD,adminHash:process.env.ADMIN_PASSWORD_HASH,adminUsername:process.env.ADMIN_USERNAME || 'admin'});
+const attempts = new Map();
+function bearer(req) {return String(req.headers.authorization || '').replace(/^Bearer /i,'');}
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -28,41 +31,63 @@ const server = http.createServer(async (req, res) => {
       return respondJson(res, 200, { ok: true, time: new Date().toISOString() }, corsHeaders(req));
     }
 
+    if (url.pathname === '/api/auth/capabilities' && req.method === 'GET') return respondJson(res,200,{accounts:access.configured,version:1},corsHeaders(req));
+    if (url.pathname === '/api/auth/login' && req.method === 'POST') {
+      const payload = await readBody(req), key = req.socket.remoteAddress + ':' + String(payload.username || '').toLowerCase().slice(0,80);
+      const previous = attempts.get(key), limit = previous && previous.until>Date.now() ? previous : {count:0,until:Date.now()+15*60000};
+      limit.count++;attempts.set(key,limit);if(attempts.size>5000)attempts.delete(attempts.keys().next().value);
+      if(limit.count>10) return respondJson(res,429,{error:'尝试次数过多，请15分钟后重试'},corsHeaders(req));
+      const result=access.login(payload.username,payload.password);attempts.delete(key);
+      return respondJson(res,200,result,corsHeaders(req));
+    }
+    if (url.pathname === '/api/auth/session' && req.method === 'GET') return respondJson(res,200,access.session(bearer(req)),corsHeaders(req));
+    if (url.pathname === '/api/auth/logout' && req.method === 'POST') {access.logout(bearer(req));return respondJson(res,200,{ok:true},corsHeaders(req));}
+    if (url.pathname === '/api/auth/my-report' && req.method === 'GET') return respondJson(res,200,{item:access.report(bearer(req))},corsHeaders(req));
+    if (url.pathname === '/api/admin/accounts') {
+      if (!requireAdmin(req)) return respondJson(res,403,{error:'Forbidden'},corsHeaders(req));
+      if(req.method==='GET')return respondJson(res,200,{items:access.list()},corsHeaders(req));
+      if(req.method==='POST')return respondJson(res,200,{items:access.create(await readBody(req))},corsHeaders(req));
+    }
+    const accountMatch=url.pathname.match(/^\/api\/admin\/accounts\/([^/]+)$/);
+    if(accountMatch && req.method==='PATCH') {
+      if(!requireAdmin(req))return respondJson(res,403,{error:'Forbidden'},corsHeaders(req));
+      return respondJson(res,200,{item:access.update(accountMatch[1],await readBody(req))},corsHeaders(req));
+    }
     if (url.pathname === "/api/reports" && req.method === "POST") {
-      return handleCreateReport(req, res);
+      return await handleCreateReport(req, res);
     }
 
     if (url.pathname === "/api/reports" && req.method === "GET") {
-      return handleListReports(req, res, url);
+      return await handleListReports(req, res, url);
     }
 
     if (url.pathname === "/api/reports" && req.method === "DELETE") {
-      return handleBulkDelete(req, res, url);
+      return await handleBulkDelete(req, res, url);
     }
 
     if (url.pathname === "/api/gaokao-queries" && req.method === "POST") {
-      return handleCreateGaokaoQuery(req, res);
+      return await handleCreateGaokaoQuery(req, res);
     }
 
     if (url.pathname === "/api/gaokao-queries" && req.method === "GET") {
-      return handleListGaokaoQueries(req, res, url);
+      return await handleListGaokaoQueries(req, res, url);
     }
 
     const reportMatch = url.pathname.match(/^\/api\/reports\/([^/]+)$/);
     if (reportMatch && req.method === "GET") {
-      return handleGetReport(req, res, reportMatch[1]);
+      return await handleGetReport(req, res, reportMatch[1]);
     }
     if (reportMatch && req.method === "DELETE") {
-      return handleDeleteReport(req, res, reportMatch[1]);
+      return await handleDeleteReport(req, res, reportMatch[1]);
     }
     if (reportMatch && req.method === "PATCH") {
-      return handleUpdateReport(req, res, reportMatch[1]);
+      return await handleUpdateReport(req, res, reportMatch[1]);
     }
 
     return respondJson(res, 404, { error: "Not found" }, corsHeaders(req));
   } catch (error) {
     console.error(error);
-    return respondJson(res, 500, { error: error.message || "Server error" }, corsHeaders(req));
+    return respondJson(res, error.status || 500, { error: error.status ? error.message : "Server error" }, corsHeaders(req));
   }
 });
 
@@ -79,7 +104,8 @@ function corsHeaders(req) {
   return {
     "Access-Control-Allow-Origin": allowOrigin,
     "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type,x-admin-token,x-report-ingest-key",
+    "Access-Control-Allow-Headers": "Content-Type,Authorization,x-admin-token,x-report-ingest-key",
+    "Cache-Control": "no-store",
     "Content-Type": "application/json; charset=utf-8"
   };
 }
@@ -105,7 +131,9 @@ function readReports() {
   try {
     const raw = fs.readFileSync(DATA_FILE, "utf8");
     const parsed = JSON.parse(raw || "[]");
-    return Array.isArray(parsed) ? parsed : [];
+    const base = Array.isArray(parsed) ? parsed : [];
+    const ids = new Set(base.map(x=>x.id));
+    return [...base,...access.reports().filter(x=>!ids.has(x.id))];
   } catch {
     return [];
   }
@@ -152,6 +180,7 @@ function readBody(req) {
 }
 
 function requireAdmin(req) {
+  if (access.configured) return Boolean(access.admin(bearer(req) || String(req.headers["x-admin-token"] || "")));
   if (!ADMIN_TOKEN) {
     throw new Error("ADMIN_TOKEN is not configured");
   }
@@ -183,17 +212,23 @@ function isSmokeTestReport(report) {
 }
 
 async function handleCreateReport(req, res) {
-  if (!requireIngest(req)) {
+  if (!access.configured && !requireIngest(req)) {
     return respondJson(res, 403, { error: "Forbidden" }, corsHeaders(req));
   }
 
-  const payload = await readBody(req);
+  let payload = await readBody(req);
+  if (access.configured && !['assessment_session','assessment_feedback'].includes(payload.recordType)) {
+    const existing=readReports().find(x=>x.id===payload.id), user=access.session(bearer(req));
+    if(existing && existing.accessAccount?.id!==user.account?.id) return respondJson(res,409,{error:'报告编号冲突'},corsHeaders(req));
+  }
+  if (access.configured) payload = ["assessment_session","assessment_feedback"].includes(payload.recordType) ? access.record(bearer(req),payload) : access.commit(bearer(req),payload);
   const id = String(payload.id || "").trim() || crypto.randomUUID();
   const submittedAt = String(payload.submittedAt || new Date().toISOString());
 
   const reports = readReports();
   const normalized = {
     ...payload,
+    adminMeta: reports.find(item=>item.id===id)?.adminMeta,
     id,
     submittedAt
   };
@@ -296,6 +331,7 @@ function handleDeleteReport(req, res, id) {
   if (next.length === reports.length) {
     return respondJson(res, 404, { error: "Not found" }, corsHeaders(req));
   }
+  access.eraseReport(id);
   writeReports(next);
   return respondJson(res, 200, { ok: true, id }, corsHeaders(req));
 }
@@ -344,6 +380,7 @@ function handleBulkDelete(req, res, url) {
   const reports = readReports();
   const kept = reports.filter((report) => !isSmokeTestReport(report));
   const deletedCount = reports.length - kept.length;
+  reports.filter(isSmokeTestReport).forEach(item=>access.eraseReport(item.id));
   writeReports(kept);
   return respondJson(res, 200, { ok: true, deletedCount }, corsHeaders(req));
 }

@@ -1,6 +1,6 @@
 // First-party pilot observations. No question text, answer values, names or contact details.
 (function () {
-  const VERSION = '2026-10-study-v12', KEY = 'majornavi_study_queue_v1';
+  const VERSION = '2026-10-access-v13', KEY = 'majornavi_study_queue_v1';
   let queue = [], session = null, tick = 0, context = null, busy = false, running = false;
   const waiters = [];
   try { const stored = JSON.parse(localStorage.getItem(KEY) || '[]'); if (Array.isArray(stored)) queue = stored.slice(-50); } catch {}
@@ -13,19 +13,23 @@
     busy = true;
     try {
       while (queue.length) {
-        const item = queue[0], controller = new AbortController();
+        const owner=window.getAssessmentScope?.() || "local";
+        const index=queue.findIndex(x=>(x._owner || "local")===owner);
+        if(index<0)break;
+        const item = queue[index], controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 15000);
         try {
-          const response = await fetch(`${base}/api/reports`, {method:'POST',headers:{'Content-Type':'application/json','x-report-ingest-key':window.REPORT_INGEST_KEY || ''},body:JSON.stringify(item),signal:controller.signal,keepalive:true});
+          const response = await fetch(`${base}/api/reports`, {method:'POST',headers:{'Content-Type':'application/json','x-report-ingest-key':window.REPORT_INGEST_KEY || '',...(window.MajorNaviAccess?.token()?{Authorization:`Bearer ${window.MajorNaviAccess.token()}`}:{})},body:JSON.stringify(Object.fromEntries(Object.entries(item).filter(([key])=>key!=="_owner"))),signal:controller.signal,keepalive:true});
           if (!response.ok) break;
-          if (queue[0] === item) queue.shift(); // A newer snapshot with the same ID stays queued.
+          if (queue.includes(item)) queue.splice(queue.indexOf(item),1); // A newer snapshot with the same ID stays queued.
           persist();
         } catch { break; } finally { clearTimeout(timer); }
       }
     } finally { busy = false; waiters.splice(0).forEach(resolve => resolve()); }
   }
   function enqueue(item, send = true) {
-    queue = queue.filter(old => old.id !== item.id); queue.push(item); queue = queue.slice(-50);
+    item._owner=window.getAssessmentScope?.() || "local";
+    queue = queue.filter(old => old.id !== item.id || old._owner!==item._owner); queue.push(item); queue = queue.slice(-50);
     const saved = persist(); if (send) void flush(); return saved;
   }
   function addSeconds(seconds) {

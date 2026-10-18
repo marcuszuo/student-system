@@ -46,7 +46,7 @@ let filteredGaokaoQueries = [];
 function getDefaultConfig() {
   return {
     apiBase: String(window.ADMIN_DEFAULT_API_BASE || "").trim().replace(/\/+$/, ""),
-    token: String(window.ADMIN_DEFAULT_TOKEN || "").trim()
+    token: String(window.MajorNaviAccess?.admin()?.token || "").trim()
   };
 }
 
@@ -127,6 +127,8 @@ function reportMatchesFilters(report) {
     report.comparisons?.advisorConclusion,
     report.developmentInsights?.directionLabel,
     report.developmentInsights?.parentAdvice,
+    report.accessAccount?.name,
+    report.accessAccount?.username,
     report.developmentInsights?.selectionReminder
   ]
     .filter(Boolean)
@@ -388,7 +390,7 @@ function renderReportList() {
         <strong>${escapeHtml(report.recommendations?.[0]?.name || report.directions?.[0]?.label || "未命名报告")}</strong>
         <span>${escapeHtml(String(report.recommendations?.[0]?.matchIndex || ""))}</span>
       </div>
-      <p>${escapeHtml(summarizeProfile(report))}</p>
+      <p>${escapeHtml([report.accessAccount?.name,report.accessAccount?.username,summarizeProfile(report)].filter(Boolean).join(" · "))}</p>
       ${(report.advisorTags || []).length ? `<div class="advisor-tags advisor-tags-list">${(report.advisorTags || []).slice(0, 2).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>` : ""}
       <p>${escapeHtml(formatDateTime(report.submittedAt))}</p>
       <p><span class="admin-status-badge admin-status-${escapeHtml(String(report.adminMeta?.status || "new"))}">${escapeHtml(getFollowupStatusLabel(report.adminMeta?.status))}</span></p>
@@ -420,6 +422,7 @@ function renderReportDetail(report) {
   detailEl.innerHTML = `
     <div class="admin-detail-header">
       <p class="result-kicker">报告详情</p>
+      <p>${escapeHtml([report.accessAccount?.name,report.accessAccount?.username].filter(Boolean).join(" · "))}</p>
       <h2>${escapeHtml(recommendations[0]?.name || directions[0]?.label || "报告")}</h2>
       <p class="result-summary">${escapeHtml(report.comparisons?.directionSummary || "")}</p>
     </div>
@@ -1006,3 +1009,11 @@ function renderPilotObservations(items) {
     <details><summary>查看测评进度与逐页耗时</summary><div class="report-table-wrap"><table><thead><tr><th>开始时间</th><th>年级</th><th>状态</th><th>估计耗时</th><th>最后进度</th><th>逐页耗时</th><th>模块耗时（估计）</th></tr></thead><tbody>${sessions.map(row).join('')}</tbody></table></div></details>
     <details><summary>查看报告反馈（${feedback.length}）</summary>${feedback.map(x => `<article><p><strong>${escapeHtml(x.rating)}</strong> · ${escapeHtml(x.topic)} · ${escapeHtml(formatDateTime(x.submittedAt))}</p><p>${escapeHtml(x.text || '未填写补充意见')}</p><p>关联报告：${escapeHtml(x.reportId)}</p></article>`).join('') || '<p>暂无反馈。</p>'}</details>`;
 }
+
+window.openAccountReport = async function(id) {
+  const config=getAdminConfig();
+  const data=await window.MajorNaviAccess.request(config.apiBase,'/api/reports/'+encodeURIComponent(id),{token:config.token});
+  if(!reports.some(x=>x.id===id))reports.unshift(data.item);
+  selectedReportId=id;renderReportDetail(data.item);
+  detailEl.scrollIntoView({behavior:'smooth',block:'start'});
+};

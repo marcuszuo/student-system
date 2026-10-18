@@ -86,13 +86,7 @@ const ITEMS_PER_PAGE = 8;
 const STORAGE_KEY = "student-major-assessment-v2";
 const AUTH_STORAGE_KEY = "student-major-auth-v1";
 const ADMIN_STORAGE_KEY = "majornavi-report-admin-config";
-const AUTH_USERS = Array.isArray(window.AUTH_USERS) && window.AUTH_USERS.length
-  ? window.AUTH_USERS
-  : [
-    { username: "student", password: "333333", role: "student" },
-    { username: "admin", password: "333333", role: "admin", redirectTo: "./pages/admin.html" }
-  ];
-const AUTH_ENABLED = AUTH_USERS.length > 0;
+const AUTH_ENABLED = true;
 const REPORT_API_BASE_URL = String(window.REPORT_API_BASE_URL || "").trim().replace(/\/+$/, "");
 const REPORT_INGEST_KEY = String(window.REPORT_INGEST_KEY || "").trim();
 const ADMIN_DASHBOARD_PATH = String(window.ADMIN_DASHBOARD_PATH || "./pages/admin.html").trim() || "./pages/admin.html";
@@ -337,6 +331,9 @@ let publicSubjectScores = { cn: null, math: null, en: null, phy: null, chem: nul
 let internationalProfile = { curriculumName: "", scoreText: "" };
 let schoolMajorText = "";
 let authSession = null;
+window.getAssessmentToken = () => authSession?.token || "";
+window.getAssessmentScope = () => authSession?.account?.id ? `${authSession.account.id}:${authSession.account.generation}` : "local";
+let loginPending = false;
 
 function formatTime(date) {
   return date.toLocaleTimeString("zh-CN", { hour12: false });
@@ -366,35 +363,9 @@ function normalizeUsername(username) {
   return String(username || "").trim().toLowerCase();
 }
 
-function normalizeAuthUser(user) {
-  return {
-    ...user,
-    role: user?.role === "admin" ? "admin" : "student",
-    redirectTo: String(user?.redirectTo || "").trim(),
-    adminApiBase: String(user?.adminApiBase || "").trim(),
-    adminToken: String(user?.adminToken || "").trim()
-  };
-}
-
-function findAuthUser(username, password) {
-  const normalizedPassword = String(password || "").trim();
-  const matched = AUTH_USERS.find((user) => {
-    const expectedUsername = String(user.username || "").trim().toLowerCase();
-    const expectedPasswords = Array.isArray(user.password) ? user.password : [user.password];
-    return expectedUsername === username && expectedPasswords.map((item) => String(item || "").trim()).includes(normalizedPassword);
-  });
-  return matched ? normalizeAuthUser(matched) : null;
-}
-
 function openAdminDashboard(user) {
-  if (user.adminApiBase || user.adminToken) {
-    localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify({
-      apiBase: user.adminApiBase || "",
-      token: user.adminToken || ""
-    }));
-  }
-  const target = user.redirectTo || ADMIN_DASHBOARD_PATH;
-  window.location.href = target;
+  window.MajorNaviAccess.saveAdmin(REPORT_API_BASE_URL,user);
+  window.location.href = ADMIN_DASHBOARD_PATH;
 }
 
 function saveAuthSession(session) {
@@ -437,7 +408,7 @@ function renderAuthState() {
   authSessionBar.classList.remove("hidden");
   if (authed) {
     restoreSavedReport();
-    authSessionText.textContent = `已登录账号：${authSession.username}`;
+    authSessionText.textContent = `已登录账号：${authSession.username}${authSession.account?.status === "completed" ? " · 已完成一次测评，仅可查看和导出原报告" : ""}`;
   }
 }
 
@@ -473,7 +444,7 @@ function emitEvent(name, params) {
 }
 
 function draftStorageKey() {
-  return `${STORAGE_KEY}:${authSession?.username || "local"}`;
+  return `${STORAGE_KEY}:${authSession?.username || "local"}${authSession?.account?.id ? ":"+authSession.account.generation : ""}`;
 }
 function isQuestionAnswered(question) {
   return question.options.some((option) => option.key === answers[question.id]);
@@ -1959,7 +1930,7 @@ function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoo
   return {
     id: createRecordId(),
     submittedAt: new Date().toISOString(),
-    siteVersion: "2026-10-study-v12",
+    siteVersion: "2026-10-access-v13",
     usage: window.MajorNaviStudy?.snapshot() || null,
     scoreMeaning: "候选专业内相对匹配指数，不是能力分、录取概率或成功概率",
     jointPriorityMajors: getJointPriorityMajors(rankedMajors).map((major) => major.name),
@@ -2062,6 +2033,7 @@ async function syncReportRecord(payload) {
   if (REPORT_INGEST_KEY) {
     headers["x-report-ingest-key"] = REPORT_INGEST_KEY;
   }
+  if (authSession?.token) headers.Authorization = `Bearer ${authSession.token}`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   try {
@@ -2088,7 +2060,7 @@ function isCurrentReport(record, key) {
   return cached?.payload?.id === record.payload.id;
 }
 function reportCacheKey() {
-  return REPORT_CACHE_PREFIX + (authSession?.username || "local");
+  return REPORT_CACHE_PREFIX + (authSession?.username || "local") + (authSession?.account?.id ? ":"+authSession.account.generation : "");
 }
 function escapeReportText(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
@@ -2186,6 +2158,11 @@ async function deliverCachedReport(record) {
   try {
     await syncReportRecord(record.payload);
     record.synced = true;
+    if (authSession?.token) {
+      saveAuthSession({...authSession,account:{...authSession.account,status:"completed",reportId:record.payload.id}});
+      authSessionText.textContent = `账号：${authSession.username} · 已完成一次测评，仅可查看和导出原报告`;
+      intro.classList.add("hidden");quizForm.classList.add("hidden");
+    }
     const latest = readCachedReport(key);
     let saved = false;
     if (latest?.payload.id === record.payload.id) {
@@ -2664,6 +2641,7 @@ function appendCalibrationQuestions() {
 }
 
 function maybeRenderPreviewReport() {
+  if (!["127.0.0.1", "localhost"].includes(window.location.hostname)) return false;
   const params = new URLSearchParams(window.location.search);
   if (params.get("preview_report") !== "1") return false;
 
@@ -2916,7 +2894,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
       <li><strong>比较方式：</strong>各投入相同时间，记录成果、困难和继续投入意愿，请学科老师反馈，再对照上表的选择重点进行比较。</li></ul>
     </section>
     <p class="report-student-line">本报告用于专业发展参考，建议结合学业表现和实践经历使用。</p>
-    <p class="report-student-line" id="report-version-line">测评版本：2026.10 / V${esc((metadata.siteVersion || "v12").match(/v(\d+)$/)?.[1] || "12")} · 生成日期：${esc(new Date(metadata.submittedAt || Date.now()).toLocaleDateString("zh-CN"))}</p>
+    <p class="report-student-line" id="report-version-line">测评版本：2026.10 / V${esc((metadata.siteVersion || "v13").match(/v(\d+)$/)?.[1] || "13")} · 生成日期：${esc(new Date(metadata.submittedAt || Date.now()).toLocaleDateString("zh-CN"))}</p>
     <details class="rank-details report-feedback no-print"><summary>反馈本次报告</summary>
       <form id="report-feedback-form"><label>报告与学生实际情况是否符合？<select name="rating" required><option value="">请选择</option><option>符合</option><option>部分符合</option><option>不符合</option><option>暂时无法判断</option></select></label>
       <label>希望改进的部分<select name="topic"><option>专业推荐</option><option>学生特征</option><option>题目理解</option><option>答题长度</option><option>其他</option></select></label>
@@ -2929,7 +2907,7 @@ function bindReportFeedback(payload) {
   const form = document.getElementById("report-feedback-form");
   if (!form || !window.MajorNaviStudy) return;
   const line = document.getElementById("report-version-line");
-  if (line) line.textContent = `测评版本：2026.10 / V${(payload.siteVersion || "v12").match(/v(\d+)$/)?.[1] || "12"} · 生成日期：${new Date(payload.submittedAt).toLocaleDateString("zh-CN")}`;
+  if (line) line.textContent = `测评版本：2026.10 / V${(payload.siteVersion || "v13").match(/v(\d+)$/)?.[1] || "13"} · 生成日期：${new Date(payload.submittedAt).toLocaleDateString("zh-CN")}`;
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const fields = form.elements;
@@ -2974,7 +2952,8 @@ function validateIntroStep(step) {
   return true;
 }
 
-function handleLoginAttempt() {
+async function handleLoginAttempt() {
+  if (loginPending) return;
   const username = normalizeUsername(authUsernameInput.value);
   const password = String(authPasswordInput.value || "").trim();
   authUsernameInput.value = username;
@@ -2989,28 +2968,17 @@ function handleLoginAttempt() {
     return;
   }
 
-  const matchedUser = findAuthUser(username, password);
-  if (!matchedUser) {
-    setAuthStatus("用户名或密码错误", "error");
-    return;
-  }
+  loginPending=true;loginBtn.disabled=true;
+  setAuthStatus("正在验证账号…");
+  try {
+    const session=await window.MajorNaviAccess.request(REPORT_API_BASE_URL,'/api/auth/login',{method:'POST',body:{username,password}});
+    authPasswordInput.value='';
+    if(session.role==='admin'){openAdminDashboard(session);return;}
+    await acceptStudentSession({...session,loggedInAt:new Date().toISOString()});
+    setAuthStatus('登录成功','success');
+  } catch(error) {setAuthStatus(error.name==='AbortError'?'连接超时，请重试':error.message,'error');}
+  finally {loginPending=false;loginBtn.disabled=false;}
 
-  if (matchedUser.role === "admin") {
-    authPasswordInput.value = "";
-    setAuthStatus("正在进入管理后台…", "success");
-    openAdminDashboard(matchedUser);
-    return;
-  }
-
-  saveAuthSession({
-    username,
-    loggedInAt: new Date().toISOString()
-  });
-  authPasswordInput.value = "";
-  clearDraft(false);
-  loadDraft();
-  renderAuthState();
-  setAuthStatus("登录成功", "success");
 }
 
 loginBtn.addEventListener("click", () => {
@@ -3026,8 +2994,9 @@ loginBtn.addEventListener("click", () => {
 });
 
 logoutBtn.addEventListener("click", () => {
-  clearAuthSession();
+  if(authSession?.token)void window.MajorNaviAccess?.request(REPORT_API_BASE_URL,"/api/auth/logout",{method:"POST",token:authSession.token}).catch(()=>{});
   clearDraft(false);
+  clearAuthSession();
   renderAuthState();
   authPasswordInput.value = "";
   setAuthStatus("请输入用户名和密码", "neutral");
@@ -3045,6 +3014,7 @@ introPrev2Btn.addEventListener("click", () => {
 });
 
 startBtn.addEventListener("click", () => {
+  if(authSession?.account?.status==="completed") {setSaveStatus("本账号已完成测评，请查看原报告。");return;}
   if (!validateIntroStep(1) || !validateIntroStep(2)) return;
   // Keep the existing question order and calibration state when resuming.
   studentProfile = readStudentProfile();
@@ -3179,6 +3149,7 @@ clearBtn.addEventListener("click", () => {
 
 quizForm.addEventListener("submit", (event) => {
   event.preventDefault();
+  if(authSession?.token && activeReportRecord) {setSaveStatus("当前报告已生成，请导出或重试同步，不会重复生成。");return;}
   const allAnswered = activeQuestions.every(isQuestionAnswered);
   if (!allAnswered) {
     currentPage = getFirstUnansweredPage();
@@ -3246,6 +3217,7 @@ quizForm.addEventListener("submit", (event) => {
     context: { studentProfile, selectedMode, publicSubjectScores, internationalProfile, schoolMajorText, calibrationContext, calibrationAdded, followUpAdded },
     answers: { ...answers }, questionIds: activeQuestions.map((q) => q.id)
   } };
+  if(authSession?.token) reportPayload.recoveryView=record.view;
   activeReportRecord = record;
   window.MajorNaviStudy?.complete(reportPayload.id);
   bindReportFeedback(reportPayload);
@@ -3309,9 +3281,40 @@ window.addEventListener("online", () => {
   if (record && !record.synced && REPORT_API_BASE_URL) void deliverCachedReport(record);
 });
 
+async function acceptStudentSession(session) {
+  clearDraft(false);saveAuthSession(session);
+  void window.MajorNaviStudy?.flush();
+  const restored=loadDraft();
+  if(!restored && session.account?.grade){gradeInput.value=session.account.grade;studentProfile=readStudentProfile();}
+  renderAuthState();
+  if(session.account?.status==='completed') {
+    intro.classList.add('hidden');quizForm.classList.add('hidden');
+    const data=await window.MajorNaviAccess.request(REPORT_API_BASE_URL,'/api/auth/my-report',{token:session.token});
+    if(data.item?.recoveryView) {
+      const record={payload:data.item,view:data.item.recoveryView,synced:true};
+      try {localStorage.setItem(reportCacheKey(),JSON.stringify(record));}catch{}
+      activeReportRecord=record;restoreSavedReportFromMemory(record);
+    }
+    setSaveStatus('本账号已完成测评，可查看和导出原报告，不能再次答题。');
+  }
+}
+function restoreSavedReportFromMemory(record) {
+  const view=record.view;
+  if(view.context)({studentProfile,selectedMode,publicSubjectScores,internationalProfile,schoolMajorText,calibrationContext,calibrationAdded,followUpAdded}=view.context);
+  answers=view.answers || {};activeQuestions=allQuestions.filter(q=>(view.questionIds || []).includes(q.id));
+  renderResult(view.studentVector,view.rankedMajors,view.weightingSummary,view.schoolRecommendation,record.payload);
+  bindReportFeedback(record.payload);resultBox.classList.remove('hidden');
+}
+async function initializeAssessment() {
+  loadAuthSession();
+  const saved=authSession;authSession=null;renderAuthState();
+  if(!saved?.token)return;
+  try {
+    const verified=await window.MajorNaviAccess.request(REPORT_API_BASE_URL,'/api/auth/session',{token:saved.token});
+    if(verified.role==='student')await acceptStudentSession({...saved,...verified});
+  } catch(error) {setAuthStatus('登录状态需要重新验证，请重新登录。','error');}
+}
 applyMode(DEFAULT_MODE);
-loadAuthSession();
-if (authSession || !AUTH_ENABLED) loadDraft();
 showIntroStep(introStep);
-renderAuthState();
+void initializeAssessment();
 maybeRenderPreviewReport();
