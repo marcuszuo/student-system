@@ -28,6 +28,9 @@ const gaokaoThirtyDayCountEl = document.getElementById("admin-gaokao-30day-count
 const gaokaoResetFiltersBtn = document.getElementById("admin-gaokao-reset-filters-btn");
 const listEl = document.getElementById("admin-report-list");
 const detailEl = document.getElementById("admin-detail");
+const reportDialog = document.getElementById("admin-report-dialog");
+document.getElementById("admin-close-report").addEventListener("click",()=>reportDialog.close());
+reportDialog.addEventListener("close",()=>{selectedReportId="";detailEl.innerHTML="";});
 const sortFilterEl = document.getElementById("admin-sort-filter");
 const typeFilterEl = document.getElementById("admin-type-filter");
 const followupFilterEl = document.getElementById("admin-followup-filter");
@@ -273,7 +276,7 @@ function populateGaokaoProvinceFilter() {
 function applyFilters() {
   filteredReports = reports.filter(reportMatchesFilters).sort(compareReports);
   if (!filteredReports.find((item) => item.id === selectedReportId)) {
-    selectedReportId = filteredReports[0]?.id || "";
+    selectedReportId = "";
   }
 }
 
@@ -384,31 +387,22 @@ function renderReportList() {
     return;
   }
 
-  listEl.innerHTML = filteredReports.map((report) => `
-    <button type="button" class="admin-report-item${report.id === selectedReportId ? " active" : ""}" data-report-id="${escapeHtml(report.id)}">
-      <div class="admin-report-title">
-        <strong>${escapeHtml(report.recommendations?.[0]?.name || report.directions?.[0]?.label || "未命名报告")}</strong>
-        <span>${escapeHtml(String(report.recommendations?.[0]?.matchIndex || ""))}</span>
-      </div>
-      <p>${escapeHtml([report.accessAccount?.name,report.accessAccount?.username,summarizeProfile(report)].filter(Boolean).join(" · "))}</p>
-      ${(report.advisorTags || []).length ? `<div class="advisor-tags advisor-tags-list">${(report.advisorTags || []).slice(0, 2).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>` : ""}
-      <p>${escapeHtml(formatDateTime(report.submittedAt))}</p>
-      <p><span class="admin-status-badge admin-status-${escapeHtml(String(report.adminMeta?.status || "new"))}">${escapeHtml(getFollowupStatusLabel(report.adminMeta?.status))}</span></p>
-      ${report.adminMeta?.note ? `<p class="admin-report-note-flag">已备注</p>` : ""}
-    </button>
-  `).join("");
+  listEl.innerHTML = `<div class="admin-report-table-scroll"><table class="admin-report-table"><thead><tr><th>报告编号</th><th>使用者</th><th>账号</th><th>年级</th><th>学生类型</th><th>提交时间</th><th>跟进状态</th><th>操作</th></tr></thead><tbody>${filteredReports.map(report=>`<tr>
+    <td>${escapeHtml(report.id)}</td><td>${escapeHtml(report.accessAccount?.name || "未登记")}</td><td>${escapeHtml(report.accessAccount?.username || "—")}</td>
+    <td>${escapeHtml(report.studentProfile?.grade || "—")}</td><td>${escapeHtml(report.studentProfile?.typeLabel || "—")}</td><td>${escapeHtml(formatDateTime(report.submittedAt))}</td>
+    <td>${escapeHtml(getFollowupStatusLabel(report.adminMeta?.status))}</td><td><button type="button" class="btn btn-ghost" data-report-id="${escapeHtml(report.id)}" aria-label="查看报告：${escapeHtml(report.accessAccount?.name || report.id)}">查看报告</button></td>
+  </tr>`).join("")}</tbody></table></div>`;
+
 }
 
 function renderReportDetail(report) {
   if (!report) {
-    detailEl.innerHTML = `
-      <div class="empty-state">
-        <h2>未找到报告</h2>
-        <p>请重新加载或选择其他报告。</p>
-      </div>
-    `;
+    if(reportDialog.open)reportDialog.close();
+    detailEl.innerHTML="";
     return;
   }
+  if(!reportDialog.open)reportDialog.showModal();
+  reportDialog.scrollTop=0;
 
   const profile = report.studentProfile || {};
   const topTraits = report.scoring?.topTraits || [];

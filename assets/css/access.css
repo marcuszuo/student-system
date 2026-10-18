@@ -11,3 +11,19 @@
 [hidden] {display:none !important;}
 #account-management td button,#account-copy,#account-download,#account-refresh {background:#f1f5f1;border:1px solid #bdcbc2;border-radius:7px;padding:7px 10px;margin:3px;font:inherit;color:#315247;}
 #account-management td button:disabled {opacity:.6;cursor:wait;}
+
+.admin-content-list-only {display:block;}
+.admin-content-list-only .admin-list-wrap {width:100%;box-sizing:border-box;}
+.admin-content-list-only .admin-filters {display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;}
+.admin-content-list-only .admin-report-list {display:block;max-height:none;overflow:visible;}
+.admin-report-table-scroll {overflow-x:auto;}
+.admin-report-table {width:100%;border-collapse:collapse;text-align:left;}
+.admin-report-table th,.admin-report-table td {padding:14px 10px;border-bottom:1px solid #dce4df;vertical-align:middle;}
+.admin-report-table th {white-space:nowrap;color:#52685d;}
+.admin-report-table td:first-child {max-width:200px;overflow-wrap:anywhere;font-size:13px;}
+.admin-report-table td:last-child {white-space:nowrap;}
+.admin-report-table tbody tr:hover {background:#f5f8f4;}
+#admin-report-dialog {width:min(1100px,94vw);max-width:94vw;max-height:90vh;padding:20px;border:1px solid #c8d4cc;border-radius:18px;box-sizing:border-box;color:#20312b;}
+#admin-report-dialog::backdrop {background:#16291e80;}
+.admin-report-dialog-toolbar {display:flex;justify-content:flex-end;position:sticky;top:-20px;background:white;padding:10px 0;z-index:1;}
+#admin-report-dialog .admin-detail {border:0;padding:8px;}
