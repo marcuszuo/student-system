@@ -399,18 +399,18 @@ function openAdminDashboard(user) {
 
 function saveAuthSession(session) {
   authSession = session;
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+  try { localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session)); } catch { /* Session remains active in memory. */ }
 }
 
 function clearAuthSession() {
   authSession = null;
-  localStorage.removeItem(AUTH_STORAGE_KEY);
+  try { localStorage.removeItem(AUTH_STORAGE_KEY); } catch { /* In-memory session is cleared. */ }
 }
 
 function loadAuthSession() {
-  const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-  if (!raw) return null;
   try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!parsed?.username || !parsed?.loggedInAt) return null;
     authSession = parsed;
@@ -472,12 +472,25 @@ function emitEvent(name, params) {
   }
 }
 
+function draftStorageKey() {
+  return `${STORAGE_KEY}:${authSession?.username || "local"}`;
+}
+function isQuestionAnswered(question) {
+  return question.options.some((option) => option.key === answers[question.id]);
+}
+function reportInputFingerprint() {
+  return JSON.stringify({mode:selectedMode,questions:activeQuestions.map((q)=>[q.id,answers[q.id]]),
+    profile:studentProfile,scores:publicSubjectScores,international:internationalProfile,school:schoolMajorText});
+}
+
 function saveDraft() {
   studentProfile = readStudentProfile();
   publicSubjectScores = readPublicSubjectScores();
   internationalProfile = readInternationalProfile();
   schoolMajorText = readSchoolMajorText();
   const payload = {
+    owner: authSession?.username || "local",
+    started: !quizForm.classList.contains("hidden"),
     introStep,
     studentProfile,
     mode: selectedMode,
@@ -494,8 +507,14 @@ function saveDraft() {
     page: currentPage,
     savedAt: new Date().toISOString()
   };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  setSaveStatus(`评估草稿已保存 ${formatTime(new Date())}`);
+  try {
+    localStorage.setItem(draftStorageKey(), JSON.stringify(payload));
+    setSaveStatus(`评估草稿已保存 ${formatTime(new Date())}`);
+    return true;
+  } catch {
+    setSaveStatus("当前浏览器暂时无法保存草稿，可继续答题；请保持页面打开，完成后导出报告。");
+    return false;
+  }
 }
 
 function buildQuestionOrder(mode, savedOrder = [], selected = buildSelectedQuestions(mode)) {
@@ -746,16 +765,26 @@ function applyMode(mode, draftState = {}) {
 }
 
 function loadDraft() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return;
   try {
+    let raw = localStorage.getItem(draftStorageKey());
+    // The legacy application had one default student account. Other accounts do not import its draft.
+    if (!raw && authSession?.username === "student") {
+      const legacy = localStorage.getItem(STORAGE_KEY);
+      if (legacy) {
+        const prior = JSON.parse(legacy);
+        if (!prior.owner || prior.owner === "student") raw = legacy;
+      }
+    }
+    if (!raw) return false;
     const parsed = JSON.parse(raw);
-    answers = parsed.answers || {};
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Invalid draft");
+    if (parsed.owner && parsed.owner !== (authSession?.username || "local")) return false;
+    answers = parsed.answers && typeof parsed.answers === "object" && !Array.isArray(parsed.answers) ? parsed.answers : {};
     introStep = Number(parsed.introStep) || 1;
-    studentProfile = parsed.studentProfile || studentProfile;
+    studentProfile = {type:parsed.studentProfile?.type === "international" ? "international" : "public",grade:String(parsed.studentProfile?.grade || "")};
     publicSubjectScores = parsed.publicSubjectScores || publicSubjectScores;
     internationalProfile = parsed.internationalProfile || internationalProfile;
-    schoolMajorText = parsed.schoolMajorText || "";
+    schoolMajorText = typeof parsed.schoolMajorText === "string" ? parsed.schoolMajorText : "";
     const draftState = parsed.mode === DEFAULT_MODE
       ? parsed
       : {
@@ -769,7 +798,8 @@ function loadDraft() {
         followUpAdded: false
       };
     applyMode(DEFAULT_MODE, draftState);
-    currentPage = Number(parsed.page) || 1;
+    answers = Object.fromEntries(activeQuestions.filter(isQuestionAnswered).map((q)=>[q.id,answers[q.id]]));
+    currentPage = Number.isFinite(Number(parsed.page)) ? Math.floor(Number(parsed.page)) : 1;
     currentPage = Math.min(Math.max(currentPage, 1), totalPages);
     const studentTypeInput = document.querySelector(`input[name="student-type"][value="${studentProfile.type}"]`);
     if (studentTypeInput) studentTypeInput.checked = true;
@@ -785,15 +815,22 @@ function loadDraft() {
     setSchoolFileStatus(schoolMajorText ? `已恢复目标学校专业范围（${parseSchoolMajorText(schoolMajorText).length} 个专业）` : "暂未上传文件");
     setSaveStatus("已恢复上次评估草稿");
     showIntroStep(introStep);
+    if (parsed.started || Object.keys(answers).length) {
+      intro.classList.add("hidden"); quizForm.classList.remove("hidden");
+      renderCurrentPage(); updateProgress();
+    }
+    return true;
   } catch {
     answers = {};
     currentPage = 1;
     introStep = 1;
     applyMode(DEFAULT_MODE);
+    setSaveStatus("草稿暂时无法恢复，原记录仍保留。可以重新开始测评。");
+    return false;
   }
 }
 
-function clearDraft() {
+function clearDraft(removeSaved = true) {
   answers = {};
   studentProfile = { type: "public", grade: "" };
   publicSubjectScores = { cn: null, math: null, en: null, phy: null, chem: null, bio: null };
@@ -822,8 +859,17 @@ function clearDraft() {
   calibrationContext = null;
   followUpAdded = false;
   applyMode(DEFAULT_MODE);
-  localStorage.removeItem(STORAGE_KEY);
-  setSaveStatus("已清空当前记录");
+  if (removeSaved) {
+    try {
+      localStorage.removeItem(draftStorageKey());
+      if (authSession?.username === "student") localStorage.removeItem(STORAGE_KEY);
+    } catch { /* In-memory reset remains available when storage is blocked. */ }
+  }
+  activeReportRecord = null;
+  resultBox.classList.add("hidden");
+  quizForm.classList.add("hidden");intro.classList.remove("hidden");
+  submitBtn.disabled = false;
+  setSaveStatus(removeSaved ? "已清空当前记录" : "");
   showIntroStep(1);
   renderCurrentPage();
   updateProgress();
@@ -898,7 +944,7 @@ function renderCurrentPage() {
 }
 
 function updateProgress() {
-  const answered = activeQuestions.filter((q) => answers[q.id]).length;
+  const answered = activeQuestions.filter(isQuestionAnswered).length;
   const total = activeQuestions.length;
   const percent = total ? (answered / total) * 100 : 0;
   progressText.textContent = `${answered} / ${total}`;
@@ -906,7 +952,7 @@ function updateProgress() {
 }
 
 function isCurrentPageAnswered() {
-  return getPageQuestions(currentPage).every((q) => answers[q.id]);
+  return getPageQuestions(currentPage).every(isQuestionAnswered);
 }
 
 function average(values) {
@@ -1905,7 +1951,7 @@ function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoo
   return {
     id: createRecordId(),
     submittedAt: new Date().toISOString(),
-    siteVersion: "2026-10-parent-summary-v10",
+    siteVersion: "2026-10-system-flow-v11",
     scoreMeaning: "候选专业内相对匹配指数，不是能力分、录取概率或成功概率",
     jointPriorityMajors: getJointPriorityMajors(rankedMajors).map((major) => major.name),
     studentProfile: {
@@ -2007,20 +2053,31 @@ async function syncReportRecord(payload) {
   if (REPORT_INGEST_KEY) {
     headers["x-report-ingest-key"] = REPORT_INGEST_KEY;
   }
-  const response = await fetch(`${REPORT_API_BASE_URL}/api/reports`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(payload)
-  });
-  if (!response.ok) {
-    throw new Error(`后台同步失败（${response.status}）`);
-  }
-  return response.json().catch(() => ({ ok: true }));
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  try {
+    const response = await fetch(`${REPORT_API_BASE_URL}/api/reports`, {
+      method:"POST",headers,body:JSON.stringify(payload),signal:controller.signal
+    });
+    if (!response.ok) throw new Error(`后台同步失败（${response.status}）`);
+    return await response.json().catch(() => ({ok:true}));
+  } finally { clearTimeout(timeout); }
 }
 
 // Keep the same report ID for retries; cache before attempting network delivery.
 const REPORT_CACHE_PREFIX = "majornavi_report_v2:";
 let reportSyncInFlight = false;
+let activeReportRecord = null;
+const reportSyncJobs = new Set();
+function readCachedReport(key = reportCacheKey()) {
+  try { return JSON.parse(localStorage.getItem(key) || "null"); } catch { return null; }
+}
+function isCurrentReport(record, key) {
+  if (key !== reportCacheKey()) return false;
+  if (activeReportRecord) return activeReportRecord.payload.id === record.payload.id;
+  const cached = readCachedReport(key);
+  return cached?.payload?.id === record.payload.id;
+}
 function reportCacheKey() {
   return REPORT_CACHE_PREFIX + (authSession?.username || "local");
 }
@@ -2104,37 +2161,41 @@ function showReportRecoveryStatus(record, message) {
   if (REPORT_API_BASE_URL && !record.synced) {
     const button = document.createElement("button");
     button.type = "button";
-    button.textContent = reportSyncInFlight ? "正在同步…" : "重试同步报告";
-    button.disabled = reportSyncInFlight;
+    const busy = reportSyncJobs.has(`${reportCacheKey()}:${record.payload.id}`);
+    button.textContent = busy ? "正在同步…" : "重试同步报告";
+    button.disabled = busy;
     button.addEventListener("click", () => deliverCachedReport(record));
     panel.append(" ", button);
   }
 }
 async function deliverCachedReport(record) {
-  if (reportSyncInFlight || !REPORT_API_BASE_URL || record.synced) return;
-  const cacheKey = reportCacheKey();
-  reportSyncInFlight = true;
-  showReportRecoveryStatus(record, "报告已保留，正在同步。 ");
+  if (!REPORT_API_BASE_URL || record.synced) return;
+  const key = reportCacheKey(), job = `${key}:${record.payload.id}`;
+  if (reportSyncJobs.has(job)) return;
+  reportSyncJobs.add(job);reportSyncInFlight = true;
+  if (isCurrentReport(record,key)) showReportRecoveryStatus(record,"报告已生成，正在同步。");
   try {
     await syncReportRecord(record.payload);
     record.synced = true;
-    // Do not overwrite a newer assessment while this request was in flight.
-    const current = JSON.parse(localStorage.getItem(cacheKey) || "null");
-    if (current?.payload.id === record.payload.id) localStorage.setItem(cacheKey, JSON.stringify(record));
-    if (cacheKey === reportCacheKey() && current?.payload.id === record.payload.id) showReportRecoveryStatus(record, "报告已同步至后台，并保留本机副本。");
-  } catch (error) {
-    const latest = JSON.parse(localStorage.getItem(cacheKey) || "null");
-    if (cacheKey === reportCacheKey() && latest?.payload.id === record.payload.id) showReportRecoveryStatus(record, "同步未完成，报告仍保留在本机，可重试。");
+    const latest = readCachedReport(key);
+    let saved = false;
+    if (latest?.payload.id === record.payload.id) {
+      try { localStorage.setItem(key,JSON.stringify(record)); saved = true; } catch { /* Cloud success is still valid. */ }
+    }
+    if (isCurrentReport(record,key)) showReportRecoveryStatus(record,saved ? "报告已同步至后台，并保留本机副本。" : "报告已同步至后台，请导出一份留存。");
+  } catch {
+    if (isCurrentReport(record,key)) showReportRecoveryStatus(record,"同步未完成，可重试；请先导出报告留存。");
   } finally {
-    reportSyncInFlight = false;
-    const retry = document.querySelector("#report-recovery-status button");
-    if (retry) { retry.disabled = false; retry.textContent = "重试同步报告"; }
+    reportSyncJobs.delete(job);reportSyncInFlight = reportSyncJobs.size > 0;
+    if (isCurrentReport(record,key) && !record.synced) showReportRecoveryStatus(record,"同步未完成，可重试；请先导出报告留存。");
   }
 }
+
 function restoreSavedReport() {
   try {
-    const record = JSON.parse(localStorage.getItem(reportCacheKey()) || "null");
+    const record = readCachedReport();
     if (!record?.view || !record?.payload) return;
+    activeReportRecord = record;
     const view = record.view;
     const previousAnswers = answers, previousQuestions = activeQuestions;
     const previousContext = { studentProfile, selectedMode, publicSubjectScores, internationalProfile, schoolMajorText, calibrationContext, calibrationAdded, followUpAdded };
@@ -2556,7 +2617,7 @@ function getPreviewPersona() {
 }
 
 function getFirstUnansweredPage() {
-  const index = activeQuestions.findIndex((q) => !answers[q.id]);
+  const index = activeQuestions.findIndex((q) => !isQuestionAnswered(q));
   return index < 0 ? totalPages : Math.floor(index / ITEMS_PER_PAGE) + 1;
 }
 
@@ -2911,6 +2972,8 @@ function handleLoginAttempt() {
     loggedInAt: new Date().toISOString()
   });
   authPasswordInput.value = "";
+  clearDraft(false);
+  loadDraft();
   renderAuthState();
   setAuthStatus("登录成功", "success");
 }
@@ -2929,6 +2992,7 @@ loginBtn.addEventListener("click", () => {
 
 logoutBtn.addEventListener("click", () => {
   clearAuthSession();
+  clearDraft(false);
   renderAuthState();
   authPasswordInput.value = "";
   setAuthStatus("请输入用户名和密码", "neutral");
@@ -2947,7 +3011,7 @@ introPrev2Btn.addEventListener("click", () => {
 
 startBtn.addEventListener("click", () => {
   if (!validateIntroStep(1) || !validateIntroStep(2)) return;
-  applyMode(DEFAULT_MODE);
+  // Keep the existing question order and calibration state when resuming.
   studentProfile = readStudentProfile();
   publicSubjectScores = readPublicSubjectScores();
   internationalProfile = readInternationalProfile();
@@ -2973,6 +3037,7 @@ quizForm.addEventListener("change", (event) => {
   const target = event.target;
   if (target instanceof HTMLInputElement && target.type === "radio") {
     answers[target.name] = target.value;
+    submitBtn.disabled = false;
     saveDraft();
     updateProgress();
   }
@@ -2980,6 +3045,7 @@ quizForm.addEventListener("change", (event) => {
 
 [gradeInput, internationalCurriculumNameInput, internationalScoreTextInput, scoreCnInput, scoreMathInput, scoreEnInput, scorePhyInput, scoreChemInput, scoreBioInput].forEach((input) => {
   input.addEventListener("input", () => {
+    submitBtn.disabled = false;
     studentProfile = readStudentProfile();
     publicSubjectScores = readPublicSubjectScores();
     internationalProfile = readInternationalProfile();
@@ -3075,7 +3141,7 @@ clearBtn.addEventListener("click", () => {
 
 quizForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  const allAnswered = activeQuestions.every((q) => answers[q.id]);
+  const allAnswered = activeQuestions.every(isQuestionAnswered);
   if (!allAnswered) {
     currentPage = getFirstUnansweredPage();
     renderCurrentPage();
@@ -3098,6 +3164,14 @@ quizForm.addEventListener("submit", (event) => {
       });
       return;
     }
+  }
+  studentProfile = readStudentProfile();publicSubjectScores = readPublicSubjectScores();internationalProfile = readInternationalProfile();
+  const fingerprint = reportInputFingerprint();
+  const previousReport = activeReportRecord || readCachedReport();
+  if (previousReport?.fingerprint === fingerprint) {
+    setSaveStatus("当前作答的报告已生成，可直接查看或导出。");
+    if (!previousReport.synced && REPORT_API_BASE_URL) void deliverCachedReport(previousReport);
+    return;
   }
   const studentVector = calculateStudentVector(answers);
   const weighted = applySubjectWeight(studentVector.score);
@@ -3128,27 +3202,28 @@ quizForm.addEventListener("submit", (event) => {
   const schoolRecommendation = rankSchoolMajors(weighted.score, schoolMajorText);
   renderResult({ ...studentVector, score: weighted.score }, rankedMajors, weighted.summary, schoolRecommendation);
   const reportPayload = buildReportPayload({ ...studentVector, score: weighted.score }, rankedMajors, weighted.summary, schoolRecommendation);
-  const record = { payload: reportPayload, synced: false, view: {
+  const record = { fingerprint, payload: reportPayload, synced: false, view: {
     studentVector: { ...studentVector, score: weighted.score }, rankedMajors,
     weightingSummary: weighted.summary, schoolRecommendation,
     context: { studentProfile, selectedMode, publicSubjectScores, internationalProfile, schoolMajorText, calibrationContext, calibrationAdded, followUpAdded },
     answers: { ...answers }, questionIds: activeQuestions.map((q) => q.id)
   } };
+  activeReportRecord = record;
+  submitBtn.disabled = true;
   let cached = false;
   try {
     localStorage.setItem(reportCacheKey(), JSON.stringify(record));
     cached = true;
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(draftStorageKey());
+    if (authSession?.username === "student") localStorage.removeItem(STORAGE_KEY);
     setSaveStatus("报告已保存在本机，刷新后可恢复。");
   } catch (error) {
     setSaveStatus("本机保存失败，请先导出报告；原有草稿仍保留。");
   }
   resultBox.classList.remove("hidden");
   resultBox.scrollIntoView({ behavior: "smooth", block: "start" });
-  if (cached) {
-    showReportRecoveryStatus(record, "报告已保存在本机，刷新后可恢复。");
-    if (REPORT_API_BASE_URL) void deliverCachedReport(record);
-  }
+  showReportRecoveryStatus(record,cached ? "报告已保存在本机，刷新后可恢复。" : "本机保存失败，请先导出报告留存。");
+  if (REPORT_API_BASE_URL) void deliverCachedReport(record);
   emitEvent("complete_assessment", {
     mode: selectedMode,
     student_type: studentProfile.type,
@@ -3182,9 +3257,14 @@ resultBox.addEventListener("click", (event) => {
   }
 });
 
+window.addEventListener("online", () => {
+  const record = activeReportRecord || readCachedReport();
+  if (record && !record.synced && REPORT_API_BASE_URL) void deliverCachedReport(record);
+});
+
 applyMode(DEFAULT_MODE);
-loadDraft();
-showIntroStep(introStep);
 loadAuthSession();
+if (authSession || !AUTH_ENABLED) loadDraft();
+showIntroStep(introStep);
 renderAuthState();
 maybeRenderPreviewReport();

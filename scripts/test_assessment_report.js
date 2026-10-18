@@ -100,7 +100,7 @@ if(process.argv.includes('--export')) {
   fixture=fixture.replace(/  <script>\s*window.ADMIN_DASHBOARD_PATH[\s\S]*?<\/script>/,'<script>window.REPORT_API_BASE_URL="";</script>');
   fixture=fixture.replace('</body>',`<script>\nconst fixture=${JSON.stringify(record).replace(/</g,'\\u003c')};\n({studentProfile,selectedMode,publicSubjectScores,internationalProfile,schoolMajorText,calibrationContext,calibrationAdded,followUpAdded}=fixture.view.context);\nanswers=fixture.view.answers;activeQuestions=allQuestions.filter(q=>fixture.view.questionIds.includes(q.id));\nrenderResult(fixture.view.studentVector,fixture.view.rankedMajors,fixture.view.weightingSummary,null);\nauthGate.classList.add('hidden');assessmentShell.classList.remove('hidden');intro.classList.add('hidden');quizForm.classList.add('hidden');resultBox.classList.remove('hidden');\ndocument.querySelectorAll('#result details:not(.report-methods)').forEach(d=>d.open=true);\n</script></body>`);
   // Omit auth initialization in this isolated fixture to preserve existing user records.
-  fixture=fixture.replace('assets/js/app.js?v=20261018-parent-report-v10','exports/G11-修订验证-20261017/app-fixture.js');
+  fixture=fixture.replace('assets/js/app.js?v=20261018-system-flow-v11','exports/G11-修订验证-20261017/app-fixture.js');
   fs.writeFileSync(path.join(dir,'app-fixture.js'),source);
   fs.writeFileSync(path.join(dir,'报告验证.html'),fixture);
 }
