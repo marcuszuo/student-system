@@ -30,7 +30,7 @@
     host.querySelector('#account-refresh').addEventListener('click',()=>void act(load));
     host.querySelector('#account-copy').addEventListener('click',()=>void act(async()=>{await navigator.clipboard.writeText(host.querySelector('#account-credentials textarea').value);status('登录信息已复制。');}));
     host.querySelector('#account-download').addEventListener('click',()=>{const csv='\uFEFF'+[['使用者','年级','账号','密码','有效期'],...credentials.map(x=>[x.name,x.grade,x.username,x.password,x.expiresAt])].map(row=>row.map(v=>'"'+String(v||'').replace(/^[=+@\-\t\r]/,"'$&").replace(/"/g,'""')+'"').join(',')).join('\n');const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));link.download='本次发放账号.csv';link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);});
-    host.querySelector('#account-logout').addEventListener('click',()=>void act(async()=>{await request('/api/auth/logout',{method:'POST'});api.clearAdmin();location.reload();}));
+    host.querySelector('#account-logout').addEventListener('click',()=>void api.logoutAdmin(base));
     host.querySelector('#account-list').addEventListener('click',event=>{const button=event.target.closest('button[data-action]');if(!button)return;void act(async()=>{const id=button.dataset.id,action=button.dataset.action;
       if(action==='report'){await window.openAccountReport(id);return;}
       if(action==='edit'){const row=(await request('/api/admin/accounts')).items.find(x=>x.id===id),dialog=host.querySelector('#account-edit');for(const field of ['id','name','grade','note'])dialog.querySelector(`[name="${field}"]`).value=row[field]||'';dialog.showModal();return;}
