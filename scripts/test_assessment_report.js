@@ -57,7 +57,7 @@ answerNew();run('currentPage=totalPages;appendCalibrationQuestions();');answerNe
 run(`var interim=rankMajors(applySubjectWeight(calculateStudentVector(answers).score).score); if(needsBoundaryFollowUp(interim)) { calibrationContext={...calibrationContext,topMajor:interim[0].name,compareMajor:interim[1].name,boundaryDims:getBoundaryDims(interim[0],interim[1],4),boundaryTags:getBoundaryTags(interim[0],interim[1])}; appendBoundaryFollowUpQuestions(); }`);answerNew();
 run(`var simulatedVector=calculateStudentVector(answers);var simulatedWeighted=applySubjectWeight(simulatedVector.score);var simulatedRanked=rankMajors(simulatedWeighted.score);renderResult({...simulatedVector,score:simulatedWeighted.score},simulatedRanked,simulatedWeighted.summary,null);`);
 const report=node('result').innerHTML;
-assert(report.includes('最高项按模型归一化为100'));
+assert(!/Holland|MBTI|Kuder|有效回答|作答明细|计分|归一化|题目记录/.test(report));
 assert(report.includes('02 学生特征分析'));
 assert(report.includes('03 专业推荐与比较'));
 assert(report.includes('04 后续建议'));
@@ -65,7 +65,8 @@ assert(!report.includes('未来4周探索安排'));
 assert(!report.includes('家长优先阅读摘要'));
 assert(report.indexOf('02 学生特征分析') < report.indexOf('03 专业推荐与比较'));
 assert(report.indexOf('03 专业推荐与比较') < report.indexOf('04 后续建议'));
-assert(report.indexOf('04 后续建议') < report.indexOf('附录：测评方法'));
+assert(!report.includes('附录'));
+assert.equal((report.match(/class="report-feature-card"/g)||[]).length,5);
 const cover=report.slice(report.indexOf('<section class="result-header'),report.indexOf('<div class="result-tools'));
 assert(!/候选内相对指数|前两项相对差距|Holland|CIR|指数点|作答倾向指数/.test(cover));
 assert(cover.includes('专业建议'));
@@ -74,15 +75,16 @@ assert(cover.includes('选择重点'));
 assert(!/[？?]|目前还不能明确区分/.test(cover));
 assert(!/记忆力0分|能力突出|具有较高一致性/.test(report));
 assert(!report.includes('值得复核的不同偏好'));
-assert(report.includes('关联说明'));
-assert(report.includes('不作为冲突证据'));
+for(const heading of ['兴趣方向','思考与学习方式','实践倾向','表达与协作','职业价值取向']) assert(report.includes(heading));
+
+
 const payload=run('buildReportPayload({...simulatedVector,score:simulatedWeighted.score},simulatedRanked,simulatedWeighted.summary,null)');
 assert(payload.scoreMeaning.includes('不是能力分'));
 assert(payload.scoring.integratedMeasurements.some(m=>m.kind === 'confidence'));
-assert(report.includes('技能信心'));
-assert(report.includes('工作价值观'));
-assert(report.includes('实践经历'));
-assert(report.includes('不属于MBTI或Kuder正式量表'));
+
+
+
+
 assert.equal(payload.recommendations.filter(r=>r.jointPriority).length, payload.jointPriorityMajors.length>1?payload.jointPriorityMajors.length:0);
 // More than three close candidates must be included in both report and stored payload.
 run('var tieRanked=simulatedRanked.map((m,i)=>({...m,score01:1-i*.009,matchIndex:Math.round((1-i*.009)*100)})); renderResult({...simulatedVector,score:simulatedWeighted.score},tieRanked,simulatedWeighted.summary,null);');
@@ -98,7 +100,7 @@ if(process.argv.includes('--export')) {
   fixture=fixture.replace(/  <script>\s*window.ADMIN_DASHBOARD_PATH[\s\S]*?<\/script>/,'<script>window.REPORT_API_BASE_URL="";</script>');
   fixture=fixture.replace('</body>',`<script>\nconst fixture=${JSON.stringify(record).replace(/</g,'\\u003c')};\n({studentProfile,selectedMode,publicSubjectScores,internationalProfile,schoolMajorText,calibrationContext,calibrationAdded,followUpAdded}=fixture.view.context);\nanswers=fixture.view.answers;activeQuestions=allQuestions.filter(q=>fixture.view.questionIds.includes(q.id));\nrenderResult(fixture.view.studentVector,fixture.view.rankedMajors,fixture.view.weightingSummary,null);\nauthGate.classList.add('hidden');assessmentShell.classList.remove('hidden');intro.classList.add('hidden');quizForm.classList.add('hidden');resultBox.classList.remove('hidden');\ndocument.querySelectorAll('#result details:not(.report-methods)').forEach(d=>d.open=true);\n</script></body>`);
   // Omit auth initialization in this isolated fixture to preserve existing user records.
-  fixture=fixture.replace('assets/js/app.js?v=20261018-task-v9','exports/G11-修订验证-20261017/app-fixture.js');
+  fixture=fixture.replace('assets/js/app.js?v=20261018-parent-report-v10','exports/G11-修订验证-20261017/app-fixture.js');
   fs.writeFileSync(path.join(dir,'app-fixture.js'),source);
   fs.writeFileSync(path.join(dir,'报告验证.html'),fixture);
 }

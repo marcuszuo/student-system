@@ -1905,7 +1905,7 @@ function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoo
   return {
     id: createRecordId(),
     submittedAt: new Date().toISOString(),
-    siteVersion: "2026-10-task-discrimination-v9",
+    siteVersion: "2026-10-parent-summary-v10",
     scoreMeaning: "候选专业内相对匹配指数，不是能力分、录取概率或成功概率",
     jointPriorityMajors: getJointPriorityMajors(rankedMajors).map((major) => major.name),
     studentProfile: {
@@ -2761,6 +2761,34 @@ function getMajorComparison(major) {
     task: `选择「${major.courses}」中的一个入门主题，完成一个练习或作品并请老师反馈。` };
 }
 
+function buildParentPortrait(score, answerMap = answers) {
+  const measures = getIntegratedMeasurements(answerMap);
+  const strong = (kind) => measures.filter((m) => m.kind === kind && m.count && m.value >= 0.75).sort((a,b) => b.value-a.value);
+  const interests = strong("interest").slice(0,3).map((m) => getIntegratedLabel(m.dim));
+  const domains = strong("domain").slice(0,3).map((m) => DOMAIN_LABELS[m.dim.replace("domain.","")]);
+  const skills = strong("confidence").slice(0,2).map((m) => getIntegratedLabel(m.dim));
+  const independent = measures.filter((m) => m.kind === "experience" && m.count && m.value >= 0.75).map((m) => getIntegratedLabel(m.dim));
+  const values = strong("value").slice(0,3).map((m) => getIntegratedLabel(m.dim));
+  const expression = measures.find((m) => m.kind === "confidence" && m.dim === "skill.expression");
+  const coordination = measures.find((m) => m.kind === "confidence" && m.dim === "skill.coordination");
+  const socialHigh = [expression,coordination].filter((m) => m?.count && m.value >= 0.75).map((m) => getIntegratedLabel(m.dim));
+  const socialLow = [expression,coordination].filter((m) => m?.count && m.value <= 0.25).map((m) => getIntegratedLabel(m.dim));
+  const thinking = (score["cognition.abstract"] || 0) >= 0.45
+    ? "倾向先理解原理和逻辑，再进入具体问题。更适合在概念讲解与实际应用相结合的学习中建立理解。"
+    : (score["cognition.system"] || 0) >= 0.45
+      ? "倾向通过结构、步骤和任务之间的联系理解内容。清晰的任务安排和阶段反馈有助于持续推进。"
+      : (score["cognition.contextual"] || 0) >= 0.45
+        ? "更容易结合具体情境与实际用途理解内容，适合通过案例和真实任务逐步深入。"
+        : "学习方式未呈现单一突出倾向，适合将原理讲解、案例与动手练习结合，并观察哪种方式更有助于理解。";
+  return [
+    {title:"兴趣方向",text:interests.length ? `兴趣主要集中在${interests.join("、")}。${domains.length ? `具体更愿意持续投入${domains.join("、")}相关任务，专业选择宜围绕这些学习内容展开。` : "专业选择宜进一步比较具体课程内容，区分对领域名称的兴趣与对日常学习任务的投入。"}` : "兴趣分布较分散，尚未呈现集中的偏好方向。专业比较宜从具体课程和任务入手，明确哪些内容能够持续吸引学生。"},
+    {title:"思考与学习方式",text:thinking},
+    {title:"实践倾向",text:`${skills.length ? `对${skills.join("、")}相关任务较有信心。` : "对具体任务的自我把握较为谨慎，宜通过小型成果逐步建立信心。"}${independent.length ? `已在${independent.join("、")}方面积累独立完成经历，适合进一步增加任务复杂度。` : "目前独立完成任务的经历有限，后续重点是积累可展示的作品或项目成果。"}`},
+    {title:"表达与协作",text:socialHigh.length ? `对${socialHigh.join("、")}较有信心，适合在项目中承担相应职责，并通过实际反馈提升协作质量。` : socialLow.length ? `对${socialLow.join("、")}的自我把握较谨慎，宜先承担目标明确的小任务，再逐步增加汇报、沟通或协调责任。` : "对表达与协作的自我评价较为适中或相关经历尚少，可从分工明确的小组任务积累经验。"},
+    {title:"职业价值取向",text:values.length ? `较重视${values.join("、")}。比较专业与未来发展路径时，应同时关注这些条件，避免只凭热门程度或专业名称做决定。` : "对未来工作条件尚未形成突出的优先顺序，后续可结合职业访谈和真实项目明确个人取舍。"}
+  ];
+}
+
 function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecommendation) {
   const esc = escapeReportText;
   const score = studentVector.score;
@@ -2769,72 +2797,25 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
   const tied = joint.length > 1;
   const recommended = tied ? joint : candidates.slice(0, 1);
   const names = recommended.slice(0, 3).map((m) => m.name).join("、") + (recommended.length > 3 ? `等${recommended.length}个专业` : "");
-  const traits = getTopDimensions(score, 3);
   const summaryTitle = `${tied ? "同组优先推荐" : "优先推荐"}：${names}`;
-  const integrated = getIntegratedMeasurements(answers);
-  const labels = {interest:"职业兴趣",confidence:"技能信心",value:"工作价值观",experience:"实践经历"};
-  const integratedCards = ["interest","confidence","value","experience"].map((kind) => {
-    const group = integrated.filter((m) => m.kind === kind);
-    const sorted = group.filter((m) => m.count).sort((a,b) => b.value-a.value);
-    const strong = sorted.filter((m) => m.value >= 0.75);
-    const text = !group.length ? "本次记录尚未包含独立测量题，需补充测评。"
-      : !sorted.length ? (group.every((m) => m.answered === m.asked) ? "已选择缺少相关经历，暂不据此判断信心水平。" : "本模块尚未完成有效评价，需补充回答。")
-      : kind === "experience" ? sorted.map((m) => `${getIntegratedLabel(m.dim)}：${m.examples[0]?.answer || "待补充"}`).join("；")
-      : strong.length ? `${kind === "interest" ? "较喜欢的活动领域" : kind === "confidence" ? "较有信心的任务" : "较重视的发展条件"}：${strong.map((m) => getIntegratedLabel(m.dim)).join("、")}。`
-      : "已分别评价各项，本次没有明显的高评价项，详见附录记录。";
-    return `<article class="report-feature-card"><h4>${labels[kind]}</h4><p>${esc(text)}</p></article>`;
-  }).join("");
-  const skillForInterest = {"interest.r":"skill.making","interest.i":"skill.data","interest.a":"skill.expression","interest.s":"skill.coordination","interest.e":"skill.coordination","interest.c":"skill.data"};
-  const interpretation = integrated.filter((m) => m.kind === "interest" && m.count && m.value >= 0.75).slice(0, 3).map((interest) => {
-    const skill = skillForInterest[interest.dim];
-    const confidence = integrated.find((m) => m.kind === "confidence" && m.dim === skill);
-    const experience = integrated.find((m) => m.kind === "experience" && m.dim === skill);
-    const message = !confidence?.count ? "兴趣较强，相关任务信心信息不足。"
-      : confidence.value < 0.5 ? "兴趣较强，相关任务信心较低，可从入门练习积累经验。"
-      : confidence.value >= 0.75 && (!experience?.count || experience.value <= 0.5) ? "兴趣和自述信心较强，独立实践经历仍需补充。"
-      : confidence.value >= 0.75 ? "兴趣、任务信心和自述实践经历相互支持。"
-      : "兴趣较强，相关任务信心一般，适合用实际成果进一步比较。";
-    return `<li><strong>${esc(getIntegratedLabel(interest.dim))}：</strong>${message}</li>`;
-  }).join("");
-  const highInterests = integrated.filter((m) => m.kind === "interest" && m.count && m.value >= 0.75);
-  const highConfidence = integrated.filter((m) => m.kind === "confidence" && m.count && m.value >= 0.75);
-  const highValues = integrated.filter((m) => m.kind === "value" && m.count && m.value >= 0.75);
-  const academicText = studentProfile.type === "international" ? internationalProfile.scoreText
-    : Object.entries(publicSubjectScores).filter(([,value]) => typeof value === "number").map(([key,value]) => `${({cn:"语文",math:"数学",en:"英语",phy:"物理",chem:"化学",bio:"生物"})[key] || key} ${value}`).join("；");
-  const basis = integrated.length ? `${highValues.length ? `较重视${highValues.map((m)=>getIntegratedLabel(m.dim)).join("、")}。` : ""}兴趣、技能信心和价值观分别评价后综合比较。${highInterests.length ? `兴趣较强的领域为${highInterests.map((m)=>getIntegratedLabel(m.dim)).join("、")}。` : ""}${highConfidence.length ? `较有信心的任务为${highConfidence.map((m)=>getIntegratedLabel(m.dim)).join("、")}。` : ""}` : traits.map((t) => describeReportTrait(t.dim)).join("");
-  const learningTraits = getTopDimensions(score, dimensionKeys.length).filter((t) => t.dim.startsWith("cognition.") || t.dim === "ability.focus").slice(0, 3);
-  const featureCards = learningTraits.map((trait) => {
-    const evidence = buildAnswerEvidence({ coreDims: [trait.dim] }).supporting[0];
-    return `<article class="report-feature-card"><h4>${esc(trait.label)}</h4><p>${esc(describeReportTrait(trait.dim))}</p>
-      ${evidence ? `<p class="report-example">作答例证：「${esc(evidence.question)}」选择了「${esc(evidence.answer)}」。</p>` : "<p class=report-example>当前相关信息来自综合画像，详细来源见附录。</p>"}</article>`;
-  }).join("");
-  const conditions = [...new Set(recommended.flatMap((major) => getMajorCoreDims(major)))].filter((dim) => (score[dim] || 0) < 0.5).slice(0, 3);
+  const portrait = buildParentPortrait(score);
+  const basis = portrait[0].text + portrait[1].text;
+  const featureCards = portrait.map((item) => `<article class="report-feature-card"><h4>${esc(item.title)}</h4><p>${esc(item.text)}</p></article>`).join("");
   const rows = candidates.map((major) => {
-    const ev = buildAnswerEvidence(major);
     const comparison = getMajorComparison(major);
     const role = tied && joint.some((m) => m.name === major.name) ? "同组优先推荐" : major === candidates[0] ? "优先推荐" : "补充比较";
-    const supportingDims = [...new Set(ev.supporting.map((r) => dimensionNameMap[r.dimension] || r.dimension))];
-    const integratedSupport = integrated.filter((m) => m.kind !== "experience" && m.kind !== "domain" && m.count && m.value >= 0.75 && getMajorVectorValue(major,m.dim) >= 0.6).map((m) => `${labels[m.kind]}：${getIntegratedLabel(m.dim)}`).slice(0,4);
     const domain = getDomainSupport(major);
-    const domainText = domain.answered ? `专业任务偏好：${domain.measures.map((m)=>DOMAIN_LABELS[m.dim.replace("domain.","")]).join("、")}（${domain.value >= 0.75 ? "愿意投入" : domain.value <= 0.25 ? "投入意愿较低，需重点核对" : "投入意愿一般"}）。` : "专业任务偏好尚缺信息。";
-    const rationale = integratedSupport.length ? `综合参照${integratedSupport.join("；")}，与该专业的课程任务比较。` : supportingDims.length
-      ? `作答体现了${supportingDims.join("、")}，与该专业的部分学习任务相关。`
-      : "该专业在本次候选中相对靠前，直接作答证据较少，需结合学业表现理解。";
+    const rationale = domain.answered
+      ? domain.value >= 0.75 ? `对${domain.measures.map((m) => DOMAIN_LABELS[m.dim.replace("domain.","")]).join("、")}相关任务有较强投入意愿，与该专业的主要学习内容相符。`
+        : domain.value <= 0.25 ? "综合特征使该专业进入候选范围，但对其具体学习任务的投入意愿较低，选择前应重点比较课程接受度。"
+        : "综合兴趣与职业偏好支持将该专业纳入比较，具体任务投入意愿适中，选择重点见右侧。"
+      : "综合兴趣与职业偏好支持将该专业纳入比较，仍需结合其实际课程内容判断长期投入。";
     return `<tr><th scope="row"><p class="rank-label">${role}</p>${esc(major.name)}</th>
-      <td data-label="推荐依据">${esc(rationale)}<br>${esc(domainText)}</td><td data-label="大学主要学习内容">${esc(comparison.study)}</td><td data-label="选择时重点观察">${esc(comparison.focus)}</td></tr>`;
+      <td data-label="推荐依据">${esc(rationale)}</td><td data-label="大学主要学习内容">${esc(comparison.study)}</td><td data-label="选择时重点观察">${esc(comparison.focus)}</td></tr>`;
   });
   const tableHead = "<thead><tr><th>推荐专业</th><th>推荐依据</th><th>大学主要学习内容</th><th>选择时重点观察</th></tr></thead>";
   const table = (items) => `<div class="report-table-wrap" tabindex="0" role="region" aria-label="专业推荐比较表"><table class="report-comparison-table">${tableHead}<tbody>${items.join("")}</tbody></table></div>`;
   const extra = rows.length > 3 ? `<details class="rank-details"><summary>展开其余${rows.length - 3}个同组推荐专业</summary>${table(rows.slice(3))}</details>` : "";
-  const evidenceHTML = candidates.map((major) => {
-    const ev = buildAnswerEvidence(major);
-    const items = (records) => records.map((r) => `<li>题目${esc(r.questionId)}：${esc(r.question)}<br>选择：${esc(r.answer)}<br>关联说明：${esc(r.explanation)}</li>`).join("");
-    return `<details class="rank-details"><summary>${esc(major.name)}：查看实际作答依据</summary>
-      <p>支持该方向的回答</p><ul>${items(ev.supporting) || "<li>暂无直接支持回答。</li>"}</ul>
-      <p>其他相关回答（补充信息，不作为冲突证据）</p><ul>${items(ev.toVerify) || "<li>暂无其他相关回答。</li>"}</ul>
-      ${ev.missing.length ? `<p>待补充信息：${esc(ev.missing.map((d) => dimensionNameMap[d] || d).join("、"))}。缺少选择不代表能力不足。</p>` : ""}</details>`;
-  }).join("");
-  const radarProfile = buildRadarProfile(score);
   const planMajors = candidates.slice(0, 2);
   resultBox.innerHTML = `
     <section class="result-header report-cover" aria-labelledby="report-conclusion">
@@ -2850,10 +2831,8 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
     </section>
     <div class="result-tools"><button type="button" id="export-pdf-btn" class="btn btn-ghost">导出 PDF（打印版）</button></div>
     <section class="report-section" aria-labelledby="report-features"><h3 id="report-features">02 学生特征分析</h3>
-      <p>兴趣回答“喜欢什么”，信心回答“认为自己能做什么”，价值观回答“未来看重什么”；实践经历提供自述参照，彼此独立计分。</p>
-      <div class="report-feature-grid">${integratedCards}<article class="report-feature-card"><h4>学业参照</h4><p style="white-space:pre-line">${esc(academicText || "未填写成绩")}</p><p>成绩用于辅助比较课程准备，实践经历来自学生自述。</p></article></div>${interpretation ? `<h4>综合解读</h4><ul>${interpretation}</ul><p>兴趣与任务的关联用于辅助解释，不是固定的一对一职业映射。</p>` : ""}
-      <details class="rank-details"><summary>学习与协作偏好：辅助理解学习环境</summary><div class="report-feature-grid">${featureCards}</div><p>这部分不按MBTI类型划分，也不直接决定专业排序。</p></details>
-      <p class="report-learning-condition"><strong>选择时需关注的学习条件：</strong>${conditions.length ? `推荐专业涉及${esc(conditions.map((d) => dimensionNameMap[d] || d).join("、"))}相关任务。请结合近期作业、课程成绩和老师反馈补充判断；本次较少选择相关回答，不代表能力不足。` : "将这些偏好与近期作业、课程成绩和老师反馈对照，重点观察持续投入和实际完成情况。"}</p>
+      <p>从五个方面概括学生的兴趣、学习特点与职业偏好，说明专业选择应重点考虑什么。</p>
+      <div class="report-feature-grid">${featureCards}</div>
     </section>
     <section class="report-section" aria-labelledby="report-comparison"><h3 id="report-comparison">03 专业推荐与比较</h3>
       <p>按“推荐依据、主要课程、选择重点”集中比较。${tied ? "同组推荐专业处于同一推荐层级，表内先后不代表确定的优劣。" : "优先推荐专业与补充方向分层呈现。"}</p>
@@ -2865,18 +2844,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
       <ul>${planMajors.map((m) => `<li><strong>${esc(m.name)}：</strong>${esc(getMajorComparison(m).task)}</li>`).join("")}
       <li><strong>比较方式：</strong>各投入相同时间，记录成果、困难和继续投入意愿，请学科老师反馈，再对照上表的选择重点进行比较。</li></ul>
     </section>
-    <details class="rank-details report-methods"><summary>附录：测评方法、兴趣参照与作答明细</summary>
-      <p>相对指数仅比较本次候选专业，最高项按模型归一化为100，不代表完全适合、能力水平、录取或成功概率。各维度来自自述偏好及成绩辅助调整，低值或未选择不代表能力不足。</p>
-      <p>${esc(weightingSummary)}。Holland兴趣辅助代码：${esc(getHollandCode(score))}。R代表动手实践，I代表研究分析，A代表创意表达，S代表助人与合作，E代表组织与影响，C代表规则与秩序；代码不单独决定专业。</p>
-      <h4>综合画像参照</h4><p>展示作答倾向的相对分布，不是客观能力测验或同龄人百分位。</p>
-      <div class="radar-wrap"><canvas id="profile-radar" width="360" height="360"></canvas><div class="radar-legend">${radarProfile.map((x) => `<span>${esc(x.label)} ${x.value}</span>`).join("")}</div></div>
-      <p>报告版本：v9 · 2026-10-18；新增专业任务分流，固定作答检查可追溯。</p><h4>独立测量记录</h4><p>新增题目由MajorNavi自建，采用Holland六类兴趣作为分类参照；不属于MBTI或Kuder正式量表，未继承其常模或信效度。技能信心不等同于客观能力，实践经历为学生自述。</p>
-      <ul>${integrated.map((m) => `<li>${labels[m.kind] || "专业任务偏好"} · ${esc(m.kind === "domain" ? DOMAIN_LABELS[m.dim.replace("domain.","")] : dimensionNameMap[m.dim] || m.dim)}：${m.count ? Math.round(m.value*100) : "缺少经历，未计分"}；有效回答${m.count}/${m.asked}。${esc(m.examples.map((e)=>`${e.question} ${e.answer}`).join("；"))}</li>`).join("")}</ul>
-      <p>推荐采用兴趣、信心、价值观与学科准备的自建加权规则；权重尚需真实样本验证。性格、学习方式和抗压信息用于辅助说明，不直接决定专业排序。</p><h4>候选专业相对指数</h4><ul>${candidates.map((m) => `<li>${esc(m.name)}：${m.matchIndex}</li>`).join("")}</ul>
-      <h4>实际作答明细</h4>${evidenceHTML}
-      <p>题目记录：${new Set(activeQuestions.map((q) => q.id)).size}道独立题目；${calibrationAdded ? "已完成个性化追加题" : "未追加校准题"}${followUpAdded ? "，并完成分流追问" : ""}。追加题用于补充推荐方向之间的区分信息，不代表测评已经具备实证信效度。</p>
-    </details>`;
-  drawRadarChart("profile-radar", radarProfile);
+    <p class="report-student-line">本报告用于专业发展参考，建议结合学业表现和实践经历使用。</p>`;
 }
 
 function validateIntroStep(step) {
