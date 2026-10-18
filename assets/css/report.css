@@ -15,7 +15,6 @@
   #report-recovery-status { display: none; }
 }
 
-.tool-hub.assessment-entry { grid-template-columns: 1fr; }
 
 #result .report-feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 #result .report-feature-card { padding: 16px; background: #f6f8f4; border: 1px solid #e0e6dd; border-radius: 12px; }

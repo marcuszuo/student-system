@@ -403,6 +403,7 @@ function renderAuthState() {
   }
 
   const authed = Boolean(authSession?.username);
+  document.getElementById("tool-hub")?.classList.toggle("hidden", authed);
   authGate.classList.toggle("hidden", authed);
   assessmentShell.classList.toggle("hidden", !authed);
   authSessionBar.classList.remove("hidden");
