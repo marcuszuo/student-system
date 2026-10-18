@@ -629,7 +629,7 @@ async function fetchReports() {
 
   setStatus("正在加载报告…");
 
-  const params = new URLSearchParams({ limit: "100" });
+  const params = new URLSearchParams({ limit: "200" });
   const dateFrom = String(dateFromEl.value || "").trim();
   const dateTo = String(dateToEl.value || "").trim();
   if (dateFrom) params.set("date_from", dateFrom);
@@ -644,7 +644,9 @@ async function fetchReports() {
     throw new Error(`加载失败（${response.status}）`);
   }
   const data = await response.json();
-  reports = Array.isArray(data.items) ? data.items : [];
+  const all = Array.isArray(data.items) ? data.items : [];
+  renderPilotObservations(all.filter(item => ['assessment_session','assessment_feedback'].includes(item.recordType)));
+  reports = all.filter(item => !['assessment_session','assessment_feedback'].includes(item.recordType));
   applyFilters();
   renderOverview();
   renderReportList();
@@ -988,3 +990,19 @@ fetchAllAdminData().catch((error) => {
   console.error(error);
   setStatus(error.message || "后台加载失败。", "error");
 });
+
+function renderPilotObservations(items) {
+  let panel = document.getElementById('admin-pilot-observations');
+  if (!panel) {
+    panel = document.createElement('section'); panel.id = 'admin-pilot-observations'; panel.className = 'card';
+    document.querySelector('main').appendChild(panel);
+  }
+  const sessions = items.filter(x => x.recordType === 'assessment_session');
+  const feedback = items.filter(x => x.recordType === 'assessment_feedback');
+  const completed = sessions.filter(x => x.status === 'completed');
+  const minutes = completed.length ? Math.round(completed.reduce((sum,x) => sum + Number(x.activeSeconds || 0),0) / completed.length / 60) : null;
+  const row = x => `<tr><td>${escapeHtml(formatDateTime(x.submittedAt))}</td><td>${escapeHtml(x.studentProfile?.grade || '—')}</td><td>${x.status === 'completed' ? '已完成' : '暂未完成'}</td><td>${Math.round(Number(x.activeSeconds || 0)/60)} 分钟</td><td>第 ${Number(x.lastPage || 1)} 页 · ${Number(x.answered || 0)}/${Number(x.total || 0)} 题</td><td>${escapeHtml(Object.entries(x.pageSeconds || {}).map(([page,seconds]) => `${page}页 ${Math.round(Number(seconds))}秒`).join('；'))}</td><td>${escapeHtml(Object.entries(x.moduleSeconds || {}).map(([module,seconds]) => `${module}模块 ${Math.round(Number(seconds))}秒`).join('；'))}</td></tr>`;
+  panel.innerHTML = `<h2>试测与报告反馈</h2><p>当前加载范围：${sessions.length} 次测评记录，${completed.length} 次已完成，${feedback.length} 条反馈。${minutes === null ? '' : `已完成记录平均可见交互耗时约 ${minutes} 分钟。`}</p><p>仅展示最近加载的最多200条混合记录，受日期筛选影响，不代表全部学生。隐藏页面时间不计入；无交互间隔最多计60秒。暂未完成也可能稍后继续，最后停留页不等于退出原因。混合页面按题量分摊模块耗时，仅供精简题目的初步参考。</p>
+    <details><summary>查看测评进度与逐页耗时</summary><div class="report-table-wrap"><table><thead><tr><th>开始时间</th><th>年级</th><th>状态</th><th>估计耗时</th><th>最后进度</th><th>逐页耗时</th><th>模块耗时（估计）</th></tr></thead><tbody>${sessions.map(row).join('')}</tbody></table></div></details>
+    <details><summary>查看报告反馈（${feedback.length}）</summary>${feedback.map(x => `<article><p><strong>${escapeHtml(x.rating)}</strong> · ${escapeHtml(x.topic)} · ${escapeHtml(formatDateTime(x.submittedAt))}</p><p>${escapeHtml(x.text || '未填写补充意见')}</p><p>关联报告：${escapeHtml(x.reportId)}</p></article>`).join('') || '<p>暂无反馈。</p>'}</details>`;
+}

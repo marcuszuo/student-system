@@ -489,6 +489,7 @@ function saveDraft() {
   internationalProfile = readInternationalProfile();
   schoolMajorText = readSchoolMajorText();
   const payload = {
+    study: window.MajorNaviStudy?.snapshot(),
     owner: authSession?.username || "local",
     started: !quizForm.classList.contains("hidden"),
     introStep,
@@ -797,6 +798,7 @@ function loadDraft() {
         calibrationContext: null,
         followUpAdded: false
       };
+    window.MajorNaviStudy?.restore(parsed.study);
     applyMode(DEFAULT_MODE, draftState);
     answers = Object.fromEntries(activeQuestions.filter(isQuestionAnswered).map((q)=>[q.id,answers[q.id]]));
     currentPage = Number.isFinite(Number(parsed.page)) ? Math.floor(Number(parsed.page)) : 1;
@@ -831,6 +833,8 @@ function loadDraft() {
 }
 
 function clearDraft(removeSaved = true) {
+  window.MajorNaviStudy?.checkpoint();
+  window.MajorNaviStudy?.restore(null);
   answers = {};
   studentProfile = { type: "public", grade: "" };
   publicSubjectScores = { cn: null, math: null, en: null, phy: null, chem: null, bio: null };
@@ -944,6 +948,10 @@ function renderCurrentPage() {
 }
 
 function updateProgress() {
+  if (!quizForm.classList.contains("hidden")) {
+    window.MajorNaviStudy?.observe({modules:getPageQuestions(currentPage).map(q=>MODULE_META[q.module]?.label || q.module),page:currentPage,total:activeQuestions.length,answered:activeQuestions.filter(isQuestionAnswered).length,grade:studentProfile.grade,type:studentProfile.type});
+    window.MajorNaviStudy?.checkpoint("in_progress");
+  }
   const answered = activeQuestions.filter(isQuestionAnswered).length;
   const total = activeQuestions.length;
   const percent = total ? (answered / total) * 100 : 0;
@@ -1951,7 +1959,8 @@ function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoo
   return {
     id: createRecordId(),
     submittedAt: new Date().toISOString(),
-    siteVersion: "2026-10-system-flow-v11",
+    siteVersion: "2026-10-study-v12",
+    usage: window.MajorNaviStudy?.snapshot() || null,
     scoreMeaning: "候选专业内相对匹配指数，不是能力分、录取概率或成功概率",
     jointPriorityMajors: getJointPriorityMajors(rankedMajors).map((major) => major.name),
     studentProfile: {
@@ -2202,12 +2211,13 @@ function restoreSavedReport() {
     if (view.context) ({ studentProfile, selectedMode, publicSubjectScores, internationalProfile, schoolMajorText, calibrationContext, calibrationAdded, followUpAdded } = view.context);
     answers = view.answers || {};
     activeQuestions = allQuestions.filter((q) => (view.questionIds || []).includes(q.id));
-    try { renderResult(view.studentVector, view.rankedMajors, view.weightingSummary, view.schoolRecommendation); }
+    try { renderResult(view.studentVector, view.rankedMajors, view.weightingSummary, view.schoolRecommendation, record.payload); }
     finally {
       answers = previousAnswers; activeQuestions = previousQuestions;
       ({ studentProfile, selectedMode, publicSubjectScores, internationalProfile, schoolMajorText, calibrationContext, calibrationAdded, followUpAdded } = previousContext);
     }
     resultBox.classList.remove("hidden");
+    bindReportFeedback(record.payload);
     showReportRecoveryStatus(record, record.synced ? "已恢复本机保存的报告（已同步）。" : "已恢复本机保存的报告，可继续查看或重试同步。");
   } catch (error) { setSaveStatus("本机报告暂时无法恢复，请保留草稿重新生成。"); }
 }
@@ -2850,7 +2860,7 @@ function buildParentPortrait(score, answerMap = answers) {
   ];
 }
 
-function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecommendation) {
+function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecommendation, metadata = {}) {
   const esc = escapeReportText;
   const score = studentVector.score;
   const candidates = getReportMajors(rankedMajors);
@@ -2905,7 +2915,32 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
       <ul>${planMajors.map((m) => `<li><strong>${esc(m.name)}：</strong>${esc(getMajorComparison(m).task)}</li>`).join("")}
       <li><strong>比较方式：</strong>各投入相同时间，记录成果、困难和继续投入意愿，请学科老师反馈，再对照上表的选择重点进行比较。</li></ul>
     </section>
-    <p class="report-student-line">本报告用于专业发展参考，建议结合学业表现和实践经历使用。</p>`;
+    <p class="report-student-line">本报告用于专业发展参考，建议结合学业表现和实践经历使用。</p>
+    <p class="report-student-line" id="report-version-line">测评版本：2026.10 / V${esc((metadata.siteVersion || "v12").match(/v(\d+)$/)?.[1] || "12")} · 生成日期：${esc(new Date(metadata.submittedAt || Date.now()).toLocaleDateString("zh-CN"))}</p>
+    <details class="rank-details report-feedback no-print"><summary>反馈本次报告</summary>
+      <form id="report-feedback-form"><label>报告与学生实际情况是否符合？<select name="rating" required><option value="">请选择</option><option>符合</option><option>部分符合</option><option>不符合</option><option>暂时无法判断</option></select></label>
+      <label>希望改进的部分<select name="topic"><option>专业推荐</option><option>学生特征</option><option>题目理解</option><option>答题长度</option><option>其他</option></select></label>
+      <label>具体意见（选填，请勿填写姓名或联系方式）<textarea name="comment" maxlength="1000" rows="3"></textarea></label>
+      <button class="btn btn-ghost" type="submit">提交反馈</button><p role="status" aria-live="polite" id="report-feedback-status"></p></form>
+    </details>`;
+}
+
+function bindReportFeedback(payload) {
+  const form = document.getElementById("report-feedback-form");
+  if (!form || !window.MajorNaviStudy) return;
+  const line = document.getElementById("report-version-line");
+  if (line) line.textContent = `测评版本：2026.10 / V${(payload.siteVersion || "v12").match(/v(\d+)$/)?.[1] || "12"} · 生成日期：${new Date(payload.submittedAt).toLocaleDateString("zh-CN")}`;
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const fields = form.elements;
+    const button = form.querySelector('button[type="submit"]');
+    button.disabled = true;
+    button.textContent = "正在提交…";
+    const saved = await window.MajorNaviStudy.feedback(payload.id,fields.rating.value,fields.topic.value,fields.comment.value);
+    button.disabled = false;
+    button.textContent = "提交反馈";
+    document.getElementById("report-feedback-status").textContent = saved === "sent" ? "感谢反馈，已提交成功。" : saved === "pending" ? "反馈已保存在本机，联网后会自动重试。" : "本机暂时无法保存反馈，已尝试直接同步，请保留文字以便重试。";
+  });
 }
 
 function validateIntroStep(step) {
@@ -3038,8 +3073,8 @@ quizForm.addEventListener("change", (event) => {
   if (target instanceof HTMLInputElement && target.type === "radio") {
     answers[target.name] = target.value;
     submitBtn.disabled = false;
-    saveDraft();
     updateProgress();
+    saveDraft();
   }
 });
 
@@ -3107,12 +3142,14 @@ schoolMajorImageInput.addEventListener("change", async (event) => {
 prevBtn.addEventListener("click", () => {
   if (currentPage > 1) {
     currentPage -= 1;
+    updateProgress();
     saveDraft();
     renderCurrentPage();
     window.scrollTo({ top: 0, behavior: "smooth" });
     return;
   }
 
+  window.MajorNaviStudy?.pause();
   quizForm.classList.add("hidden");
   intro.classList.remove("hidden");
   showIntroStep(2);
@@ -3127,6 +3164,7 @@ nextBtn.addEventListener("click", () => {
   }
   if (currentPage < totalPages) {
     currentPage += 1;
+    updateProgress();
     saveDraft();
     renderCurrentPage();
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -3209,6 +3247,8 @@ quizForm.addEventListener("submit", (event) => {
     answers: { ...answers }, questionIds: activeQuestions.map((q) => q.id)
   } };
   activeReportRecord = record;
+  window.MajorNaviStudy?.complete(reportPayload.id);
+  bindReportFeedback(reportPayload);
   submitBtn.disabled = true;
   let cached = false;
   try {
@@ -3255,6 +3295,13 @@ resultBox.addEventListener("click", (event) => {
     window.addEventListener("afterprint", restoreDetails);
     window.print();
   }
+});
+
+window.addEventListener("pagehide", () => {
+  if (!quizForm.classList.contains("hidden") && !activeReportRecord) saveDraft();
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && !quizForm.classList.contains("hidden") && !activeReportRecord) saveDraft();
 });
 
 window.addEventListener("online", () => {
