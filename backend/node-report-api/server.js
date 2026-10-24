@@ -31,7 +31,7 @@ const server = http.createServer(async (req, res) => {
       return respondJson(res, 200, { ok: true, time: new Date().toISOString() }, corsHeaders(req));
     }
 
-    if (url.pathname === '/api/auth/capabilities' && req.method === 'GET') return respondJson(res,200,{accounts:access.configured,version:1},corsHeaders(req));
+    if (url.pathname === '/api/auth/capabilities' && req.method === 'GET') return respondJson(res,200,{accounts:access.configured,version:2,dualAccess:access.configured},corsHeaders(req));
     if (url.pathname === '/api/auth/login' && req.method === 'POST') {
       const payload = await readBody(req), key = req.socket.remoteAddress + ':' + String(payload.username || '').toLowerCase().slice(0,80);
       const previous = attempts.get(key), limit = previous && previous.until>Date.now() ? previous : {count:0,until:Date.now()+15*60000};
@@ -42,6 +42,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (url.pathname === '/api/auth/session' && req.method === 'GET') return respondJson(res,200,access.session(bearer(req)),corsHeaders(req));
     if (url.pathname === '/api/auth/logout' && req.method === 'POST') {access.logout(bearer(req));return respondJson(res,200,{ok:true},corsHeaders(req));}
+    if (url.pathname === '/api/auth/gaokao-permit' && req.method === 'GET') return respondJson(res,200,access.gaokaoPermit(bearer(req)),corsHeaders(req));
     if (url.pathname === '/api/auth/my-report' && req.method === 'GET') return respondJson(res,200,{item:access.report(bearer(req))},corsHeaders(req));
     if (url.pathname === '/api/admin/accounts') {
       if (!requireAdmin(req)) return respondJson(res,403,{error:'Forbidden'},corsHeaders(req));
@@ -239,25 +240,16 @@ async function handleCreateReport(req, res) {
 }
 
 async function handleCreateGaokaoQuery(req, res) {
-  if (!requireIngest(req)) {
-    return respondJson(res, 403, { error: "Forbidden" }, corsHeaders(req));
-  }
-
-  const payload = await readBody(req);
-  const id = String(payload.id || "").trim() || crypto.randomUUID();
-  const submittedAt = String(payload.submittedAt || new Date().toISOString());
-
-  const queries = readGaokaoQueries();
-  const normalized = {
-    ...payload,
-    id,
-    submittedAt,
-    recordType: "gaokao_query"
-  };
-  const next = [normalized, ...queries.filter((item) => item.id !== id)].slice(0, 3000);
-  writeGaokaoQueries(next);
-
-  return respondJson(res, 200, { ok: true, id }, corsHeaders(req));
+  if (!access.configured && !requireIngest(req)) return respondJson(res,403,{error:'Forbidden'},corsHeaders(req));
+  let payload=await readBody(req);
+  if(access.configured) payload=access.queryRecord(bearer(req),payload);
+  const id=String(payload.id || '').trim() || crypto.randomUUID();
+  const queries=readGaokaoQueries();
+  const previous=queries.find(item=>item.id===id);
+  const normalized=previous || {...payload,id,submittedAt:String(payload.submittedAt || new Date().toISOString()),recordType:'gaokao_query'};
+  writeGaokaoQueries([normalized,...queries.filter(item=>item.id!==id)].slice(0,3000));
+  if(access.configured) access.noteQuery(bearer(req),id);
+  return respondJson(res,200,{ok:true,id},corsHeaders(req));
 }
 
 function handleListReports(req, res, url) {
@@ -303,11 +295,13 @@ function handleListGaokaoQueries(req, res, url) {
   const limit = Math.min(Number(url.searchParams.get("limit") || 50), 300);
   const dateFrom = normalizeDateValue(url.searchParams.get("date_from"), "start");
   const dateTo = normalizeDateValue(url.searchParams.get("date_to"), "end");
+  const accountId = String(url.searchParams.get("account_id") || "").trim();
   const province = String(url.searchParams.get("province") || "").trim();
   const track = String(url.searchParams.get("track") || "").trim();
 
   const items = readGaokaoQueries()
     .filter((item) => {
+      if(accountId && item.accessAccount?.id!==accountId)return false;
       const submittedAt = normalizeDateValue(item.submittedAt);
       if (dateFrom && submittedAt && submittedAt < dateFrom) return false;
       if (dateTo && submittedAt && submittedAt > dateTo) return false;

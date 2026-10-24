@@ -34,3 +34,9 @@
 body[data-admin-view="assessment"] .admin-gaokao-section {display:none;}
 body[data-admin-view="gaokao"] .admin-overview,body[data-admin-view="gaokao"] .admin-content,body[data-admin-view="gaokao"] #admin-pilot-observations,body[data-admin-view="gaokao"] .admin-toolbar .admin-actions {display:none;}
 .admin-session-tools {display:flex;justify-content:space-between;align-items:center;gap:16px;}
+#account-management select {font:inherit;padding:10px;border:1px solid #bccac2;border-radius:8px;width:100%;box-sizing:border-box;}
+#student-service-menu {padding:20px 0;}
+#return-service-menu {margin-bottom:20px;}
+#student-service-status {color:#8b3d28;}
+.gaokao-shell > .admin-session-tools,#gaokao-access-status {grid-column:1 / -1;}
+#account-management th,#account-management td {min-width:100px;}

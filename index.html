@@ -12,7 +12,7 @@
     }
   </script>
   <link rel="stylesheet" href="assets/css/styles.css?v=20261013-career-depth">
-  <link rel="stylesheet" href="assets/css/report.css?v=20261018-entry-v17">
+  <link rel="stylesheet" href="assets/css/report.css?v=20261024-dual-v18">
   <link rel="stylesheet" href="assets/css/access.css?v=20261018-access-v13">
 </head>
 <body>
@@ -40,8 +40,8 @@
       <section id="auth-gate" class="auth-gate">
         <div class="auth-card">
           <p class="auth-kicker">账号验证</p>
-          <h2>登录后进入评估流程</h2>
-          <p class="auth-copy">请输入账号信息，完成验证后即可进入专业发展评估流程。</p>
+          <h2>登录后选择使用功能</h2>
+          <p class="auth-copy">请输入发放给你的账号，登录后可查看已开通的测评与高考查询功能。</p>
           <div class="auth-form">
             <label class="single-field">
               <span>用户名</span>
@@ -52,7 +52,7 @@
               <input id="auth-password" type="password" autocomplete="current-password" placeholder="请输入密码">
             </label>
             <div class="auth-actions">
-              <button type="button" id="login-btn" class="btn btn-primary">登录并进入评估</button>
+              <button type="button" id="login-btn" class="btn btn-primary">登录并继续</button>
             </div>
             <p id="auth-status" class="auth-status">请输入用户名和密码</p>
           </div>
@@ -65,6 +65,8 @@
           <button type="button" id="logout-btn" class="btn btn-ghost btn-small">退出登录</button>
         </div>
 
+        <section id="student-service-menu" class="hidden"></section>
+        <button type="button" id="return-service-menu" class="btn btn-ghost hidden">返回功能选择</button>
         <div id="intro" class="intro">
           <section class="intro-panel" data-intro-step="1">
             <h3>选择学生类型与年级</h3>
@@ -178,8 +180,8 @@
     window.REPORT_INGEST_KEY = "3ee938df43c042796300cd54cc40cd19";
   </script>
   <script src="assets/js/analytics.js?v=20260629-gaokao-launch"></script>
-  <script src="assets/js/access-client.js?v=20261018-logout-v14"></script>
+  <script src="assets/js/access-client.js?v=20261024-dual-v18"></script>
   <script src="assets/js/study.js?v=20261018-access-v13"></script>
-  <script src="assets/js/app.js?v=20261018-entry-v17"></script>
+  <script src="assets/js/app.js?v=20261024-dual-v18"></script>
 </body>
 </html>

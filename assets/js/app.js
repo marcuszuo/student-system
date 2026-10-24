@@ -332,6 +332,7 @@ let internationalProfile = { curriculumName: "", scoreText: "" };
 let schoolMajorText = "";
 let authSession = null;
 window.getAssessmentToken = () => authSession?.token || "";
+window.getAssessmentSession = () => authSession;
 window.getAssessmentScope = () => authSession?.account?.id ? `${authSession.account.id}:${authSession.account.generation}` : "local";
 let loginPending = false;
 
@@ -402,6 +403,8 @@ function renderAuthState() {
     return;
   }
 
+  document.getElementById("student-service-menu")?.classList.add("hidden");
+  document.getElementById("return-service-menu")?.classList.add("hidden");
   const authed = Boolean(authSession?.username);
   document.getElementById("tool-hub")?.classList.toggle("hidden", authed);
   authGate.classList.toggle("hidden", authed);
@@ -409,7 +412,7 @@ function renderAuthState() {
   authSessionBar.classList.remove("hidden");
   if (authed) {
     restoreSavedReport();
-    authSessionText.textContent = `已登录账号：${authSession.username}${authSession.account?.status === "completed" ? " · 已完成一次测评，仅可查看和导出原报告" : ""}`;
+    authSessionText.textContent = `已登录账号：${authSession.username}${authSession.account?.status === "completed" ? " · 测评已完成" : ""}`;
   }
 }
 
@@ -2160,8 +2163,8 @@ async function deliverCachedReport(record) {
     await syncReportRecord(record.payload);
     record.synced = true;
     if (authSession?.token) {
-      saveAuthSession({...authSession,account:{...authSession.account,status:"completed",reportId:record.payload.id}});
-      authSessionText.textContent = `账号：${authSession.username} · 已完成一次测评，仅可查看和导出原报告`;
+      saveAuthSession({...authSession,account:{...authSession.account,status:authSession.account?.features?.gaokao?.canQuery?"active":"completed",reportId:record.payload.id,features:authSession.account?.features?{...authSession.account.features,assessment:{...authSession.account.features.assessment,canStart:false,canViewReport:true,state:"completed"}}:undefined}});
+      authSessionText.textContent = `账号：${authSession.username} · 测评已完成`;
       intro.classList.add("hidden");quizForm.classList.add("hidden");
     }
     const latest = readCachedReport(key);
@@ -3015,7 +3018,7 @@ introPrev2Btn.addEventListener("click", () => {
 });
 
 startBtn.addEventListener("click", () => {
-  if(authSession?.account?.status==="completed") {setSaveStatus("本账号已完成测评，请查看原报告。");return;}
+  if(authSession?.account?.features?.assessment?.canStart===false || authSession?.account?.status==="completed") {setSaveStatus("本账号已完成测评，请查看原报告。");return;}
   if (!validateIntroStep(1) || !validateIntroStep(2)) return;
   // Keep the existing question order and calibration state when resuming.
   studentProfile = readStudentProfile();
@@ -3282,23 +3285,45 @@ window.addEventListener("online", () => {
   if (record && !record.synced && REPORT_API_BASE_URL) void deliverCachedReport(record);
 });
 
+function renderStudentServices() {
+  const menu=document.getElementById('student-service-menu');
+  if(!menu || !authSession?.account?.features)return;
+  const {assessment,gaokao}=authSession.account.features;
+  const assessmentText=assessment.canStart?'可完成一次测评':assessment.canViewReport?'已完成，可查看原报告':!assessment.enabled?'未开通':'已过期或报告查看期已结束';
+  const gaokaoText=gaokao.canQuery?`有效期至 ${new Date(gaokao.expiresAt).toLocaleDateString('zh-CN')}，可重复查询`:gaokao.enabled?'查询权限已过期':'未开通';
+  menu.innerHTML=`<h2>选择使用功能</h2><p id="student-service-status" role="status"></p><div class="tool-hub"><article class="tool-entry-card"><h3>专业发展评估</h3><p>${escapeReportText(assessmentText)}</p><button type="button" class="btn btn-primary" id="service-assessment" ${assessment.canStart||assessment.canViewReport?'':'disabled'}>${assessment.canViewReport?'查看测评报告':'进入专业测评'}</button></article><article class="tool-entry-card"><h3>高考志愿参考</h3><p>${escapeReportText(gaokaoText)}</p><a class="btn btn-primary" href="./pages/gaokao.html" ${gaokao.canQuery?'':'hidden'}>进入高考查询</a></article></div>`;
+  intro.classList.add('hidden');quizForm.classList.add('hidden');resultBox.classList.add('hidden');
+  document.getElementById('return-service-menu').classList.add('hidden');menu.classList.remove('hidden');
+  document.getElementById('service-assessment').addEventListener('click',()=>void openAssessmentService().catch(error=>{document.getElementById('student-service-status').textContent=error.message;}));
+}
+async function openAssessmentService() {
+  const verified=await window.MajorNaviAccess.request(REPORT_API_BASE_URL,'/api/auth/session',{token:authSession.token});
+  saveAuthSession({...authSession,...verified});
+  const f=authSession.account?.features?.assessment;
+  if(f && !f.canStart && !f.canViewReport){renderStudentServices();return;}
+  document.getElementById('student-service-menu').classList.add('hidden');
+  document.getElementById('return-service-menu').classList.remove('hidden');
+  if(f?.canViewReport || (!f && authSession.account?.status==='completed')) {
+    intro.classList.add('hidden');quizForm.classList.add('hidden');
+    const data=await window.MajorNaviAccess.request(REPORT_API_BASE_URL,'/api/auth/my-report',{token:authSession.token});
+    if(data.item?.recoveryView){const record={payload:data.item,view:data.item.recoveryView,synced:true};try{localStorage.setItem(reportCacheKey(),JSON.stringify(record));}catch{}activeReportRecord=record;restoreSavedReportFromMemory(record);}
+  } else if(activeReportRecord?.view && !authSession.account?.reportId) {
+    intro.classList.add('hidden');quizForm.classList.add('hidden');restoreSavedReportFromMemory(activeReportRecord);
+    showReportRecoveryStatus(activeReportRecord,'本机报告已生成，等待同步；成功提交后才核销测评次数。');
+  } else if(Object.keys(answers).length) {intro.classList.add('hidden');quizForm.classList.remove('hidden');renderCurrentPage();updateProgress();}
+  else {intro.classList.remove('hidden');showIntroStep(introStep);}
+}
 async function acceptStudentSession(session) {
-  clearDraft(false);saveAuthSession(session);
-  void window.MajorNaviStudy?.flush();
+  clearDraft(false);saveAuthSession(session);void window.MajorNaviStudy?.flush();
   const restored=loadDraft();
   if(!restored && session.account?.grade){gradeInput.value=session.account.grade;studentProfile=readStudentProfile();}
   renderAuthState();
-  if(session.account?.status==='completed') {
-    intro.classList.add('hidden');quizForm.classList.add('hidden');
-    const data=await window.MajorNaviAccess.request(REPORT_API_BASE_URL,'/api/auth/my-report',{token:session.token});
-    if(data.item?.recoveryView) {
-      const record={payload:data.item,view:data.item.recoveryView,synced:true};
-      try {localStorage.setItem(reportCacheKey(),JSON.stringify(record));}catch{}
-      activeReportRecord=record;restoreSavedReportFromMemory(record);
-    }
-    setSaveStatus('本账号已完成测评，可查看和导出原报告，不能再次答题。');
-  }
+  if(session.account?.features) {
+    renderStudentServices();
+    if(new URLSearchParams(window.location.search).get('next')==='gaokao' && session.account.features.gaokao.canQuery)window.location.href='./pages/gaokao.html';
+  } else if(session.account?.status==='completed') {await openAssessmentService();}
 }
+
 function restoreSavedReportFromMemory(record) {
   const view=record.view;
   if(view.context)({studentProfile,selectedMode,publicSubjectScores,internationalProfile,schoolMajorText,calibrationContext,calibrationAdded,followUpAdded}=view.context);
@@ -3315,6 +3340,10 @@ async function initializeAssessment() {
     if(verified.role==='student')await acceptStudentSession({...saved,...verified});
   } catch(error) {setAuthStatus('登录状态需要重新验证，请重新登录。','error');}
 }
+document.getElementById('return-service-menu').addEventListener('click',()=>{
+  if(!quizForm.classList.contains('hidden') && !activeReportRecord)saveDraft();
+  window.MajorNaviStudy?.pause();renderStudentServices();
+});
 applyMode(DEFAULT_MODE);
 showIntroStep(introStep);
 void initializeAssessment();

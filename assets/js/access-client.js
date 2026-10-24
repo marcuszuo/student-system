@@ -1,4 +1,6 @@
 (function () {
+  let studentMemory=null;
+  const STUDENT_KEY='student-major-auth-v1';
   const ADMIN_KEY='majornavi-admin-session-v1';
   // Student app owns its existing session key; telemetry receives the token only via this accessor.
   window.MajorNaviAccess = {
@@ -23,6 +25,24 @@
       } catch { /* Local logout still completes when the API is unavailable. */ }
       finally {window.location.replace(new URL('../index.html',window.location.href).href);}
     },
-    token(){return window.getAssessmentToken?.() || '';}
+    student() {
+      if(window.getAssessmentSession)return window.getAssessmentSession();
+      if(studentMemory)return studentMemory;
+      try{return JSON.parse(localStorage.getItem(STUDENT_KEY)||'null');}catch{return null;}
+    },
+    saveStudent(session) {studentMemory=session;try{localStorage.setItem(STUDENT_KEY,JSON.stringify(session));}catch{}},
+    clearStudent(){studentMemory=null;try{localStorage.removeItem(STUDENT_KEY);}catch{}},
+    async verifyStudent(base) {
+      const saved=this.student();if(!saved?.token)throw new Error('请先登录');
+      const verified=await this.request(base,'/api/auth/session',{token:saved.token});
+      if(verified.role!=='student')throw new Error('请使用学生账号登录');
+      const session={...saved,...verified};this.saveStudent(session);return session;
+    },
+    async logoutStudent(base) {
+      const token=this.student()?.token;this.clearStudent();
+      try{if(token)await this.request(base,'/api/auth/logout',{method:'POST',token});}catch{}
+      finally{window.location.replace(new URL('/index.html',window.location.href).href);}
+    },
+    token(){return this.student()?.token || '';}
   };
 })();

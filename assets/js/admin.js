@@ -353,12 +353,13 @@ function renderGaokaoList() {
 
   gaokaoListEl.innerHTML = `
     <div class="admin-gaokao-list-head">
-      <h3>最近查询</h3>
+      <h3>最近查询${new URLSearchParams(window.location.search).has("account_id")?"（当前使用者）":""}</h3>
       <span>${filteredGaokaoQueries.length} 条</span>
     </div>
     <div class="admin-gaokao-items">
       ${filteredGaokaoQueries.slice(0, 10).map((item) => `
         <article class="admin-gaokao-item">
+          <p>${escapeHtml([item.accessAccount?.name,item.accessAccount?.username].filter(Boolean).join(" · ") || "历史记录（未关联账号）")}</p>
           <div class="admin-gaokao-item-top">
             <strong>${escapeHtml(item.province || "未知省份")} · ${escapeHtml(normalizeTrackLabel(item))}</strong>
             <span>${escapeHtml(formatDateTime(item.submittedAt))}</span>
@@ -657,6 +658,8 @@ async function fetchGaokaoQueries() {
   if (!apiBase || !token) return;
 
   const params = new URLSearchParams({ limit: "200" });
+  const accountId=new URLSearchParams(window.location.search).get("account_id");
+  if(accountId)params.set("account_id",accountId);
   const dateFrom = String(dateFromEl.value || "").trim();
   const dateTo = String(dateToEl.value || "").trim();
   if (dateFrom) params.set("date_from", dateFrom);

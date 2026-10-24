@@ -12,6 +12,7 @@
     }
   </script>
   <link rel="stylesheet" href="../assets/css/styles.css?v=20260706-gaokao-v11">
+  <link rel="stylesheet" href="../assets/css/access.css?v=20261024-dual-v18">
 </head>
 <body>
   <main class="page">
@@ -26,7 +27,10 @@
       </div>
     </section>
 
-    <section class="card gaokao-shell">
+    <section class="card" id="gaokao-access-gate"><h2>高考查询账号验证</h2><p role="status">正在验证登录与使用权限…</p><a class="btn btn-primary" href="../index.html?next=gaokao">登录并进入高考查询</a><a class="btn btn-ghost" href="../index.html">返回功能选择</a></section>
+    <section class="card gaokao-shell" hidden>
+      <div class="admin-session-tools"><span id="gaokao-student-session"></span><a class="btn btn-ghost" href="../index.html">返回功能选择</a><button class="btn btn-ghost" id="gaokao-student-logout" type="button">退出登录</button></div>
+      <p id="gaokao-access-status" role="status" aria-live="polite"></p>
       <section class="gaokao-form-panel">
         <div class="gaokao-panel-head">
           <div>
@@ -126,5 +130,7 @@
   </script>
   <script src="../assets/js/gaokao_data.js?v=20260706-gaokao-v11"></script>
   <script src="../assets/js/gaokao.js?v=20260706-gaokao-v11"></script>
+  <script src="../assets/js/access-client.js?v=20261024-dual-v18"></script>
+  <script src="../assets/js/gaokao-access.js?v=20261024-dual-v18"></script>
 </body>
 </html>
