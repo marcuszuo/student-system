@@ -40,3 +40,10 @@ body[data-admin-view="gaokao"] .admin-overview,body[data-admin-view="gaokao"] .a
 #student-service-status {color:#8b3d28;}
 .gaokao-shell > .admin-session-tools,#gaokao-access-status {grid-column:1 / -1;}
 #account-management th,#account-management td {min-width:100px;}
+.account-summary {display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin:20px 0;}
+.account-summary > div {display:grid;gap:8px;padding:16px;border:1px solid #d4dfd7;border-radius:12px;background:#f5f8f4;}
+.account-summary span {color:#52685d;font-size:14px;}
+.account-summary strong {font-size:28px;color:#203b2e;}
+#account-expiry-notice {color:#88512e;}
+#account-export-list,#account-reset-filters {background:#f1f5f1;border:1px solid #bdcbc2;border-radius:7px;padding:7px 10px;margin:3px;font:inherit;color:#315247;}
+#account-export-list:disabled {opacity:.5;cursor:default;}
