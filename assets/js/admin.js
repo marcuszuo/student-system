@@ -423,7 +423,7 @@ function renderReportDetail(report) {
       <p class="result-summary">${escapeHtml(report.comparisons?.directionSummary || "")}</p>
     </div>
     <div class="admin-actions detail-actions">
-      <button id="admin-export-detail-btn" type="button" class="btn btn-ghost">导出当前报告</button>
+      <button id="admin-export-detail-btn" type="button" class="btn btn-ghost">下载 PDF 报告</button><p id="admin-pdf-status" role="status" aria-live="polite"></p>
       <button id="admin-delete-report-btn" type="button" class="btn btn-ghost">删除当前报告</button>
     </div>
     <div class="student-summary-grid">
@@ -890,16 +890,12 @@ function exportHighIntentReports() {
   setStatus(`已导出 ${highIntentReports.length} 份高意向学生报告。`, "success");
 }
 
-function exportReportDetail(report) {
-  const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json;charset=utf-8;" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = `majornavi-report-${report.id || "detail"}.json`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(link.href);
-  setStatus("当前报告已导出。", "success");
+async function exportReportDetail(report) {
+  const button=document.getElementById('admin-export-detail-btn'),status=document.getElementById('admin-pdf-status');
+  if(button.disabled)return;button.disabled=true;button.textContent='正在生成 PDF…';status.textContent='正在准备报告与中文字体，请稍候。';
+  try {await window.MajorNaviReportPDF.download(report);status.textContent='PDF 已生成，请在浏览器下载列表中查看。';}
+  catch(error){status.textContent='PDF 导出失败：'+error.message+' 可点击按钮重试。';}
+  finally {button.disabled=false;button.textContent='下载 PDF 报告';}
 }
 
 exportBtn.addEventListener("click", exportReports);
