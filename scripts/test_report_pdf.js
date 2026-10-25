@@ -9,6 +9,12 @@ async function main(){
   const model=pdfExport.model(report,parent),serialized=JSON.stringify(model);
   assert.equal(model.portrait.length,5);assert(model.recommendations.length>=3);
   for(const banned of ['内部备注不得导出','questionId','recommendationPolicy','hollandCode','answerEvidence','作答倾向指数'])assert(!serialized.includes(banned));
+  const preview=pdfExport.html(report,parent);
+  for(const section of ['01 测评结论','02 学生特征分析','03 专业推荐与比较','04 后续建议'])assert(preview.includes(section));
+  for(const item of model.portrait)assert(preview.includes(item.text));
+  assert(!preview.includes('内部备注不得导出'));
+  const attack=pdfExport.html({...report,accessAccount:{name:'<img src=x onerror=alert(1)>'}},parent);
+  assert(!attack.includes('<img'));assert(attack.includes('&lt;img'));
   const harness=require('./lib/assessment_harness').createAssessmentHarness();harness.sandbox.record=fixture;
   const expected=harness.run(`({studentProfile,selectedMode,publicSubjectScores,internationalProfile,schoolMajorText,calibrationContext,calibrationAdded,followUpAdded}=record.view.context);answers=record.view.answers;activeQuestions=record.view.questionIds.map(id=>allQuestions.find(q=>q.id===id)).filter(Boolean);buildParentPortrait(record.view.studentVector.score)`);
   assert.deepEqual(JSON.parse(JSON.stringify(model.portrait)),JSON.parse(JSON.stringify(expected)));

@@ -406,199 +406,27 @@ function renderReportDetail(report) {
   if(!reportDialog.open)reportDialog.showModal();
   reportDialog.scrollTop=0;
 
-  const profile = report.studentProfile || {};
-  const topTraits = report.scoring?.topTraits || [];
-  const directions = report.directions || [];
-  const recommendations = report.recommendations || [];
-  const schoolRestricted = report.schoolRestricted?.recommendations || [];
-  const careerAnalysis = report.careerAnalysis || null;
-  const developmentInsights = report.developmentInsights || null;
-  const advisorTags = report.advisorTags || [];
-
+  let reportHtml='',incomplete=false;
+  try{reportHtml=window.MajorNaviReportPDF.html(report);}
+  catch(error){incomplete=true;reportHtml='<p role="status">'+escapeHtml(error.message)+'</p>';}
   detailEl.innerHTML = `
-    <div class="admin-detail-header">
-      <p class="result-kicker">报告详情</p>
-      <p>${escapeHtml([report.accessAccount?.name,report.accessAccount?.username].filter(Boolean).join(" · "))}</p>
-      <h2>${escapeHtml(recommendations[0]?.name || directions[0]?.label || "报告")}</h2>
-      <p class="result-summary">${escapeHtml(report.comparisons?.directionSummary || "")}</p>
-    </div>
     <div class="admin-actions detail-actions">
-      <button id="admin-export-detail-btn" type="button" class="btn btn-ghost">下载 PDF 报告</button><p id="admin-pdf-status" role="status" aria-live="polite"></p>
+      <button id="admin-export-detail-btn" type="button" class="btn btn-primary" ${incomplete?'disabled':''}>下载 PDF 报告</button>
+      <p id="admin-pdf-status" role="status" aria-live="polite"></p>
+    </div>
+    ${reportHtml}
+    <details id="admin-report-management" class="admin-report-management"><summary>跟进备注与报告管理 · ${escapeHtml(getFollowupStatusLabel(report.adminMeta?.status))}</summary>
+      <p>以下信息仅用于后台跟进，不会出现在学生报告或PDF中。</p>
+      <label class="single-field"><span>跟进状态</span><select id="admin-followup-status">
+        ${[['new','新报告'],['pending','待跟进'],['contacted','已沟通'],['high_intent','高意向']].map(([value,label])=>'<option value="'+value+'" '+(String(report.adminMeta?.status || 'new')===value?'selected':'')+'>'+label+'</option>').join('')}
+      </select></label>
+      <label for="admin-note-input">后台备注</label>
+      <textarea id="admin-note-input" rows="4" placeholder="记录沟通进展、家长关注点和下次跟进安排。">${escapeHtml(report.adminMeta?.note || '')}</textarea>
+      <button id="admin-save-note-btn" type="button" class="btn btn-ghost">保存跟进信息</button>
+      <p id="admin-note-save-status" role="status" aria-live="polite"></p>
+      <p class="note-meta">${escapeHtml(report.adminMeta?.updatedAt?'最近更新：'+formatDateTime(report.adminMeta.updatedAt):'尚未填写后台备注。')}</p>
       <button id="admin-delete-report-btn" type="button" class="btn btn-ghost">删除当前报告</button>
-    </div>
-    <div class="student-summary-grid">
-      <article class="student-summary-card">
-        <span class="student-summary-label">提交时间</span>
-        <strong>${escapeHtml(formatDateTime(report.submittedAt))}</strong>
-      </article>
-      <article class="student-summary-card">
-        <span class="student-summary-label">学生类型</span>
-        <strong>${escapeHtml(profile.typeLabel || "")}</strong>
-      </article>
-      <article class="student-summary-card">
-        <span class="student-summary-label">当前年级</span>
-        <strong>${escapeHtml(profile.grade || "")}</strong>
-      </article>
-      <article class="student-summary-card">
-        <span class="student-summary-label">课程背景</span>
-        <strong>${escapeHtml(profile.curriculumSummary || "")}</strong>
-      </article>
-    </div>
-    <section class="advice note-editor">
-      <div class="note-editor-head">
-        <h3>后台备注</h3>
-        <button id="admin-save-note-btn" type="button" class="btn btn-ghost">保存跟进信息</button>
-      </div>
-      <label class="single-field">
-        <span>跟进状态</span>
-        <select id="admin-followup-status">
-          <option value="new" ${String(report.adminMeta?.status || "new") === "new" ? "selected" : ""}>新报告</option>
-          <option value="pending" ${String(report.adminMeta?.status || "") === "pending" ? "selected" : ""}>待跟进</option>
-          <option value="contacted" ${String(report.adminMeta?.status || "") === "contacted" ? "selected" : ""}>已沟通</option>
-          <option value="high_intent" ${String(report.adminMeta?.status || "") === "high_intent" ? "selected" : ""}>高意向</option>
-        </select>
-      </label>
-      <textarea id="admin-note-input" rows="5" placeholder="可记录已沟通、待跟进、高意向、家长关注点等后台备注。">${escapeHtml(report.adminMeta?.note || "")}</textarea>
-      <p class="note-meta">${escapeHtml(report.adminMeta?.updatedAt ? `最近更新：${formatDateTime(report.adminMeta.updatedAt)}` : "尚未填写后台备注。")} 当前状态：${escapeHtml(getFollowupStatusLabel(report.adminMeta?.status))}</p>
-    </section>
-    <section class="advice">
-      <h3>画像摘要</h3>
-      <p>${escapeHtml((topTraits || []).map((item) => `${item.label}${item.score}分`).join("、") || "暂无")}</p>
-      <p>${escapeHtml(report.scoring?.weightingSummary || "")}</p>
-    </section>
-    ${advisorTags.length ? `
-      <section class="advice">
-        <h3>顾问标签</h3>
-        <div class="advisor-tags advisor-tags-admin">
-          ${advisorTags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}
-        </div>
-      </section>
-    ` : ""}
-    <section class="advice">
-      <h3>方向结论</h3>
-      <p>${escapeHtml(directions.map((item, index) => `${index === 0 ? "优先" : "次优"}：${item.label}`).join("；") || "暂无")}</p>
-    </section>
-    ${careerAnalysis ? `
-      <section class="career-analysis-section">
-        <div class="career-analysis-header">
-          <div>
-            <p class="career-analysis-kicker">职业性格与发展分析</p>
-            <h3>${escapeHtml(careerAnalysis.label || "")}</h3>
-          </div>
-          <p class="career-analysis-holland">Holland 辅助代码：${escapeHtml(report.scoring?.hollandCode || "")}</p>
-        </div>
-        <p class="career-analysis-summary">${escapeHtml(careerAnalysis.summary || "")}</p>
-        <div class="career-analysis-grid">
-          <article class="career-analysis-card">
-            <h4>未来工作中的核心优势</h4>
-            <ul>
-              ${(careerAnalysis.strengths || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
-            </ul>
-            <p class="career-analysis-note"><strong>当前优势维度：</strong>${escapeHtml(careerAnalysis.topText || "")}</p>
-          </article>
-          <article class="career-analysis-card">
-            <h4>可能出现的职业盲点</h4>
-            <ul>
-              ${(careerAnalysis.blindspots || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
-            </ul>
-            <p class="career-analysis-note"><strong>当前相对薄弱维度：</strong>${escapeHtml(careerAnalysis.lowText || "")}</p>
-            ${careerAnalysis.directionBlindspot ? `<p class="career-analysis-note"><strong>方向判断提醒：</strong>${escapeHtml(careerAnalysis.directionBlindspot)}</p>` : ""}
-          </article>
-          <article class="career-analysis-card">
-            <h4>更适合的发展环境</h4>
-            <p>${escapeHtml(careerAnalysis.environment || "")}</p>
-          </article>
-          <article class="career-analysis-card">
-            <h4>发展建议</h4>
-            <p>${escapeHtml(careerAnalysis.advice || "")}</p>
-          </article>
-        </div>
-        ${(careerAnalysis.axes || []).length ? `
-          <div class="career-axis-list">
-            ${(careerAnalysis.axes || []).map((axis) => `
-              <article class="career-axis-item">
-                <p class="career-axis-label">${escapeHtml(axis.label || "")}</p>
-                <strong>${escapeHtml(axis.orientation || "")}</strong>
-                <p>${escapeHtml(axis.summary || "")}</p>
-              </article>
-            `).join("")}
-          </div>
-        ` : ""}
-      </section>
-    ` : ""}
-    ${developmentInsights ? `
-      <section class="development-insights-section">
-        <div class="development-insights-header">
-          <div>
-            <p class="career-analysis-kicker">大学学习方式与培养提醒</p>
-            <h3>${escapeHtml(developmentInsights.directionLabel || "")}</h3>
-          </div>
-        </div>
-        <div class="development-insights-grid">
-          <article class="development-insight-card">
-            <h4>更适合的大学学习方式</h4>
-            <p>${escapeHtml(developmentInsights.learningStyle || "")}</p>
-          </article>
-          <article class="development-insight-card">
-            <h4>当前不太适合的培养环境</h4>
-            <p>${escapeHtml(developmentInsights.unsuitableEnvironment || "")}</p>
-          </article>
-          <article class="development-insight-card">
-            <h4>家长沟通建议</h4>
-            <p>${escapeHtml(developmentInsights.parentAdvice || "")}</p>
-          </article>
-          <article class="development-insight-card">
-            <h4>相近方向选择提醒</h4>
-            <p>${escapeHtml(developmentInsights.selectionReminder || "")}</p>
-          </article>
-        </div>
-      </section>
-    ` : ""}
-    <div class="rank-grid">
-      ${recommendations.map((item) => `
-        <article class="rank-card">
-          <div class="rank-card-top">
-            <div>
-              <p class="rank-label">${escapeHtml(item.label || "")}</p>
-              <h3>${escapeHtml(item.name || "")}</h3>
-            </div>
-            <p class="score">${escapeHtml(String(item.matchIndex || ""))} / 100</p>
-          </div>
-          <div class="rank-meta-grid">
-            <span>学科门类：${escapeHtml(item.category || "")}</span>
-            <span>课程关键词：${escapeHtml(item.courses || "")}</span>
-            <span>典型去向：${escapeHtml(item.careers || "")}</span>
-          </div>
-          <p class="evidence"><strong>核心判断：</strong>${escapeHtml(item.fit || "")}</p>
-          <p class="evidence"><strong>匹配亮点：</strong>${escapeHtml(item.edge || "")}</p>
-          <p class="evidence"><strong>匹配依据：</strong>${escapeHtml((item.evidence || []).join("、"))}</p>
-          <p class="risk"><strong>继续验证：</strong>${escapeHtml(item.caution || "")}</p>
-          <p class="risk"><strong>风险提示：</strong>${escapeHtml((item.risks || []).join("、"))}</p>
-        </article>
-      `).join("")}
-    </div>
-    <section class="advice">
-      <h3>顾问判断</h3>
-      <p>${escapeHtml(report.comparisons?.advisorConclusion || "暂无")}</p>
-    </section>
-    <section class="advice">
-      <h3>比较与提醒</h3>
-      <p>${escapeHtml(report.comparisons?.primaryVsSecondary || "暂无")}</p>
-      <p>${escapeHtml(report.comparisons?.reverseAdvice || "暂无")}</p>
-    </section>
-    ${schoolRestricted.length ? `
-      <section class="advice">
-        <h3>目标学校范围内替代建议</h3>
-        <p>${escapeHtml(schoolRestricted.map((item) => `${item.name}${item.matchIndex}/100`).join("、"))}</p>
-      </section>
-    ` : ""}
-    ${report.adaptiveFlow?.calibrationContext ? `
-      <section class="advice">
-        <h3>自适应流程记录</h3>
-        <p>校准维度：${escapeHtml((report.adaptiveFlow.calibrationContext.boundaryDims || []).join("、"))}</p>
-        <p>是否追问：${report.adaptiveFlow.followUpAdded ? "是" : "否"}</p>
-      </section>
-    ` : ""}
+    </details>
   `;
 
   const exportDetailBtn = document.getElementById("admin-export-detail-btn");
@@ -611,7 +439,12 @@ function renderReportDetail(report) {
     deleteReportBtn.addEventListener("click", () => deleteReport(report.id));
   }
   if (saveNoteBtn) {
-    saveNoteBtn.addEventListener("click", () => saveReportNote(report.id));
+    saveNoteBtn.addEventListener("click", async () => {
+      saveNoteBtn.disabled=true;
+      try {await saveReportNote(report.id);}
+      catch(error){document.getElementById('admin-note-save-status').textContent=error.message;}
+      finally {saveNoteBtn.disabled=false;}
+    });
   }
 }
 
@@ -741,6 +574,7 @@ async function clearSmokeReports() {
 }
 
 async function saveReportNote(id) {
+  const previousScroll=reportDialog.scrollTop;
   const { apiBase, token } = getAdminConfig();
   const noteInput = document.getElementById("admin-note-input");
   const statusInput = document.getElementById("admin-followup-status");
@@ -769,6 +603,8 @@ async function saveReportNote(id) {
   renderReportList();
   renderReportDetail(filteredReports.find((report) => report.id === selectedReportId) || null);
   setStatus("后台跟进信息已保存。", "success");
+  const management=document.getElementById('admin-report-management');
+  if(management){management.open=true;reportDialog.scrollTop=previousScroll;document.getElementById('admin-note-save-status').textContent='跟进信息已保存。';}
 }
 
 listEl.addEventListener("click", (event) => {

@@ -24,6 +24,17 @@
     };
   }
   function clean(value){return String(value??'').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'');}
+  function html(report,parent=root.MajorNaviParentReport) {
+    const data=model(report,parent),esc=value=>clean(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    return `<article class="admin-parent-report">
+      <header><p class="result-kicker">MajorNavi · 学生专业发展测评报告</p><h2>${esc(data.name || '学生测评结果')}</h2><p>${esc(data.profile)}</p><p>测评日期：${esc(data.date)}</p></header>
+      <section><h3>01 测评结论</h3><p class="admin-report-conclusion">${esc(data.conclusion)}</p><p>${esc(data.explanation)}</p></section>
+      <section><h3>02 学生特征分析</h3><div class="admin-portrait-grid">${data.portrait.map(x=>`<article><h4>${esc(x.title)}</h4><p>${esc(x.text)}</p></article>`).join('') || '<p>此历史记录未保存学生特征摘要。</p>'}</div></section>
+      <section><h3>03 专业推荐与比较</h3>${data.recommendations.map(x=>`<article class="admin-major-comparison"><h4>${esc(x.name)} <span>${esc(x.role)}</span></h4><p><strong>推荐依据：</strong>${esc(x.rationale)}</p><p><strong>大学主要学习内容：</strong>${esc(x.study || '以院校培养方案为准')}</p><p><strong>选择重点：</strong>${esc(x.focus)}</p></article>`).join('')}</section>
+      <section><h3>04 后续建议</h3><ul>${data.recommendations.slice(0,2).map(x=>`<li><strong>${esc(x.name)}：</strong>${esc(x.task)}</li>`).join('')}</ul><p>比较方式：各投入相同时间，记录成果、困难和继续投入意愿，请学科老师反馈，再对照专业选择重点进行比较。</p></section>
+      <footer><p>本报告用于专业发展参考，建议结合学业表现和实践经历使用。</p><p>测评版本：${esc(data.version)} · 报告编号：${esc(data.id)}</p></footer>
+    </article>`;
+  }
   async function createBytes(report,{PDFLib,fontkit,fontBytes,parent=root.MajorNaviParentReport}) {
     const data=model(report,parent),{PDFDocument,rgb}=PDFLib;
     const pdf=await PDFDocument.create();pdf.registerFontkit(fontkit);
@@ -85,5 +96,5 @@
     const id=String(report.id || '报告').replace(/[^a-zA-Z0-9_-]/g,'').slice(-12);
     link.href=url;link.download=`${name}-专业发展测评报告-${id}.pdf`;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
   }
-  const api={model,createBytes,download};if(typeof module==='object' && module.exports)module.exports=api;else root.MajorNaviReportPDF=api;
+  const api={model,html,createBytes,download};if(typeof module==='object' && module.exports)module.exports=api;else root.MajorNaviReportPDF=api;
 })(typeof window!=='undefined'?window:this);
