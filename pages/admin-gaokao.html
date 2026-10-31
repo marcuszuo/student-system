@@ -20,7 +20,7 @@
     }
   </script>
   <link rel="stylesheet" href="../assets/css/styles.css?v=20260703-admin-v5">
-  <link rel="stylesheet" href="../assets/css/access.css?v=20261025-preview-v21">
+  <link rel="stylesheet" href="../assets/css/access.css?v=20261031-search-v22">
 </head>
 <body data-admin-view="gaokao">
   <main class="page">
@@ -37,7 +37,7 @@
           <p id="admin-status" class="auth-status">系统将自动连接后台并加载最新报告数据。</p>
           <div class="admin-actions">
             <button id="admin-reload-btn" type="button" class="btn btn-primary">刷新报告</button>
-            <button id="admin-export-btn" type="button" class="btn btn-ghost">导出 CSV</button>
+            <button id="admin-export-btn" type="button" class="btn btn-ghost">导出筛选清单 CSV</button>
             <button id="admin-export-high-intent-btn" type="button" class="btn btn-ghost">导出高意向</button>
             <button id="admin-clear-smoke-btn" type="button" class="btn btn-ghost">清理测试报告</button>
           </div>
@@ -196,15 +196,17 @@
               <input id="admin-date-to" type="date">
             </label>
             <label class="single-field">
-              <span>专业或方向搜索</span>
-              <input id="admin-search-filter" type="text" placeholder="如 计算机 / 医学 / 商科">
+              <span>搜索学生或报告</span>
+              <input id="admin-search-filter" type="text" placeholder="姓名、账号、报告编号或专业，可空格组合">
             </label>
             <div class="single-field admin-filter-reset">
               <span>快速操作</span>
               <button id="admin-reset-filters-btn" type="button" class="btn btn-ghost">重置筛选</button>
             </div>
           </div>
+          <p id="admin-load-scope" class="admin-load-scope" role="status"></p>
           <div id="admin-report-list" class="admin-report-list"></div>
+          <nav class="admin-report-pagination" aria-label="报告分页"><label>每页条数 <select id="admin-page-size"><option>10</option><option selected>20</option><option>50</option></select></label><button type="button" id="admin-page-prev" class="btn btn-ghost">上一页</button><span id="admin-page-status" role="status" aria-live="polite"></span><button type="button" id="admin-page-next" class="btn btn-ghost">下一页</button></nav>
         </aside>
 
         <dialog id="admin-report-dialog" aria-label="测评报告详情">
@@ -221,7 +223,8 @@
   <script src="../assets/js/access-client.js?v=20261024-dual-v18"></script>
   <script src="../assets/js/parent-report.js?v=20261025-pdf-v20"></script>
   <script src="../assets/js/report-pdf.js?v=20261025-preview-v21"></script>
-  <script src="../assets/js/admin.js?v=20261025-preview-v21"></script>
+  <script src="../assets/js/report-list-tools.js?v=20261031-search-v22"></script>
+  <script src="../assets/js/admin.js?v=20261031-search-v22"></script>
   <script src="../assets/js/account-insights.js?v=20261025-admin-v19"></script>
   <script src="../assets/js/accounts-admin.js?v=20261025-admin-v19"></script>
 </body>

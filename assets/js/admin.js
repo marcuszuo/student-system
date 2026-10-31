@@ -44,6 +44,8 @@ const resetFiltersBtn = document.getElementById("admin-reset-filters-btn");
 let reports = [];
 let filteredReports = [];
 let selectedReportId = "";
+let reportPage=1;
+const reportListTools=window.MajorNaviReportList;
 let gaokaoQueries = [];
 let filteredGaokaoQueries = [];
 
@@ -119,32 +121,12 @@ function reportMatchesFilters(report) {
   const dateTo = String(dateToEl.value || "").trim();
   const searchFilter = String(searchFilterEl.value || "").trim().toLowerCase();
   const profile = report.studentProfile || {};
-  const topDirection = report.directions?.[0]?.label || "";
-  const topMajor = report.recommendations?.[0]?.name || "";
-  const secondMajor = report.recommendations?.[1]?.name || "";
-  const haystack = [
-    topDirection,
-    topMajor,
-    secondMajor,
-    profile.curriculumSummary,
-    ...(report.advisorTags || []),
-    report.comparisons?.advisorConclusion,
-    report.developmentInsights?.directionLabel,
-    report.developmentInsights?.parentAdvice,
-    report.accessAccount?.name,
-    report.accessAccount?.username,
-    report.developmentInsights?.selectionReminder
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
   if (typeFilter && getReportType(report) !== typeFilter) return false;
   if (followupFilter && String(report.adminMeta?.status || "new") !== followupFilter) return false;
   if (gradeFilter && !String(profile.grade || "").toLowerCase().includes(gradeFilter)) return false;
-  if (dateFrom && String(report.submittedAt || "").slice(0, 10) < dateFrom) return false;
-  if (dateTo && String(report.submittedAt || "").slice(0, 10) > dateTo) return false;
-  if (searchFilter && !haystack.includes(searchFilter)) return false;
+  if (dateFrom && reportListTools.day(report.submittedAt) < dateFrom) return false;
+  if (dateTo && reportListTools.day(report.submittedAt) > dateTo) return false;
+  if (!reportListTools.matches(report,searchFilter)) return false;
   return true;
 }
 
@@ -274,7 +256,8 @@ function populateGaokaoProvinceFilter() {
   }
 }
 
-function applyFilters() {
+function applyFilters(resetPage=false) {
+  if(resetPage)reportPage=1;
   filteredReports = reports.filter(reportMatchesFilters).sort(compareReports);
   if (!filteredReports.find((item) => item.id === selectedReportId)) {
     selectedReportId = "";
@@ -282,8 +265,8 @@ function applyFilters() {
 }
 
 function renderOverview() {
-  const today = new Date().toISOString().slice(0, 10);
-  const todayCount = reports.filter((report) => String(report.submittedAt || "").startsWith(today)).length;
+  const today = reportListTools.day(Date.now());
+  const todayCount = reports.filter((report) => reportListTools.day(report.submittedAt)===today).length;
   const publicCount = reports.filter((report) => getReportType(report) === "public").length;
   const internationalCount = reports.filter((report) => getReportType(report) === "international").length;
   const highIntentCount = reports.filter((report) => String(report.adminMeta?.status || "") === "high_intent").length;
@@ -297,8 +280,8 @@ function renderOverview() {
 
 function renderGaokaoOverview() {
   const items = filteredGaokaoQueries;
-  const today = new Date().toISOString().slice(0, 10);
-  const todayCount = items.filter((item) => String(item.submittedAt || "").startsWith(today)).length;
+  const today = reportListTools.day(Date.now());
+  const todayCount = items.filter((item) => reportListTools.day(item.submittedAt)===today).length;
   const physicsCount = items.filter((item) => /(physics|理科|物理)/i.test(String(item.trackCode || item.track || ""))).length;
   const historyCount = items.filter((item) => /(history|文科|历史)/i.test(String(item.trackCode || item.track || ""))).length;
   const engineeringCount = items.filter((item) => String(item.focusGroup || item.focusFilter || "") === "engineering").length;
@@ -379,6 +362,11 @@ function renderGaokaoList() {
 }
 
 function renderReportList() {
+  const page=reportListTools.paginate(filteredReports,reportPage,document.getElementById("admin-page-size").value);
+  reportPage=page.page;
+  document.getElementById("admin-page-status").textContent=`第 ${page.page} / ${page.pages} 页 · 显示 ${page.start}—${page.end} / ${page.total} 份`;
+  document.getElementById("admin-page-prev").disabled=page.page<=1;
+  document.getElementById("admin-page-next").disabled=page.page>=page.pages;
   countEl.textContent = `${filteredReports.length} 份`;
   if (!filteredReports.length) {
     listEl.innerHTML = `
@@ -389,7 +377,7 @@ function renderReportList() {
     return;
   }
 
-  listEl.innerHTML = `<div class="admin-report-table-scroll"><table class="admin-report-table"><thead><tr><th>报告编号</th><th>使用者</th><th>账号</th><th>年级</th><th>学生类型</th><th>提交时间</th><th>跟进状态</th><th>操作</th></tr></thead><tbody>${filteredReports.map(report=>`<tr>
+  listEl.innerHTML = `<div class="admin-report-table-scroll"><table class="admin-report-table"><thead><tr><th>报告编号</th><th>使用者</th><th>账号</th><th>年级</th><th>学生类型</th><th>提交时间</th><th>跟进状态</th><th>操作</th></tr></thead><tbody>${page.items.map(report=>`<tr>
     <td>${escapeHtml(report.id)}</td><td>${escapeHtml(report.accessAccount?.name || "未登记")}</td><td>${escapeHtml(report.accessAccount?.username || "—")}</td>
     <td>${escapeHtml(report.studentProfile?.grade || "—")}</td><td>${escapeHtml(report.studentProfile?.typeLabel || "—")}</td><td>${escapeHtml(formatDateTime(report.submittedAt))}</td>
     <td>${escapeHtml(getFollowupStatusLabel(report.adminMeta?.status))}</td><td><button type="button" class="btn btn-ghost" data-report-id="${escapeHtml(report.id)}" aria-label="查看报告：${escapeHtml(report.accessAccount?.name || report.id)}">查看报告</button></td>
@@ -464,8 +452,8 @@ async function fetchReports() {
   const params = new URLSearchParams({ limit: "200" });
   const dateFrom = String(dateFromEl.value || "").trim();
   const dateTo = String(dateToEl.value || "").trim();
-  if (dateFrom) params.set("date_from", dateFrom);
-  if (dateTo) params.set("date_to", dateTo);
+  if (dateFrom) params.set("date_from", reportListTools.dateBoundary(dateFrom));
+  if (dateTo) params.set("date_to", reportListTools.dateBoundary(dateTo,true));
 
   const response = await fetch(`${apiBase}/api/reports?${params.toString()}`, {
     headers: {
@@ -484,6 +472,7 @@ async function fetchReports() {
   renderReportList();
   renderReportDetail(filteredReports.find((report) => report.id === selectedReportId) || null);
   setStatus(`已加载 ${reports.length} 份报告。`, "success");
+  document.getElementById("admin-load-scope").textContent=all.length>=200?"已达到本次加载上限200条记录，当前搜索和导出只覆盖已加载内容。查询更早报告，请设置日期后点击刷新报告。":"搜索、分页和导出均针对本次已加载报告；需要查询其他日期范围时，请设置日期后点击刷新报告。";
 }
 
 async function fetchGaokaoQueries() {
@@ -619,7 +608,7 @@ listEl.addEventListener("click", (event) => {
 
 [sortFilterEl, typeFilterEl, followupFilterEl, gradeFilterEl, dateFromEl, dateToEl, searchFilterEl].forEach((input) => {
   input.addEventListener("input", () => {
-    applyFilters();
+    applyFilters(true);
     renderReportList();
     renderReportDetail(filteredReports.find((report) => report.id === selectedReportId) || null);
     setStatus(`当前筛选结果 ${filteredReports.length} 份。`);
@@ -638,7 +627,7 @@ reloadBtn.addEventListener("click", async () => {
 if (resetFiltersBtn) {
   resetFiltersBtn.addEventListener("click", () => {
     resetFilters();
-    applyFilters();
+    applyFilters(true);
     renderReportList();
     renderReportDetail(filteredReports.find((report) => report.id === selectedReportId) || null);
     setStatus(`已重置筛选条件，当前显示 ${filteredReports.length} 份报告。`);
@@ -646,11 +635,7 @@ if (resetFiltersBtn) {
 }
 
 function toCsvValue(value) {
-  const text = String(value == null ? "" : value);
-  if (/[",\n]/.test(text)) {
-    return `"${text.replace(/"/g, "\"\"")}"`;
-  }
-  return text;
+  return reportListTools.csvValue(value);
 }
 
 function exportReports() {
@@ -660,10 +645,11 @@ function exportReports() {
   }
 
   const rows = [
-    ["提交时间", "学生类型", "年级", "课程背景", "跟进状态", "优先方向", "首选专业", "匹配度", "后台备注"],
+    ["报告编号", "使用者", "账号", "提交时间", "学生类型", "年级", "课程背景", "跟进状态", "优先方向", "首选专业", "匹配度", "后台备注"],
     ...filteredReports.map((report) => {
       const profile = report.studentProfile || {};
       return [
+        report.id || "",report.accessAccount?.name || "",report.accessAccount?.username || "",
         formatDateTime(report.submittedAt),
         profile.typeLabel || "",
         profile.grade || "",
@@ -686,7 +672,7 @@ function exportReports() {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(link.href);
-  setStatus(`已导出 ${filteredReports.length} 份报告。`, "success");
+  setStatus(`已导出当前筛选结果共 ${filteredReports.length} 份清单（包含全部分页）。`, "success");
 }
 
 function exportHighIntentReports() {
@@ -697,10 +683,11 @@ function exportHighIntentReports() {
   }
 
   const rows = [
-    ["提交时间", "学生类型", "年级", "课程背景", "顾问标签", "优先方向", "首选专业", "匹配度", "后台备注"],
+    ["报告编号", "使用者", "账号", "提交时间", "学生类型", "年级", "课程背景", "顾问标签", "优先方向", "首选专业", "匹配度", "后台备注"],
     ...highIntentReports.map((report) => {
       const profile = report.studentProfile || {};
       return [
+        report.id || "",report.accessAccount?.name || "",report.accessAccount?.username || "",
         formatDateTime(report.submittedAt),
         profile.typeLabel || "",
         profile.grade || "",
@@ -818,6 +805,10 @@ if (gaokaoResetFiltersBtn) {
     setStatus(`已重置高考筛选条件，当前显示 ${filteredGaokaoQueries.length} 条查询。`);
   });
 }
+
+
+for(const [id,delta] of [['admin-page-prev',-1],['admin-page-next',1]])document.getElementById(id).addEventListener('click',()=>{reportPage+=delta;renderReportList();});
+document.getElementById('admin-page-size').addEventListener('change',()=>{reportPage=1;renderReportList();});
 
 resetFilters();
 renderOverview();
