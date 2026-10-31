@@ -20,7 +20,7 @@ const sandbox = {AbortController,setTimeout:options.setTimeout || setTimeout,cle
   window:{REPORT_API_BASE_URL:options.reportApiBase || "",location:{search:''},scrollTo:noop,addEventListener:noop},
   localStorage:{getItem:()=>null,setItem:noop,removeItem:noop},alert:noop};
 vm.createContext(sandbox);
-for (const file of ['assets/js/parent-report.js','assets/js/official_data.js','assets/js/integrated_questions.js','assets/js/majors_v2.js']) vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),sandbox);
+for (const file of ['assets/js/answer-review.js','assets/js/parent-report.js','assets/js/official_data.js','assets/js/integrated_questions.js','assets/js/majors_v2.js']) vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),sandbox);
 let source=fs.readFileSync(path.join(root,'assets/js/app.js'),'utf8');
 source=source.slice(0,source.lastIndexOf('\napplyMode(DEFAULT_MODE);'));
 vm.runInContext(source,sandbox);

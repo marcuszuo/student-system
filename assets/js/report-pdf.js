@@ -17,6 +17,7 @@
       id:String(report.id || ''),date:report.submittedAt?new Date(report.submittedAt).toLocaleDateString('zh-CN'):'未记录',
       conclusion:(joint.length>1?'同组优先推荐：':'优先推荐：')+(joint.length>1?joint.join('、'):recommendations[0].name),
       explanation:joint.length>1?'这些专业处于同一优先推荐层级，表内先后不代表确定的优劣。':'优先围绕该专业比较课程内容与实际学习投入，其他候选方向作为补充。',
+      inputNote:report.inputReview?.signals?.includes('limited_information')?'部分兴趣或专业任务尚缺少明确判断，当前推荐宜先作为课程比较的起点，并结合后续实践进一步明确方向。':'',
       portrait,
       recommendations:recommendations.map((x,i)=>({name:x.name,role:joint.includes(x.name)?'同组优先推荐':i===0?'优先推荐':'补充比较',
         rationale:parent.rationale(x,measures),...parent.comparison(x)})),
@@ -28,7 +29,7 @@
     const data=model(report,parent),esc=value=>clean(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     return `<article class="admin-parent-report">
       <header><p class="result-kicker">MajorNavi · 学生专业发展测评报告</p><h2>${esc(data.name || '学生测评结果')}</h2><p>${esc(data.profile)}</p><p>测评日期：${esc(data.date)}</p></header>
-      <section><h3>01 测评结论</h3><p class="admin-report-conclusion">${esc(data.conclusion)}</p><p>${esc(data.explanation)}</p></section>
+      <section><h3>01 测评结论</h3><p class="admin-report-conclusion">${esc(data.conclusion)}</p><p>${esc(data.explanation)}</p>${data.inputNote?`<p class="report-input-note">${esc(data.inputNote)}</p>`:''}</section>
       <section><h3>02 学生特征分析</h3><div class="admin-portrait-grid">${data.portrait.map(x=>`<article><h4>${esc(x.title)}</h4><p>${esc(x.text)}</p></article>`).join('') || '<p>此历史记录未保存学生特征摘要。</p>'}</div></section>
       <section><h3>03 专业推荐与比较</h3>${data.recommendations.map(x=>`<article class="admin-major-comparison"><h4>${esc(x.name)} <span>${esc(x.role)}</span></h4><p><strong>推荐依据：</strong>${esc(x.rationale)}</p><p><strong>大学主要学习内容：</strong>${esc(x.study || '以院校培养方案为准')}</p><p><strong>选择重点：</strong>${esc(x.focus)}</p></article>`).join('')}</section>
       <section><h3>04 后续建议</h3><ul>${data.recommendations.slice(0,2).map(x=>`<li><strong>${esc(x.name)}：</strong>${esc(x.task)}</li>`).join('')}</ul><p>比较方式：各投入相同时间，记录成果、困难和继续投入意愿，请学科老师反馈，再对照专业选择重点进行比较。</p></section>
@@ -62,6 +63,7 @@
     if(data.name)text(`学生：${data.name}`,{size:12});
     text(data.profile,{color:muted});text(`测评日期：${data.date}`,{color:muted});
     heading('01 测评结论');text(data.conclusion,{size:15});text(data.explanation);
+    if(data.inputNote)text(data.inputNote,{color:muted});
     heading('02 学生特征分析');
     if(!data.portrait.length)text('此历史记录未保存学生特征摘要。');
     data.portrait.forEach(x=>{ensure(64);text(x.title,{size:12,color:green,gap:2});text(x.text);});

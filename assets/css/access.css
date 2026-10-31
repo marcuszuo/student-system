@@ -68,3 +68,6 @@ body[data-admin-view="gaokao"] .admin-overview,body[data-admin-view="gaokao"] .a
 .admin-report-pagination select {font:inherit;padding:8px;border:1px solid #bdcbc2;border-radius:7px;}
 .admin-report-pagination button:disabled {opacity:.45;cursor:default;}
 .admin-load-scope {font-size:14px;color:#647268;line-height:1.7;}
+.report-input-note {padding:12px 16px;background:#f3f7f2;border-left:3px solid #67856c;line-height:1.8;}
+#answer-review {margin-top:20px;border:1px solid #c6d4c8;border-radius:12px;padding:20px;}
+#answer-review li {margin:10px 0;}

@@ -325,6 +325,7 @@ let followUpAdded = false;
 let totalPages = 1;
 let currentPage = 1;
 let answers = {};
+let acceptedReviewFingerprint="",pendingReviewFingerprint="",pendingAnswerReview=null;
 let introStep = 1;
 let studentProfile = { type: "public", grade: "" };
 let publicSubjectScores = { cn: null, math: null, en: null, phy: null, chem: null, bio: null };
@@ -811,6 +812,8 @@ function clearDraft(removeSaved = true) {
   window.MajorNaviStudy?.checkpoint();
   window.MajorNaviStudy?.restore(null);
   answers = {};
+  acceptedReviewFingerprint="";pendingReviewFingerprint="";pendingAnswerReview=null;
+  document.getElementById("answer-review").classList.add("hidden");
   studentProfile = { type: "public", grade: "" };
   publicSubjectScores = { cn: null, math: null, en: null, phy: null, chem: null, bio: null };
   internationalProfile = { curriculumName: "", scoreText: "" };
@@ -1918,8 +1921,9 @@ function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoo
   return {
     id: createRecordId(),
     submittedAt: new Date().toISOString(),
-    siteVersion: "2026-10-access-v13",
+    siteVersion: "2026-10-review-v23",
     usage: window.MajorNaviStudy?.snapshot() || null,
+    inputReview: {...window.MajorNaviAnswerReview.analyze(activeQuestions,answers,window.MajorNaviStudy?.snapshot()),reviewed:acceptedReviewFingerprint===reportInputFingerprint()},
     scoreMeaning: "候选专业内相对匹配指数，不是能力分、录取概率或成功概率",
     jointPriorityMajors: getJointPriorityMajors(rankedMajors).map((major) => major.name),
     studentProfile: {
@@ -2793,6 +2797,7 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
       <p class="result-kicker">MajorNavi 学生专业发展评估报告 · 01 测评结论</p>
       <h2 id="report-conclusion">${esc(summaryTitle)}</h2>
       <p class="result-summary">${tied ? "本次测评将这些专业列为同一优先推荐组，后续专业比较以这一组方向为重点。" : "本次测评将该专业列为优先推荐方向，其他候选作为补充比较。"}</p>
+      ${window.MajorNaviAnswerReview.note(metadata.inputReview)?`<p class="report-input-note">${esc(window.MajorNaviAnswerReview.note(metadata.inputReview))}</p>`:""}
       <p class="report-student-line">${esc(studentProfile.grade || "年级未填写")} · ${esc(getStudentTypeLabel(studentProfile.type))} · ${esc(getCurriculumSummary())}</p>
       <div class="report-cover-metrics">
         <article class="report-cover-metric"><span>专业建议</span><strong>${esc(names)}</strong></article>
@@ -3130,9 +3135,17 @@ quizForm.addEventListener("submit", (event) => {
       return;
     }
   }
+  const answerReview=window.MajorNaviAnswerReview.analyze(activeQuestions,answers,window.MajorNaviStudy?.snapshot());
+  if(answerReview.signals.length && acceptedReviewFingerprint!==fingerprint) {
+    pendingReviewFingerprint=fingerprint;pendingAnswerReview=answerReview;
+    const panel=document.getElementById('answer-review');
+    document.getElementById('answer-review-messages').innerHTML=window.MajorNaviAnswerReview.messages(answerReview).map(text=>'<li>'+escapeReportText(text)+'</li>').join('');
+    panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'center'});return;
+  }
+  document.getElementById('answer-review').classList.add('hidden');
   const schoolRecommendation = rankSchoolMajors(weighted.score, schoolMajorText);
-  renderResult({ ...studentVector, score: weighted.score }, rankedMajors, weighted.summary, schoolRecommendation);
   const reportPayload = buildReportPayload({ ...studentVector, score: weighted.score }, rankedMajors, weighted.summary, schoolRecommendation);
+  renderResult({ ...studentVector, score: weighted.score }, rankedMajors, weighted.summary, schoolRecommendation,reportPayload);
   const record = { fingerprint, payload: reportPayload, synced: false, view: {
     studentVector: { ...studentVector, score: weighted.score }, rankedMajors,
     weightingSummary: weighted.summary, schoolRecommendation,
@@ -3269,6 +3282,17 @@ document.getElementById('return-service-menu').addEventListener('click',()=>{
   if(!quizForm.classList.contains('hidden') && !activeReportRecord)saveDraft();
   window.MajorNaviStudy?.pause();renderStudentServices();
 });
+document.getElementById('answer-review-confirm').addEventListener('click',()=>{
+  acceptedReviewFingerprint=pendingReviewFingerprint;
+  quizForm.requestSubmit();
+});
+document.getElementById('answer-review-back').addEventListener('click',()=>{
+  document.getElementById('answer-review').classList.add('hidden');
+  const index=activeQuestions.findIndex(q=>pendingAnswerReview?.reviewIds.includes(q.id));
+  currentPage=index<0?totalPages:Math.floor(index/ITEMS_PER_PAGE)+1;renderCurrentPage();updateProgress();
+  document.getElementById('question-list').scrollIntoView({behavior:'smooth',block:'start'});
+});
+
 applyMode(DEFAULT_MODE);
 showIntroStep(introStep);
 void initializeAssessment();

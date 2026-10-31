@@ -13,6 +13,10 @@ async function main(){
   for(const section of ['01 测评结论','02 学生特征分析','03 专业推荐与比较','04 后续建议'])assert(preview.includes(section));
   for(const item of model.portrait)assert(preview.includes(item.text));
   assert(!preview.includes('内部备注不得导出'));
+  const limited={...report,inputReview:{signals:['limited_information']}};
+  assert(pdfExport.model(limited,parent).inputNote.includes('尚缺少明确判断'));
+  assert(pdfExport.html(limited,parent).includes('尚缺少明确判断'));
+  assert.equal(pdfExport.model({...report,inputReview:{signals:['short_active_time']}},parent).inputNote,'');
   const attack=pdfExport.html({...report,accessAccount:{name:'<img src=x onerror=alert(1)>'}},parent);
   assert(!attack.includes('<img'));assert(attack.includes('&lt;img'));
   const harness=require('./lib/assessment_harness').createAssessmentHarness();harness.sandbox.record=fixture;

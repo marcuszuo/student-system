@@ -13,7 +13,7 @@
   </script>
   <link rel="stylesheet" href="assets/css/styles.css?v=20261013-career-depth">
   <link rel="stylesheet" href="assets/css/report.css?v=20261024-dual-v18">
-  <link rel="stylesheet" href="assets/css/access.css?v=20261018-access-v13">
+  <link rel="stylesheet" href="assets/css/access.css?v=20261031-review-v23">
 </head>
 <body>
   <main class="page">
@@ -158,6 +158,7 @@
             <button type="button" id="next-btn" class="btn btn-primary">下一页</button>
             <button type="submit" id="submit-btn" class="btn btn-primary hidden">生成评估报告</button>
           </div>
+          <section id="answer-review" class="advice hidden" aria-labelledby="answer-review-heading"><h3 id="answer-review-heading">生成报告前，请核对以下内容</h3><ul id="answer-review-messages"></ul><p>可以返回修改，也可以确认这些回答符合实际后继续生成。核对前不会提交报告或消耗测评次数。</p><button type="button" id="answer-review-back" class="btn btn-ghost">返回核对</button> <button type="button" id="answer-review-confirm" class="btn btn-primary">确认回答并生成报告</button></section>
         </form>
 
         <section id="result" class="hidden"></section>
@@ -182,8 +183,9 @@
   <script src="assets/js/analytics.js?v=20260629-gaokao-launch"></script>
   <script src="assets/js/access-client.js?v=20261024-dual-v18"></script>
   <script src="assets/js/study.js?v=20261018-access-v13"></script>
+  <script src="assets/js/answer-review.js?v=20261031-review-v23"></script>
   <script src="assets/js/parent-report.js?v=20261025-pdf-v20"></script>
-  <script src="assets/js/report-pdf.js?v=20261025-preview-v21"></script>
-  <script src="assets/js/app.js?v=20261025-pdf-v20"></script>
+  <script src="assets/js/report-pdf.js?v=20261031-review-v23"></script>
+  <script src="assets/js/app.js?v=20261031-review-v23"></script>
 </body>
 </html>
