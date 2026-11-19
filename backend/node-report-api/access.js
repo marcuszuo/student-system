@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const DAY = 86400000;
+const storage=require('./storage');
+const snapshots=require('./report-snapshot');
 function fail(message, status = 400) { const error = new Error(message); error.status = status; throw error; }
 function hash(value) { return crypto.createHash('sha256').update(value).digest('hex'); }
 function passwordHash(value, salt = crypto.randomBytes(16).toString('hex')) {
@@ -28,14 +30,7 @@ module.exports = function createAccess({ file, adminPassword, adminHash, adminUs
     if (!Array.isArray(store.queryReceipts)) store.queryReceipts = [];
     return store;
   }
-  function write(store) {
-    fs.mkdirSync(path.dirname(file), { recursive: true });
-    const temp = file + '.' + crypto.randomBytes(6).toString('hex') + '.tmp';
-    try {
-      fs.writeFileSync(temp, JSON.stringify(store), { mode: 0o600 });
-      fs.renameSync(temp, file);
-    } finally { if (fs.existsSync(temp)) fs.unlinkSync(temp); }
-  }
+  function write(store) {storage.writeJson(file,store,value=>Array.isArray(value.accounts) && Array.isArray(value.sessions) && Array.isArray(value.submissions));}
   function features(a) {
     const permissions = parsePermissions(a.permissions);
     const canStart = !a.disabled && permissions.assessment && !a.reportId && a.expiresAt > now();
@@ -173,7 +168,7 @@ module.exports = function createAccess({ file, adminPassword, adminHash, adminUs
       }
       if (!f.canStart) fail('专业测评权限已过期', 403);
       if (store.submissions.some(x => x.id === payload.id)) fail('报告编号冲突', 409);
-      const report = { ...payload, submittedAt: new Date(now()).toISOString(), adminMeta: undefined, accessAccount: identity(a) };
+      const report = snapshots.capture({ ...payload, submittedAt: new Date(now()).toISOString(), adminMeta: undefined, accessAccount: identity(a) },{replace:true});
       a.reportId = report.id; a.completedAt = report.submittedAt; a.viewUntil = now() + 7 * DAY;
       store.submissions.push(report); write(store); return report;
     },

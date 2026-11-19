@@ -17,6 +17,13 @@ async function main(){
   assert(pdfExport.model(limited,parent).inputNote.includes('尚缺少明确判断'));
   assert(pdfExport.html(limited,parent).includes('尚缺少明确判断'));
   assert.equal(pdfExport.model({...report,inputReview:{signals:['short_active_time']}},parent).inputNote,'');
+  const captured={...report,frozenReport:pdfExport.freeze(report,parent)};
+  const baseline=pdfExport.model(captured,parent);
+  const changedRules={portrait:()=>[{title:'changed',text:'must not appear'}],comparison:()=>({focus:'changed'}),rationale:()=> 'changed'};
+  assert.deepEqual(pdfExport.model({...captured,recommendations:[{name:'改动后的专业'}]},changedRules),baseline);
+  assert(pdfExport.html(captured,changedRules).includes('01 测评结论'));
+  assert(!pdfExport.html(captured,changedRules).includes('must not appear'));
+  assert.equal(pdfExport.model({...captured,accessAccount:{name:'正确登记姓名'}},changedRules).name,'正确登记姓名');
   const attack=pdfExport.html({...report,accessAccount:{name:'<img src=x onerror=alert(1)>'}},parent);
   assert(!attack.includes('<img'));assert(attack.includes('&lt;img'));
   const harness=require('./lib/assessment_harness').createAssessmentHarness();harness.sandbox.record=fixture;

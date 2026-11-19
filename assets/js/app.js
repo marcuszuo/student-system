@@ -1921,7 +1921,7 @@ function buildReportPayload(studentVector, rankedMajors, weightingSummary, schoo
   return {
     id: createRecordId(),
     submittedAt: new Date().toISOString(),
-    siteVersion: "2026-10-review-v23",
+    siteVersion: "2026-11-history-v24",
     usage: window.MajorNaviStudy?.snapshot() || null,
     inputReview: {...window.MajorNaviAnswerReview.analyze(activeQuestions,answers,window.MajorNaviStudy?.snapshot()),reviewed:acceptedReviewFingerprint===reportInputFingerprint()},
     scoreMeaning: "候选专业内相对匹配指数，不是能力分、录取概率或成功概率",
@@ -2828,13 +2828,17 @@ function renderResult(studentVector, rankedMajors, weightingSummary, schoolRecom
       <label>具体意见（选填，请勿填写姓名或联系方式）<textarea name="comment" maxlength="1000" rows="3"></textarea></label>
       <button class="btn btn-ghost" type="submit">提交反馈</button><p role="status" aria-live="polite" id="report-feedback-status"></p></form>
     </details>`;
+  if(window.MajorNaviReportPDF.isFrozen(metadata.frozenReport)) {
+    const feedback=resultBox.innerHTML.match(/<details class="rank-details report-feedback no-print">[\s\S]*?<\/details>/)?.[0] || '';
+    resultBox.innerHTML='<div class="result-tools"><button type="button" id="export-pdf-btn" class="btn btn-ghost">下载 PDF 报告</button></div>'+window.MajorNaviReportPDF.html(metadata)+feedback;
+  }
 }
 
 function bindReportFeedback(payload) {
   const form = document.getElementById("report-feedback-form");
   if (!form || !window.MajorNaviStudy) return;
   const line = document.getElementById("report-version-line");
-  if (line) line.textContent = `测评版本：2026.10 / V${(payload.siteVersion || "v13").match(/v(\d+)$/)?.[1] || "13"} · 生成日期：${new Date(payload.submittedAt).toLocaleDateString("zh-CN")}`;
+  if (line && !window.MajorNaviReportPDF.isFrozen(payload.frozenReport)) line.textContent = `测评版本：2026.10 / V${(payload.siteVersion || "v13").match(/v(\d+)$/)?.[1] || "13"} · 生成日期：${new Date(payload.submittedAt).toLocaleDateString("zh-CN")}`;
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const fields = form.elements;
@@ -3145,6 +3149,7 @@ quizForm.addEventListener("submit", (event) => {
   document.getElementById('answer-review').classList.add('hidden');
   const schoolRecommendation = rankSchoolMajors(weighted.score, schoolMajorText);
   const reportPayload = buildReportPayload({ ...studentVector, score: weighted.score }, rankedMajors, weighted.summary, schoolRecommendation);
+  reportPayload.frozenReport=window.MajorNaviReportPDF.freeze(reportPayload);
   renderResult({ ...studentVector, score: weighted.score }, rankedMajors, weighted.summary, schoolRecommendation,reportPayload);
   const record = { fingerprint, payload: reportPayload, synced: false, view: {
     studentVector: { ...studentVector, score: weighted.score }, rankedMajors,

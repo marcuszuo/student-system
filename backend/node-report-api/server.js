@@ -2,6 +2,8 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const storage=require("./storage");
+const history=require("./history");
 
 const PORT = Number(process.env.PORT || 8787);
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
@@ -16,6 +18,11 @@ const ALLOWED_ORIGINS = String(process.env.ALLOWED_ORIGINS || "")
 
 ensureStorage();
 const access = require('./access')({file:path.join(DATA_DIR,'access-store.json'),adminPassword:process.env.ADMIN_LOGIN_PASSWORD,adminHash:process.env.ADMIN_PASSWORD_HASH,adminUsername:process.env.ADMIN_USERNAME || 'admin'});
+const backupFiles={reports:DATA_FILE,queries:GAOKAO_QUERY_FILE,accounts:path.join(DATA_DIR,'access-store.json')};
+const backupRoot=process.env.BACKUP_DIR || path.join(path.dirname(DATA_DIR),path.basename(DATA_DIR)+'-backups');
+function scheduledBackup(){try{storage.snapshot(backupFiles,backupRoot);}catch(error){console.error('Backup failed:',error.message);}}
+scheduledBackup();
+setInterval(scheduledBackup,6*60*60*1000).unref();
 const attempts = new Map();
 function bearer(req) {return String(req.headers.authorization || '').replace(/^Bearer /i,'');}
 
@@ -31,7 +38,7 @@ const server = http.createServer(async (req, res) => {
       return respondJson(res, 200, { ok: true, time: new Date().toISOString() }, corsHeaders(req));
     }
 
-    if (url.pathname === '/api/auth/capabilities' && req.method === 'GET') return respondJson(res,200,{accounts:access.configured,version:2,dualAccess:access.configured},corsHeaders(req));
+    if (url.pathname === '/api/auth/capabilities' && req.method === 'GET') return respondJson(res,200,{accounts:access.configured,version:3,dualAccess:access.configured,historyPagination:true,frozenReports:true,scheduledBackups:true},corsHeaders(req));
     if (url.pathname === '/api/auth/login' && req.method === 'POST') {
       const payload = await readBody(req), key = req.socket.remoteAddress + ':' + String(payload.username || '').toLowerCase().slice(0,80);
       const previous = attempts.get(key), limit = previous && previous.until>Date.now() ? previous : {count:0,until:Date.now()+15*60000};
@@ -120,44 +127,20 @@ function respondJson(res, status, payload, extraHeaders = {}) {
 function ensureStorage() {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, "[]\n", "utf8");
+    storage.writeJson(DATA_FILE,[],Array.isArray);
   }
   if (!fs.existsSync(GAOKAO_QUERY_FILE)) {
-    fs.writeFileSync(GAOKAO_QUERY_FILE, "[]\n", "utf8");
+    storage.writeJson(GAOKAO_QUERY_FILE,[],Array.isArray);
   }
 }
 
 function readReports() {
-  ensureStorage();
-  try {
-    const raw = fs.readFileSync(DATA_FILE, "utf8");
-    const parsed = JSON.parse(raw || "[]");
-    const base = Array.isArray(parsed) ? parsed : [];
-    const ids = new Set(base.map(x=>x.id));
-    return [...base,...access.reports().filter(x=>!ids.has(x.id))];
-  } catch {
-    return [];
-  }
+  ensureStorage();const base=storage.readJson(DATA_FILE,Array.isArray),ids=new Set(base.map(x=>x.id));
+  return [...base,...access.reports().filter(x=>!ids.has(x.id))];
 }
-
-function writeReports(items) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(items, null, 2), "utf8");
-}
-
-function readGaokaoQueries() {
-  ensureStorage();
-  try {
-    const raw = fs.readFileSync(GAOKAO_QUERY_FILE, "utf8");
-    const parsed = JSON.parse(raw || "[]");
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeGaokaoQueries(items) {
-  fs.writeFileSync(GAOKAO_QUERY_FILE, JSON.stringify(items, null, 2), "utf8");
-}
+function writeReports(items) {storage.writeJson(DATA_FILE,items,Array.isArray);}
+function readGaokaoQueries() {ensureStorage();return storage.readJson(GAOKAO_QUERY_FILE,Array.isArray);}
+function writeGaokaoQueries(items) {storage.writeJson(GAOKAO_QUERY_FILE,items,Array.isArray);}
 
 function readBody(req) {
   return new Promise((resolve, reject) => {
@@ -227,13 +210,13 @@ async function handleCreateReport(req, res) {
   const submittedAt = String(payload.submittedAt || new Date().toISOString());
 
   const reports = readReports();
-  const normalized = {
+  const normalized = require("./report-snapshot").capture({
     ...payload,
     adminMeta: reports.find(item=>item.id===id)?.adminMeta,
     id,
     submittedAt
-  };
-  const next = [normalized, ...reports.filter((item) => item.id !== id)].slice(0, 1000);
+  });
+  const next = [normalized, ...reports.filter((item) => item.id !== id)];
   writeReports(next);
 
   return respondJson(res, 200, { ok: true, id }, corsHeaders(req));
@@ -247,7 +230,7 @@ async function handleCreateGaokaoQuery(req, res) {
   const queries=readGaokaoQueries();
   const previous=queries.find(item=>item.id===id);
   const normalized=previous || {...payload,id,submittedAt:String(payload.submittedAt || new Date().toISOString()),recordType:'gaokao_query'};
-  writeGaokaoQueries([normalized,...queries.filter(item=>item.id!==id)].slice(0,3000));
+  writeGaokaoQueries([normalized,...queries.filter(item=>item.id!==id)]);
   if(access.configured) access.noteQuery(bearer(req),id);
   return respondJson(res,200,{ok:true,id},corsHeaders(req));
 }
@@ -257,6 +240,14 @@ function handleListReports(req, res, url) {
     return respondJson(res, 403, { error: "Forbidden" }, corsHeaders(req));
   }
 
+  if(url.searchParams.get('paged')==='1') {
+    const all=readReports();
+    if(url.searchParams.get('export')==='csv'){
+      const csv=history.csv(all,url.searchParams);res.writeHead(200,{...corsHeaders(req),'Content-Type':'text/csv; charset=utf-8','Content-Disposition':'attachment; filename="majornavi-report-list.csv"'});return res.end(csv);
+    }
+    const result=history.page(all,url.searchParams);if(url.searchParams.get('include_observations')==='1')result.observations=all.filter(x=>['assessment_session','assessment_feedback'].includes(x.recordType)).sort((a,b)=>String(b.submittedAt || '').localeCompare(String(a.submittedAt || ''))).slice(0,200);
+    return respondJson(res,200,result,corsHeaders(req));
+  }
   const limit = Math.min(Number(url.searchParams.get("limit") || 50), 200);
   const dateFrom = normalizeDateValue(url.searchParams.get("date_from"), "start");
   const dateTo = normalizeDateValue(url.searchParams.get("date_to"), "end");

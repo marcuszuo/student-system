@@ -45,6 +45,7 @@ let reports = [];
 let filteredReports = [];
 let selectedReportId = "";
 let reportPage=1;
+let historyEnabled=false,remoteState=null,reportRequestNumber=0,reportAbort=null,historyDebounce=null;
 const reportListTools=window.MajorNaviReportList;
 let gaokaoQueries = [];
 let filteredGaokaoQueries = [];
@@ -258,6 +259,7 @@ function populateGaokaoProvinceFilter() {
 
 function applyFilters(resetPage=false) {
   if(resetPage)reportPage=1;
+  if(historyEnabled && remoteState)return;
   filteredReports = reports.filter(reportMatchesFilters).sort(compareReports);
   if (!filteredReports.find((item) => item.id === selectedReportId)) {
     selectedReportId = "";
@@ -265,6 +267,7 @@ function applyFilters(resetPage=false) {
 }
 
 function renderOverview() {
+  if(remoteState){const overview=remoteState.overview;totalCountEl.textContent=overview.total;todayCountEl.textContent=overview.today;publicCountEl.textContent=overview.public;internationalCountEl.textContent=overview.international;highIntentCountEl.textContent=overview.highIntent;return;}
   const today = reportListTools.day(Date.now());
   const todayCount = reports.filter((report) => reportListTools.day(report.submittedAt)===today).length;
   const publicCount = reports.filter((report) => getReportType(report) === "public").length;
@@ -362,12 +365,12 @@ function renderGaokaoList() {
 }
 
 function renderReportList() {
-  const page=reportListTools.paginate(filteredReports,reportPage,document.getElementById("admin-page-size").value);
+  const page=remoteState?{...remoteState.pagination,items:filteredReports}:reportListTools.paginate(filteredReports,reportPage,document.getElementById("admin-page-size").value);
   reportPage=page.page;
   document.getElementById("admin-page-status").textContent=`第 ${page.page} / ${page.pages} 页 · 显示 ${page.start}—${page.end} / ${page.total} 份`;
   document.getElementById("admin-page-prev").disabled=page.page<=1;
   document.getElementById("admin-page-next").disabled=page.page>=page.pages;
-  countEl.textContent = `${filteredReports.length} 份`;
+  countEl.textContent = `${page.total} 份`;
   if (!filteredReports.length) {
     listEl.innerHTML = `
       <div class="empty-state compact">
@@ -436,7 +439,25 @@ function renderReportDetail(report) {
   }
 }
 
+function historyFilters(){
+  const filters={page:reportPage,pageSize:Number(document.getElementById('admin-page-size').value),q:searchFilterEl.value.trim(),grade:gradeFilterEl.value.trim(),status:followupFilterEl.value,type:typeFilterEl.value,sort:sortFilterEl.value};
+  if(dateFromEl.value)filters.date_from=reportListTools.dateBoundary(dateFromEl.value);
+  if(dateToEl.value)filters.date_to=reportListTools.dateBoundary(dateToEl.value,true);
+  return filters;
+}
+function refreshHistory(){
+  clearTimeout(historyDebounce);reportAbort?.abort();reportRequestNumber++;
+  historyDebounce=setTimeout(()=>{fetchReports().catch(error=>setStatus(error.message,'error'));},200);
+}
+async function exportHistory(highIntent){
+  const button=highIntent?exportHighIntentBtn:exportBtn;button.disabled=true;
+  setStatus('正在导出全部符合当前条件的报告清单…');
+  try{await window.MajorNaviHistory.download(getAdminConfig(),historyFilters(),highIntent);setStatus('已导出全部符合筛选条件的报告清单。','success');}
+  catch(error){setStatus(error.message,'error');}finally{button.disabled=false;}
+}
+
 async function fetchReports() {
+  const requestNumber=++reportRequestNumber;
   const { apiBase, token } = getAdminConfig();
   if (!apiBase) {
     setStatus("后台接口地址未配置。", "error");
@@ -448,7 +469,21 @@ async function fetchReports() {
   }
 
   setStatus("正在加载报告…");
-
+  if(await window.MajorNaviHistory.supported(apiBase)) {
+    if(requestNumber!==reportRequestNumber)return;
+    historyEnabled=true;reportAbort?.abort();reportAbort=new AbortController();
+    try{
+      const data=await window.MajorNaviHistory.load({apiBase,token},historyFilters(),reportAbort.signal);
+      if(requestNumber!==reportRequestNumber)return;
+      remoteState=data;reportPage=data.pagination.page;reports=data.items;filteredReports=data.items;
+      renderOverview();renderReportList();
+      const selected=reports.find(x=>x.id===selectedReportId);if(selectedReportId && selected)renderReportDetail(selected);
+      if(Array.isArray(data.observations))renderPilotObservations(data.observations);
+      document.getElementById('admin-load-scope').textContent='已查询全部历史报告；上方统计和清单导出均按当前筛选条件计算。';
+      setStatus('当前共 '+data.pagination.total+' 份报告，已显示第 '+data.pagination.page+' 页。','success');
+    }catch(error){if(requestNumber===reportRequestNumber && error.name!=='AbortError')throw error;}
+    return;
+  }
   const params = new URLSearchParams({ limit: "200" });
   const dateFrom = String(dateFromEl.value || "").trim();
   const dateTo = String(dateToEl.value || "").trim();
@@ -464,6 +499,7 @@ async function fetchReports() {
     throw new Error(`加载失败（${response.status}）`);
   }
   const data = await response.json();
+  if(requestNumber!==reportRequestNumber)return;
   const all = Array.isArray(data.items) ? data.items : [];
   renderPilotObservations(all.filter(item => ['assessment_session','assessment_feedback'].includes(item.recordType)));
   reports = all.filter(item => !['assessment_session','assessment_feedback'].includes(item.recordType));
@@ -509,7 +545,6 @@ async function fetchAllAdminData() {
     setStatus(`已加载 ${gaokaoQueries.length} 条高考查询。`,"success");
   } else {
     await fetchReports();
-    setStatus(`已加载 ${reports.length} 份报告。`,"success");
   }
 }
 
@@ -531,6 +566,7 @@ async function deleteReport(id) {
   if (!response.ok) {
     throw new Error(`删除失败（${response.status}）`);
   }
+  if(historyEnabled){selectedReportId="";await fetchReports();renderReportDetail(null);setStatus("报告已删除。","success");return;}
   reports = reports.filter((report) => report.id !== id);
   applyFilters();
   renderOverview();
@@ -587,10 +623,8 @@ async function saveReportNote(id) {
   }
 
   const data = await response.json();
-  reports = reports.map((report) => report.id === id ? data.item : report);
-  applyFilters();
-  renderReportList();
-  renderReportDetail(filteredReports.find((report) => report.id === selectedReportId) || null);
+  if(historyEnabled){await fetchReports();selectedReportId=id;renderReportDetail(data.item);}
+  else {reports = reports.map((report) => report.id === id ? data.item : report);applyFilters();renderReportList();renderReportDetail(filteredReports.find((report) => report.id === selectedReportId) || null);}
   setStatus("后台跟进信息已保存。", "success");
   const management=document.getElementById('admin-report-management');
   if(management){management.open=true;reportDialog.scrollTop=previousScroll;document.getElementById('admin-note-save-status').textContent='跟进信息已保存。';}
@@ -608,6 +642,7 @@ listEl.addEventListener("click", (event) => {
 
 [sortFilterEl, typeFilterEl, followupFilterEl, gradeFilterEl, dateFromEl, dateToEl, searchFilterEl].forEach((input) => {
   input.addEventListener("input", () => {
+    if(historyEnabled){reportPage=1;refreshHistory();return;}
     applyFilters(true);
     renderReportList();
     renderReportDetail(filteredReports.find((report) => report.id === selectedReportId) || null);
@@ -627,6 +662,7 @@ reloadBtn.addEventListener("click", async () => {
 if (resetFiltersBtn) {
   resetFiltersBtn.addEventListener("click", () => {
     resetFilters();
+    if(historyEnabled){reportPage=1;refreshHistory();return;}
     applyFilters(true);
     renderReportList();
     renderReportDetail(filteredReports.find((report) => report.id === selectedReportId) || null);
@@ -638,7 +674,8 @@ function toCsvValue(value) {
   return reportListTools.csvValue(value);
 }
 
-function exportReports() {
+async function exportReports() {
+  if(typeof historyEnabled!=="undefined" && historyEnabled){await exportHistory(false);return;}
   if (!filteredReports.length) {
     setStatus("当前没有可导出的报告。", "error");
     return;
@@ -675,7 +712,8 @@ function exportReports() {
   setStatus(`已导出当前筛选结果共 ${filteredReports.length} 份清单（包含全部分页）。`, "success");
 }
 
-function exportHighIntentReports() {
+async function exportHighIntentReports() {
+  if(historyEnabled){await exportHistory(true);return;}
   const highIntentReports = filteredReports.filter((report) => String(report.adminMeta?.status || "") === "high_intent");
   if (!highIntentReports.length) {
     setStatus("当前筛选结果中没有高意向学生。", "error");
@@ -807,8 +845,8 @@ if (gaokaoResetFiltersBtn) {
 }
 
 
-for(const [id,delta] of [['admin-page-prev',-1],['admin-page-next',1]])document.getElementById(id).addEventListener('click',()=>{reportPage+=delta;renderReportList();});
-document.getElementById('admin-page-size').addEventListener('change',()=>{reportPage=1;renderReportList();});
+for(const [id,delta] of [['admin-page-prev',-1],['admin-page-next',1]])document.getElementById(id).addEventListener('click',()=>{reportPage+=delta;if(historyEnabled){refreshHistory();return;}renderReportList();});
+document.getElementById('admin-page-size').addEventListener('change',()=>{reportPage=1;if(historyEnabled){refreshHistory();return;}renderReportList();});
 
 resetFilters();
 renderOverview();

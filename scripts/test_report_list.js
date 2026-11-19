@@ -15,7 +15,7 @@ assert.equal(tools.csvValue('=SUM(1)'), '"\'=SUM(1)"');assert.equal(tools.csvVal
 // Exercise the real export function: it must export every filtered row, not just the visible page.
 const fs=require('fs'),vm=require('vm');let exported='';
 const source=fs.readFileSync(require('path').join(__dirname,'../assets/js/admin.js'),'utf8');
-const start=source.indexOf('function exportReports()'),end=source.indexOf('function exportHighIntentReports()',start);
+const start=source.indexOf('async function exportReports()'),end=source.indexOf('async function exportHighIntentReports()',start);
 const context={filteredReports:rows.map(x=>({...report,id:'report-'+x.id})),toCsvValue:tools.csvValue,
   formatDateTime:x=>x || '',getFollowupStatusLabel:()=> '新报告',setStatus:()=>{},Date,
   Blob:class{constructor(parts){exported=parts.join('');}},URL:{createObjectURL:()=> 'blob:test',revokeObjectURL:()=>{}},
